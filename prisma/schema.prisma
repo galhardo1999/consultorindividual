@@ -1,0 +1,317 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id           String   @id @default(cuid())
+  nome         String
+  email        String   @unique
+  senhaHash    String
+  telefone     String?
+  avatarUrl    String?
+  ativo        Boolean  @default(true)
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  clientes     Cliente[]
+  imoveis      Imovel[]
+  interacoes   Interacao[]
+  etiquetas    Etiqueta[]
+
+  @@map("usuarios")
+}
+
+model Cliente {
+  id             String    @id @default(cuid())
+  usuarioId      String
+  nomeCompleto   String
+  email          String?
+  telefone       String
+  documento      String?
+  cidadeAtual    String?
+  origemLead     OrigemLead @default(INDICACAO)
+  status         StatusCliente @default(ATIVO)
+  estagioJornada EstagioJornada @default(NOVO_LEAD)
+  objetivoCompra ObjetivoCompra?
+  formaPagamento FormaPagamento?
+  nivelUrgencia  NivelUrgencia @default(MEDIA)
+  observacoes    String?
+  arquivadoEm    DateTime?
+  criadoEm       DateTime  @default(now())
+  atualizadoEm   DateTime  @updatedAt
+
+  usuario        Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  preferencia    PreferenciaCliente?
+  interesses     InteresseClienteImovel[]
+  interacoes     Interacao[]
+  etiquetasCliente EtiquetaCliente[]
+
+  @@map("clientes")
+}
+
+model PreferenciaCliente {
+  id                    String    @id @default(cuid())
+  clienteId             String    @unique
+  tipoImovel            TipoImovel?
+  precoMinimo           Float?
+  precoMaximo           Float?
+  cidadeInteresse       String?
+  bairrosInteresse      String?
+  minQuartos            Int?
+  minBanheiros          Int?
+  minVagas              Int?
+  areaMinima            Float?
+  areaMaxima            Float?
+  condicaoImovel        CondicaoImovel?
+  aceitaFinanciamento   Boolean?
+  aceitaPermuta         Boolean?
+  condominioFechado     Boolean?
+  caracteristicasPreferidas String?
+  restricoes            String?
+  prazoMudanca          String?
+  notasPessoais         String?
+  criadoEm              DateTime  @default(now())
+  atualizadoEm          DateTime  @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+
+  @@map("preferencias_cliente")
+}
+
+model Imovel {
+  id              String    @id @default(cuid())
+  usuarioId       String
+  codigoInterno   String?
+  titulo          String
+  descricao       String?
+  tipoImovel      TipoImovel
+  finalidade      FinalidadeImovel
+  preco           Float
+  valorCondominio Float?
+  valorIptu       Float?
+  cidade          String
+  bairro          String?
+  endereco        String?
+  quartos         Int?
+  suites          Int?
+  banheiros       Int?
+  vagasGaragem    Int?
+  areaUtil        Float?
+  mobiliado       Boolean  @default(false)
+  aceitaFinanciamento Boolean @default(false)
+  aceitaPermuta   Boolean @default(false)
+  status          StatusImovel @default(DISPONIVEL)
+  origemCaptacao  String?
+  destaques       String?
+  arquivadoEm     DateTime?
+  criadoEm        DateTime @default(now())
+  atualizadoEm    DateTime @updatedAt
+
+  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  caracteristicas CaracteristicaImovel[]
+  interesses      InteresseClienteImovel[]
+  interacoes      Interacao[]
+
+  @@map("imoveis")
+}
+
+model CaracteristicaImovel {
+  id                 String @id @default(cuid())
+  imovelId           String
+  tipoCaracteristica String
+  valorCaracteristica String?
+
+  imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@map("caracteristicas_imovel")
+}
+
+model InteresseClienteImovel {
+  id              String    @id @default(cuid())
+  clienteId       String
+  imovelId        String
+  statusInteresse StatusInteresse @default(INTERESSADO)
+  nivelPrioridade NivelPrioridade @default(MEDIA)
+  ehFavorito      Boolean   @default(false)
+  apresentadoEm   DateTime?
+  feedback        String?
+  motivoRejeicao  String?
+  criadoEm        DateTime  @default(now())
+  atualizadoEm    DateTime  @updatedAt
+
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel  Imovel  @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, imovelId])
+  @@map("interesses_cliente_imovel")
+}
+
+model Interacao {
+  id              String          @id @default(cuid())
+  usuarioId       String
+  clienteId       String
+  imovelId        String?
+  tipoInteracao   TipoInteracao
+  titulo          String
+  descricao       String?
+  dataInteracao   DateTime
+  proximoFollowUp DateTime?
+  criadoEm        DateTime        @default(now())
+  atualizadoEm    DateTime        @updatedAt
+
+  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente  Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel   Imovel?   @relation(fields: [imovelId], references: [id], onDelete: SetNull)
+
+  @@map("interacoes")
+}
+
+model Etiqueta {
+  id        String @id @default(cuid())
+  usuarioId String
+  nome      String
+  cor       String @default("#6366f1")
+
+  usuario         Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  etiquetasCliente EtiquetaCliente[]
+
+  @@unique([usuarioId, nome])
+  @@map("etiquetas")
+}
+
+model EtiquetaCliente {
+  id         String @id @default(cuid())
+  clienteId  String
+  etiquetaId String
+
+  cliente  Cliente  @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  etiqueta Etiqueta @relation(fields: [etiquetaId], references: [id], onDelete: Cascade)
+
+  @@unique([clienteId, etiquetaId])
+  @@map("etiquetas_cliente")
+}
+
+// Enums
+enum OrigemLead {
+  INDICACAO
+  PORTAL_IMOBILIARIO
+  REDES_SOCIAIS
+  WHATSAPP
+  SITE_PROPRIO
+  CAPTACAO_ATIVA
+  EVENTO
+  OUTRO
+}
+
+enum StatusCliente {
+  ATIVO
+  INATIVO
+  ARQUIVADO
+}
+
+enum EstagioJornada {
+  NOVO_LEAD
+  EM_QUALIFICACAO
+  BUSCANDO_OPCOES
+  VISITANDO_IMOVEIS
+  NEGOCIANDO
+  PROPOSTA_ENVIADA
+  FECHADO
+  PERDIDO
+  PAUSADO
+}
+
+enum ObjetivoCompra {
+  MORADIA_PROPRIA
+  INVESTIMENTO
+  LOCACAO
+  VERANEIO
+  OUTRO
+}
+
+enum FormaPagamento {
+  FINANCIAMENTO
+  PERMUTA
+  VISTA
+  MISTO
+  A_DEFINIR
+}
+
+enum NivelUrgencia {
+  ALTA
+  MEDIA
+  BAIXA
+  SEM_URGENCIA
+}
+
+enum TipoImovel {
+  APARTAMENTO
+  CASA
+  CASA_CONDOMINIO
+  TERRENO
+  SALA_COMERCIAL
+  LOJA
+  GALPAO
+  CHACARA
+  FAZENDA
+  OUTRO
+}
+
+enum FinalidadeImovel {
+  VENDA
+  LOCACAO
+  TEMPORADA
+  PERMUTA
+}
+
+enum CondicaoImovel {
+  NOVO
+  USADO
+  AMBOS
+}
+
+enum StatusImovel {
+  DISPONIVEL
+  RESERVADO
+  VENDIDO
+  LOCADO
+  INDISPONIVEL
+  ARQUIVADO
+}
+
+enum StatusInteresse {
+  INTERESSADO
+  APRESENTADO
+  VISITADO
+  FAVORITO
+  REJEITADO
+  EM_NEGOCIACAO
+  FECHADO
+}
+
+enum NivelPrioridade {
+  ALTA
+  MEDIA
+  BAIXA
+}
+
+enum TipoInteracao {
+  LIGACAO
+  MENSAGEM
+  REUNIAO
+  VISITA_AGENDADA
+  VISITA_REALIZADA
+  ENVIO_PROPOSTA
+  RETORNO_CLIENTE
+  ATUALIZACAO_PERFIL
+  OBSERVACAO_INTERNA
+  FOLLOW_UP
+}

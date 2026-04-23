@@ -1,0 +1,295 @@
+"use cliente";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { ArrowLeft, Save, Loader2 } from "lucide-react";
+
+const PROPERTY_TYPES = [
+  { value: "APARTAMENTO", label: "Apartamento" },
+  { value: "CASA", label: "Casa" },
+  { value: "CASA_CONDOMINIO", label: "Casa em Condomínio" },
+  { value: "TERRENO", label: "Terreno" },
+  { value: "SALA_COMERCIAL", label: "Sala Comercial" },
+  { value: "LOJA", label: "Loja" },
+  { value: "GALPAO", label: "Galpão" },
+  { value: "CHACARA", label: "Chácara" },
+  { value: "FAZENDA", label: "Fazenda" },
+  { value: "OUTRO", label: "Outro" },
+];
+
+const PURPOSES = [
+  { value: "VENDA", label: "Venda" },
+  { value: "LOCACAO", label: "Locação" },
+  { value: "TEMPORADA", label: "Temporada" },
+  { value: "PERMUTA", label: "Permuta" },
+];
+
+const STATUSES = [
+  { value: "DISPONIVEL", label: "Disponível" },
+  { value: "RESERVADO", label: "Reservado" },
+  { value: "INDISPONIVEL", label: "Indisponível" },
+];
+
+export default function NovoImovelPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [form, setForm] = useState({
+    titulo: "",
+    tipoImovel: "APARTAMENTO",
+    finalidade: "VENDA",
+    preco: "",
+    cidade: "",
+    bairro: "",
+    endereco: "",
+    codigoInterno: "",
+    descricao: "",
+    quartos: "",
+    suites: "",
+    banheiros: "",
+    vagasGaragem: "",
+    areaUtil: "",
+    valorCondominio: "",
+    valorIptu: "",
+    mobiliado: false,
+    aceitaFinanciamento: false,
+    aceitaPermuta: false,
+    status: "DISPONIVEL",
+    origemCaptacao: "",
+    destaques: "",
+  });
+
+  function update(field: string, value: string | boolean) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    const payload = {
+      ...form,
+      preco: parseFloat(form.preco) || 0,
+      quartos: form.quartos ? parseInt(form.quartos) : undefined,
+      suites: form.suites ? parseInt(form.suites) : undefined,
+      banheiros: form.banheiros ? parseInt(form.banheiros) : undefined,
+      vagasGaragem: form.vagasGaragem ? parseInt(form.vagasGaragem) : undefined,
+      areaUtil: form.areaUtil ? parseFloat(form.areaUtil) : undefined,
+      valorCondominio: form.valorCondominio ? parseFloat(form.valorCondominio) : undefined,
+      valorIptu: form.valorIptu ? parseFloat(form.valorIptu) : undefined,
+    };
+
+    const res = await fetch("/api/imoveis", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    const data = await res.json();
+    setLoading(false);
+
+    if (!res.ok) {
+      setError(data.error || "Erro ao cadastrar imóvel.");
+      return;
+    }
+
+    router.push(`/imoveis/${data.id}`);
+  }
+
+  return (
+    <div className="page" style={{ maxWidth: "800px", margin: "0 auto" }}>
+      <div className="flex items-center gap-3 mb-6">
+        <Link href="/imoveis" className="btn btn-ghost btn-icon">
+          <ArrowLeft size={18} />
+        </Link>
+        <div>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>Novo Imóvel</h1>
+          <p style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
+            Preencha os dados do imóvel
+          </p>
+        </div>
+      </div>
+
+      <form onSubmit={handleSubmit}>
+        {/* Basic info */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Informações Básicas</h2>
+
+          <div className="form-group">
+            <label className="label" htmlFor="titulo">Título *</label>
+            <input id="titulo" type="text" className="input" placeholder="Ex: Apartamento 3 quartos no Centro"
+              value={form.titulo} onChange={(e) => update("titulo", e.target.value)} required />
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="label" htmlFor="codigoInterno">Código Interno</label>
+              <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
+                value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="origemCaptacao">Origem / Captador</label>
+              <input id="origemCaptacao" type="text" className="input" placeholder="Nome do proprietário ou captador"
+                value={form.origemCaptacao} onChange={(e) => update("origemCaptacao", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="label" htmlFor="tipoImovel">Tipo *</label>
+              <select id="tipoImovel" className="select" value={form.tipoImovel} onChange={(e) => update("tipoImovel", e.target.value)}>
+                {PROPERTY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="finalidade">Finalidade *</label>
+              <select id="finalidade" className="select" value={form.finalidade} onChange={(e) => update("finalidade", e.target.value)}>
+                {PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+              </select>
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="status">Status</label>
+              <select id="status" className="select" value={form.status} onChange={(e) => update("status", e.target.value)}>
+                {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Localização</h2>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="label" htmlFor="cidade">Cidade *</label>
+              <input id="cidade" type="text" className="input" placeholder="São Paulo"
+                value={form.cidade} onChange={(e) => update("cidade", e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="bairro">Bairro</label>
+              <input id="bairro" type="text" className="input" placeholder="Centro"
+                value={form.bairro} onChange={(e) => update("bairro", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="label" htmlFor="endereco">Endereço</label>
+            <input id="endereco" type="text" className="input" placeholder="Rua, número, complemento"
+              value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
+          </div>
+        </div>
+
+        {/* Price */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Valores</h2>
+
+          <div className="form-row-3">
+            <div className="form-group">
+              <label className="label" htmlFor="preco">Preço *</label>
+              <input id="preco" type="number" className="input" placeholder="500000"
+                value={form.preco} onChange={(e) => update("preco", e.target.value)} required min="0" />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="valorCondominio">Condomínio</label>
+              <input id="valorCondominio" type="number" className="input" placeholder="800"
+                value={form.valorCondominio} onChange={(e) => update("valorCondominio", e.target.value)} min="0" />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="valorIptu">IPTU (anual)</label>
+              <input id="valorIptu" type="number" className="input" placeholder="2400"
+                value={form.valorIptu} onChange={(e) => update("valorIptu", e.target.value)} min="0" />
+            </div>
+          </div>
+        </div>
+
+        {/* Features */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Características</h2>
+
+          <div className="form-row-3">
+            <div className="form-group">
+              <label className="label" htmlFor="quartos">Quartos</label>
+              <input id="quartos" type="number" className="input" placeholder="3" min="0"
+                value={form.quartos} onChange={(e) => update("quartos", e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="suites">Suítes</label>
+              <input id="suites" type="number" className="input" placeholder="1" min="0"
+                value={form.suites} onChange={(e) => update("suites", e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="banheiros">Banheiros</label>
+              <input id="banheiros" type="number" className="input" placeholder="2" min="0"
+                value={form.banheiros} onChange={(e) => update("banheiros", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="form-row">
+            <div className="form-group">
+              <label className="label" htmlFor="vagasGaragem">Vagas</label>
+              <input id="vagasGaragem" type="number" className="input" placeholder="1" min="0"
+                value={form.vagasGaragem} onChange={(e) => update("vagasGaragem", e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="areaUtil">Área (m²)</label>
+              <input id="areaUtil" type="number" className="input" placeholder="85" min="0"
+                value={form.areaUtil} onChange={(e) => update("areaUtil", e.target.value)} />
+            </div>
+          </div>
+
+          <div className="flex gap-6 flex-wrap">
+            {[
+              { field: "mobiliado", label: "Mobiliado" },
+              { field: "aceitaFinanciamento", label: "Aceita Financiamento" },
+              { field: "aceitaPermuta", label: "Aceita Permuta" },
+            ].map((item) => (
+              <label key={item.field} className="flex items-center gap-2 cursor-pointer" style={{ fontSize: "0.875rem", color: "var(--color-surface-200)" }}>
+                <input
+                  type="checkbox"
+                  checked={form[item.field as keyof typeof form] as boolean}
+                  onChange={(e) => update(item.field, e.target.checked)}
+                />
+                {item.label}
+              </label>
+            ))}
+          </div>
+        </div>
+
+        {/* Description */}
+        <div className="card mb-5">
+          <h2 className="section-titulo mb-4">Descrição e Diferenciais</h2>
+
+          <div className="form-group">
+            <label className="label" htmlFor="descricao">Descrição</label>
+            <textarea id="descricao" className="textarea" placeholder="Descreva o imóvel..."
+              value={form.descricao} onChange={(e) => update("descricao", e.target.value)} />
+          </div>
+
+          <div className="form-group">
+            <label className="label" htmlFor="destaques">Diferenciais</label>
+            <textarea id="destaques" className="textarea" style={{ minHeight: "80px" }}
+              placeholder="Piscina, churrasqueira, varanda gourmet..."
+              value={form.destaques} onChange={(e) => update("destaques", e.target.value)} />
+          </div>
+        </div>
+
+        {error && (
+          <div className="toast toast-error mb-4" style={{ position: "static", minWidth: "unset", animation: "none" }}>
+            <span style={{ color: "#f87171" }}>{error}</span>
+          </div>
+        )}
+
+        <div className="flex justify-end gap-3">
+          <Link href="/imoveis" className="btn btn-secondary">Cancelar</Link>
+          <button type="submit" className="btn btn-primary" disabled={loading}>
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {loading ? "Salvando..." : "Salvar Imóvel"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
+}
