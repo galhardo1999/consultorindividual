@@ -4,16 +4,31 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const clientSchema = z.object({
+  // Dados Básicos
   nomeCompleto: z.string().min(2),
   telefone: z.string().min(8),
+  whatsapp: z.string().optional(),
   email: z.string().email().optional().or(z.literal("")),
   documento: z.string().optional(),
+  dataNascimento: z.string().optional(),
+  estadoCivil: z.string().optional(),
+  temFilhos: z.boolean().optional(),
+  profissao: z.string().optional(),
+  rendaMensal: z.number().optional(),
   cidadeAtual: z.string().optional(),
   origemLead: z.string().optional(),
+  responsavel: z.string().optional(),
+  // Jornada / Status
   estagioJornada: z.string().optional(),
+  temperaturaLead: z.string().optional(),
   objetivoCompra: z.string().optional(),
   formaPagamento: z.string().optional(),
   nivelUrgencia: z.string().optional(),
+  prazoCompra: z.string().optional(),
+  budgetMaximo: z.number().optional(),
+  possuiImovelVender: z.boolean().optional(),
+  preAprovacaoCredito: z.string().optional(),
+  proximoContato: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -72,8 +87,14 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { documento, ...rest } = parsed.data;
-    const dataToCreate: Record<string, unknown> = { ...rest, documento: documento || null };
+    const { documento, dataNascimento, proximoContato, ...rest } = parsed.data;
+    const dataToCreate: Record<string, unknown> = {
+      ...rest,
+      documento: documento || null,
+      // Convert date strings to proper Date objects for Prisma
+      dataNascimento: dataNascimento ? new Date(`${dataNascimento}T00:00:00.000Z`) : null,
+      proximoContato: proximoContato ? new Date(proximoContato) : null,
+    };
     Object.keys(dataToCreate).forEach((key) => {
       if (dataToCreate[key] === "") {
         dataToCreate[key] = null;

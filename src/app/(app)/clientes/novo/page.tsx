@@ -52,22 +52,66 @@ const URGENCY_LEVELS = [
   { value: "SEM_URGENCIA", label: "Sem Urgência" },
 ];
 
+const LEAD_TEMPERATURES = [
+  { value: "QUENTE", label: "🔥 Quente" },
+  { value: "MORNO", label: "🌤️ Morno" },
+  { value: "FRIO", label: "❄️ Frio" },
+];
+
+const CIVIL_STATUS = [
+  { value: "SOLTEIRO", label: "Solteiro(a)" },
+  { value: "CASADO", label: "Casado(a)" },
+  { value: "DIVORCIADO", label: "Divorciado(a)" },
+  { value: "VIUVO", label: "Viúvo(a)" },
+  { value: "UNIAO_ESTAVEL", label: "União Estável" },
+  { value: "OUTRO", label: "Outro" },
+];
+
+const PRAZO_COMPRA = [
+  { value: "ATE_30_DIAS", label: "Até 30 dias" },
+  { value: "ATE_3_MESES", label: "Até 3 meses" },
+  { value: "ATE_6_MESES", label: "Até 6 meses" },
+  { value: "ATE_1_ANO", label: "Até 1 ano" },
+  { value: "SEM_PRAZO", label: "Sem prazo definido" },
+];
+
+const PRE_APROVACAO = [
+  { value: "SIM", label: "Sim" },
+  { value: "NAO", label: "Não" },
+  { value: "EM_ANALISE", label: "Em Análise" },
+];
+
 export default function NovoClientePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [activeTab, setActiveTab] = useState<"basic" | "profile">("basic");
+  const [activeTab, setActiveTab] = useState<"basic" | "journey" | "profile">("basic");
   const [form, setForm] = useState({
+    // Dados Básicos
     nomeCompleto: "",
     telefone: "",
+    whatsapp: "",
     email: "",
     document: "",
+    dataNascimento: "",
+    estadoCivil: "",
+    temFilhos: "",
+    profissao: "",
+    rendaMensal: "",
     cidadeAtual: "",
     origemLead: "INDICACAO",
+    responsavel: "",
+    // Jornada / Status
     estagioJornada: "NOVO_LEAD",
+    temperaturaLead: "MORNO",
     objetivoCompra: "",
     formaPagamento: "",
     nivelUrgencia: "MEDIA",
+    prazoCompra: "",
+    budgetMaximo: "",
+    possuiImovelVender: "",
+    preAprovacaoCredito: "NAO",
+    proximoContato: "",
     observacoes: "",
   });
 
@@ -80,10 +124,37 @@ export default function NovoClientePage() {
     setError("");
     setLoading(true);
 
+    const payload: Record<string, unknown> = {
+      nomeCompleto: form.nomeCompleto,
+      telefone: form.telefone,
+      whatsapp: form.whatsapp || undefined,
+      email: form.email || undefined,
+      documento: form.document || undefined,
+      dataNascimento: form.dataNascimento || undefined,
+      estadoCivil: form.estadoCivil || undefined,
+      temFilhos: form.temFilhos === "true" ? true : form.temFilhos === "false" ? false : undefined,
+      profissao: form.profissao || undefined,
+      rendaMensal: form.rendaMensal ? parseFloat(form.rendaMensal.replace(/\D/g, "")) / 100 : undefined,
+      cidadeAtual: form.cidadeAtual || undefined,
+      origemLead: form.origemLead || undefined,
+      responsavel: form.responsavel || undefined,
+      estagioJornada: form.estagioJornada || undefined,
+      temperaturaLead: form.temperaturaLead || undefined,
+      objetivoCompra: form.objetivoCompra || undefined,
+      formaPagamento: form.formaPagamento || undefined,
+      nivelUrgencia: form.nivelUrgencia || undefined,
+      prazoCompra: form.prazoCompra || undefined,
+      budgetMaximo: form.budgetMaximo ? parseFloat(form.budgetMaximo.replace(/\D/g, "")) / 100 : undefined,
+      possuiImovelVender: form.possuiImovelVender === "true",
+      preAprovacaoCredito: form.preAprovacaoCredito || undefined,
+      proximoContato: form.proximoContato || undefined,
+      observacoes: form.observacoes || undefined,
+    };
+
     const res = await fetch("/api/clientes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
+      body: JSON.stringify(payload),
     });
 
     const data = await res.json();
@@ -97,8 +168,15 @@ export default function NovoClientePage() {
     router.push(`/clientes/${data.id}`);
   }
 
+  function maskCurrency(value: string) {
+    const digits = value.replace(/\D/g, "");
+    const num = parseInt(digits || "0");
+    return (num / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  }
+
   const tabs = [
     { id: "basic", label: "Dados Básicos" },
+    { id: "journey", label: "Jornada/Status" },
     { id: "profile", label: "Perfil de Busca" },
   ] as const;
 
@@ -139,6 +217,7 @@ export default function NovoClientePage() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* ─── ABA: DADOS BÁSICOS ─── */}
         {activeTab === "basic" && (
           <div className="card">
             <h2 className="section-titulo mb-4">Informações de Contato</h2>
@@ -172,6 +251,17 @@ export default function NovoClientePage() {
 
             <div className="form-row">
               <div className="form-group">
+                <label className="label" htmlFor="whatsapp">WhatsApp</label>
+                <input
+                  id="whatsapp"
+                  type="tel"
+                  className="input"
+                  placeholder="(11) 99999-9999"
+                  value={form.whatsapp}
+                  onChange={(e) => update("whatsapp", maskTelefone(e.target.value))}
+                />
+              </div>
+              <div className="form-group">
                 <label className="label" htmlFor="email">E-mail</label>
                 <input
                   id="email"
@@ -182,6 +272,9 @@ export default function NovoClientePage() {
                   onChange={(e) => update("email", e.target.value)}
                 />
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label className="label" htmlFor="document">CPF</label>
                 <input
@@ -191,6 +284,59 @@ export default function NovoClientePage() {
                   placeholder="000.000.000-00"
                   value={form.document}
                   onChange={(e) => update("document", maskCPF(e.target.value))}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="dataNascimento">Data de Nascimento</label>
+                <input
+                  id="dataNascimento"
+                  type="date"
+                  className="input"
+                  value={form.dataNascimento}
+                  onChange={(e) => update("dataNascimento", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label" htmlFor="estadoCivil">Estado Civil</label>
+                <select id="estadoCivil" className="select" value={form.estadoCivil} onChange={(e) => update("estadoCivil", e.target.value)}>
+                  <option value="">Selecionar...</option>
+                  {CIVIL_STATUS.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="temFilhos">Tem Filhos?</label>
+                <select id="temFilhos" className="select" value={form.temFilhos} onChange={(e) => update("temFilhos", e.target.value)}>
+                  <option value="">Selecionar...</option>
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label" htmlFor="profissao">Profissão</label>
+                <input
+                  id="profissao"
+                  type="text"
+                  className="input"
+                  placeholder="Ex: Engenheiro, Médico..."
+                  value={form.profissao}
+                  onChange={(e) => update("profissao", e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="rendaMensal">Renda Mensal</label>
+                <input
+                  id="rendaMensal"
+                  type="text"
+                  className="input"
+                  placeholder="R$ 0,00"
+                  value={form.rendaMensal}
+                  onChange={(e) => update("rendaMensal", maskCurrency(e.target.value))}
                 />
               </div>
             </div>
@@ -215,7 +361,25 @@ export default function NovoClientePage() {
               </div>
             </div>
 
-            <hr className="divider" />
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label" htmlFor="responsavel">Responsável / Corretor</label>
+                <input
+                  id="responsavel"
+                  type="text"
+                  className="input"
+                  placeholder="Nome do corretor responsável"
+                  value={form.responsavel}
+                  onChange={(e) => update("responsavel", e.target.value)}
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ─── ABA: JORNADA / STATUS ─── */}
+        {activeTab === "journey" && (
+          <div className="card">
             <h2 className="section-titulo mb-4">Jornada e Status</h2>
 
             <div className="form-row">
@@ -226,9 +390,25 @@ export default function NovoClientePage() {
                 </select>
               </div>
               <div className="form-group">
+                <label className="label" htmlFor="temperaturaLead">Temperatura do Lead</label>
+                <select id="temperaturaLead" className="select" value={form.temperaturaLead} onChange={(e) => update("temperaturaLead", e.target.value)}>
+                  {LEAD_TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
                 <label className="label" htmlFor="nivelUrgencia">Urgência</label>
                 <select id="nivelUrgencia" className="select" value={form.nivelUrgencia} onChange={(e) => update("nivelUrgencia", e.target.value)}>
                   {URGENCY_LEVELS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="prazoCompra">Prazo para Compra</label>
+                <select id="prazoCompra" className="select" value={form.prazoCompra} onChange={(e) => update("prazoCompra", e.target.value)}>
+                  <option value="">Selecionar...</option>
+                  {PRAZO_COMPRA.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
               </div>
             </div>
@@ -250,6 +430,47 @@ export default function NovoClientePage() {
               </div>
             </div>
 
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label" htmlFor="budgetMaximo">Budget / Valor Máximo</label>
+                <input
+                  id="budgetMaximo"
+                  type="text"
+                  className="input"
+                  placeholder="R$ 0,00"
+                  value={form.budgetMaximo}
+                  onChange={(e) => update("budgetMaximo", maskCurrency(e.target.value))}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="preAprovacaoCredito">Pré-aprovação de Crédito</label>
+                <select id="preAprovacaoCredito" className="select" value={form.preAprovacaoCredito} onChange={(e) => update("preAprovacaoCredito", e.target.value)}>
+                  {PRE_APROVACAO.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label" htmlFor="possuiImovelVender">Possui Imóvel para Vender?</label>
+                <select id="possuiImovelVender" className="select" value={form.possuiImovelVender} onChange={(e) => update("possuiImovelVender", e.target.value)}>
+                  <option value="">Selecionar...</option>
+                  <option value="true">Sim</option>
+                  <option value="false">Não</option>
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="proximoContato">Próximo Contato Agendado</label>
+                <input
+                  id="proximoContato"
+                  type="datetime-local"
+                  className="input"
+                  value={form.proximoContato}
+                  onChange={(e) => update("proximoContato", e.target.value)}
+                />
+              </div>
+            </div>
+
             <div className="form-group">
               <label className="label" htmlFor="observacoes">Observações</label>
               <textarea
@@ -263,6 +484,7 @@ export default function NovoClientePage() {
           </div>
         )}
 
+        {/* ─── ABA: PERFIL DE BUSCA ─── */}
         {activeTab === "profile" && (
           <div className="card">
             <h2 className="section-titulo mb-4">Perfil de Busca</h2>

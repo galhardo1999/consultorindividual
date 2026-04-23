@@ -4,16 +4,32 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const updateSchema = z.object({
+  // Dados Básicos
   nomeCompleto: z.string().min(2).optional(),
   telefone: z.string().min(8).optional(),
-  email: z.string().email().optional().or(z.literal("")).optional(),
-  document: z.string().optional(),
+
+  email: z.union([z.string().email(), z.literal(""), z.undefined()]),
+  whatsapp: z.string().optional().nullable(),
+  documento: z.string().optional(),
+  dataNascimento: z.string().optional(),
+  estadoCivil: z.string().optional(),
+  temFilhos: z.boolean().optional(),
+  profissao: z.string().optional(),
+  rendaMensal: z.number().optional(),
   cidadeAtual: z.string().optional(),
   origemLead: z.string().optional(),
+  responsavel: z.string().optional(),
+  // Jornada / Status
   estagioJornada: z.string().optional(),
+  temperaturaLead: z.string().optional(),
   objetivoCompra: z.string().optional(),
   formaPagamento: z.string().optional(),
   nivelUrgencia: z.string().optional(),
+  prazoCompra: z.string().optional(),
+  budgetMaximo: z.number().optional(),
+  possuiImovelVender: z.boolean().optional(),
+  preAprovacaoCredito: z.string().optional(),
+  proximoContato: z.string().optional(),
   observacoes: z.string().optional(),
 });
 
@@ -35,7 +51,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         include: { imovel: true },
         orderBy: { atualizadoEm: "desc" },
       },
-      etiquetasCliente: { include: { tag: true } },
+      etiquetasCliente: { include: { etiqueta: true } },
     },
   });
 
@@ -53,13 +69,18 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const body = await req.json();
   const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+  if (!parsed.success) return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
 
-  const dataToUpdate = { ...parsed.data };
+  const { dataNascimento, proximoContato, ...rest } = parsed.data;
+  const dataToUpdate: Record<string, unknown> = {
+    ...rest,
+    dataNascimento: dataNascimento ? new Date(`${dataNascimento}T00:00:00.000Z`) : dataNascimento === "" ? null : undefined,
+    proximoContato: proximoContato ? new Date(proximoContato) : proximoContato === "" ? null : undefined,
+  };
+  // Remove undefined keys so Prisma doesn't try to set them
   Object.keys(dataToUpdate).forEach((key) => {
-    if ((dataToUpdate as any)[key] === "") {
-      (dataToUpdate as any)[key] = null;
-    }
+    if (dataToUpdate[key] === undefined) delete dataToUpdate[key];
+    if (dataToUpdate[key] === "") dataToUpdate[key] = null;
   });
 
   const cliente = await prisma.cliente.update({

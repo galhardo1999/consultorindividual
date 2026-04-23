@@ -30,28 +30,41 @@ model Usuario {
 }
 
 model Cliente {
-  id             String    @id @default(cuid())
-  usuarioId      String
-  nomeCompleto   String
-  email          String?
-  telefone       String
-  documento      String?
-  cidadeAtual    String?
-  origemLead     OrigemLead @default(INDICACAO)
-  status         StatusCliente @default(ATIVO)
-  estagioJornada EstagioJornada @default(NOVO_LEAD)
-  objetivoCompra ObjetivoCompra?
-  formaPagamento FormaPagamento?
-  nivelUrgencia  NivelUrgencia @default(MEDIA)
-  observacoes    String?
-  arquivadoEm    DateTime?
-  criadoEm       DateTime  @default(now())
-  atualizadoEm   DateTime  @updatedAt
+  id                  String    @id @default(cuid())
+  usuarioId           String
+  nomeCompleto        String
+  email               String?
+  telefone            String
+  whatsapp            String?
+  documento           String?
+  dataNascimento      DateTime?
+  estadoCivil         EstadoCivil?
+  temFilhos           Boolean?
+  profissao           String?
+  rendaMensal         Float?
+  cidadeAtual         String?
+  origemLead          OrigemLead @default(INDICACAO)
+  responsavel         String?
+  status              StatusCliente @default(ATIVO)
+  estagioJornada      EstagioJornada @default(NOVO_LEAD)
+  temperaturaLead     TemperaturaLead @default(MORNO)
+  objetivoCompra      ObjetivoCompra?
+  formaPagamento      FormaPagamento?
+  nivelUrgencia       NivelUrgencia @default(MEDIA)
+  prazoCompra         String?
+  budgetMaximo        Float?
+  possuiImovelVender  Boolean @default(false)
+  preAprovacaoCredito PreAprovacaoCredito @default(NAO)
+  proximoContato      DateTime?
+  observacoes         String?
+  arquivadoEm         DateTime?
+  criadoEm            DateTime  @default(now())
+  atualizadoEm        DateTime  @updatedAt
 
-  usuario        Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  preferencia    PreferenciaCliente?
-  interesses     InteresseClienteImovel[]
-  interacoes     Interacao[]
+  usuario          Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  preferencia      PreferenciaCliente?
+  interesses       InteresseClienteImovel[]
+  interacoes       Interacao[]
   etiquetasCliente EtiquetaCliente[]
 
   @@map("clientes")
@@ -250,6 +263,27 @@ enum NivelUrgencia {
   MEDIA
   BAIXA
   SEM_URGENCIA
+}
+
+enum TemperaturaLead {
+  QUENTE
+  MORNO
+  FRIO
+}
+
+enum EstadoCivil {
+  SOLTEIRO
+  CASADO
+  DIVORCIADO
+  VIUVO
+  UNIAO_ESTAVEL
+  OUTRO
+}
+
+enum PreAprovacaoCredito {
+  SIM
+  NAO
+  EM_ANALISE
 }
 
 enum TipoImovel {
