@@ -1,9 +1,9 @@
-"use cliente";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Building2, Mail, Lock, Usuario, Phone, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Building2, Mail, Lock, User, Phone, Eye, EyeOff, Loader2 } from "lucide-react";
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -94,7 +94,7 @@ export default function CadastroPage() {
             <div className="form-group">
               <label className="label" htmlFor="nome">Nome completo</label>
               <div className="search-bar">
-                <Usuario size={16} />
+                <User size={16} />
                 <input
                   id="nome"
                   type="text"

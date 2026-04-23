@@ -1,9 +1,10 @@
-"use cliente";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { maskCurrency, parseCurrency } from "@/lib/utils";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -73,7 +74,7 @@ export default function EditarImovelPage() {
           titulo: data.titulo || "",
           tipoImovel: data.tipoImovel || "APARTAMENTO",
           finalidade: data.finalidade || "VENDA",
-          preco: data.preco?.toString() || "",
+          preco: maskCurrency(data.preco?.toString() || ""),
           cidade: data.cidade || "",
           bairro: data.bairro || "",
           endereco: data.endereco || "",
@@ -84,8 +85,8 @@ export default function EditarImovelPage() {
           banheiros: data.banheiros?.toString() || "",
           vagasGaragem: data.vagasGaragem?.toString() || "",
           areaUtil: data.areaUtil?.toString() || "",
-          valorCondominio: data.valorCondominio?.toString() || "",
-          valorIptu: data.valorIptu?.toString() || "",
+          valorCondominio: maskCurrency(data.valorCondominio?.toString() || ""),
+          valorIptu: maskCurrency(data.valorIptu?.toString() || ""),
           mobiliado: data.mobiliado || false,
           aceitaFinanciamento: data.aceitaFinanciamento || false,
           aceitaPermuta: data.aceitaPermuta || false,
@@ -108,14 +109,14 @@ export default function EditarImovelPage() {
 
     const payload = {
       ...form,
-      preco: parseFloat(form.preco) || 0,
+      preco: parseCurrency(form.preco) || 0,
       quartos: form.quartos ? parseInt(form.quartos) : null,
       suites: form.suites ? parseInt(form.suites) : null,
       banheiros: form.banheiros ? parseInt(form.banheiros) : null,
       vagasGaragem: form.vagasGaragem ? parseInt(form.vagasGaragem) : null,
       areaUtil: form.areaUtil ? parseFloat(form.areaUtil) : null,
-      valorCondominio: form.valorCondominio ? parseFloat(form.valorCondominio) : null,
-      valorIptu: form.valorIptu ? parseFloat(form.valorIptu) : null,
+      valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : null,
+      valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : null,
     };
 
     const res = await fetch(`/api/imoveis/${id}`, {
@@ -219,15 +220,15 @@ export default function EditarImovelPage() {
           <div className="form-row-3">
             <div className="form-group">
               <label className="label">Preço *</label>
-              <input type="number" className="input" value={form.preco} onChange={(e) => update("preco", e.target.value)} required min="0" />
+              <input type="text" className="input" placeholder="R$ 0,00" value={form.preco} onChange={(e) => update("preco", maskCurrency(e.target.value))} required />
             </div>
             <div className="form-group">
               <label className="label">Condomínio</label>
-              <input type="number" className="input" value={form.valorCondominio} onChange={(e) => update("valorCondominio", e.target.value)} min="0" />
+              <input type="text" className="input" placeholder="R$ 0,00" value={form.valorCondominio} onChange={(e) => update("valorCondominio", maskCurrency(e.target.value))} />
             </div>
             <div className="form-group">
               <label className="label">IPTU (anual)</label>
-              <input type="number" className="input" value={form.valorIptu} onChange={(e) => update("valorIptu", e.target.value)} min="0" />
+              <input type="text" className="input" placeholder="R$ 0,00" value={form.valorIptu} onChange={(e) => update("valorIptu", maskCurrency(e.target.value))} />
             </div>
           </div>
         </div>

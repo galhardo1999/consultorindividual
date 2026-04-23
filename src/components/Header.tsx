@@ -1,4 +1,4 @@
-"use cliente";
+"use client";
 
 import { useState, useEffect } from "react";
 import { Menu, Plus, Search, Moon, Sun } from "lucide-react";
@@ -48,7 +48,7 @@ export function Header({ onMenuToggle, usuario }: HeaderProps) {
           className="btn btn-ghost btn-icon"
           onClick={onMenuToggle}
           id="menu-toggle"
-          titulo="Alternar menu"
+          title="Alternar menu"
         >
           <Menu size={20} />
         </button>
@@ -90,26 +90,14 @@ export function Header({ onMenuToggle, usuario }: HeaderProps) {
       </div>
 
       <div className="flex items-center gap-2">
-        <button 
-          className="btn btn-ghost btn-icon" 
-          onClick={toggleTheme} 
-          titulo="Alternar tema"
+        <button
+          className="btn btn-ghost btn-icon"
+          onClick={toggleTheme}
+          title="Alternar tema"
           aria-label="Alternar tema"
         >
           {theme === "light" ? <Moon size={18} /> : <Sun size={18} />}
         </button>
-
-        {/* Quick add */}
-        <div className="flex gap-1 ml-2">
-          <Link href="/clientes/novo" className="btn btn-primary btn-sm" id="add-cliente-btn">
-            <Plus size={14} />
-            <span className="hidden sm:inline">Cliente</span>
-          </Link>
-          <Link href="/imoveis/novo" className="btn btn-secondary btn-sm" id="add-imovel-btn">
-            <Plus size={14} />
-            <span className="hidden sm:inline">Imóvel</span>
-          </Link>
-        </div>
 
         {/* Avatar */}
         {usuario && (
@@ -122,7 +110,7 @@ export function Header({ onMenuToggle, usuario }: HeaderProps) {
                 fontSize: "0.8rem",
                 transition: "opacity 0.15s",
               }}
-              titulo={usuario.nome || "Perfil"}
+              title={usuario.nome || "Perfil"}
             >
               {usuario.image ? (
                 // eslint-disable-next-line @next/next/no-img-element

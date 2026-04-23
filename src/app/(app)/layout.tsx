@@ -1,4 +1,4 @@
-"use cliente";
+"use client";
 
 import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
@@ -35,7 +35,7 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       <div className={`main-content ${sidebarCollapsed ? "collapsed" : ""}`} style={{ flex: 1, minWidth: 0 }}>
         <Header
           onMenuToggle={handleMenuToggle}
-          usuario={session?.usuario}
+          usuario={session?.user}
         />
         <main>{children}</main>
       </div>

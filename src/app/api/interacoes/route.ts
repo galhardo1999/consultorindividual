@@ -15,14 +15,14 @@ const interactionSchema = z.object({
 
 export async function GET(request: Request) {
   const session = await auth();
-  if (!session?.usuario?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   const { searchParams } = new URL(request.url);
   const clienteId = searchParams.get("clienteId") || undefined;
 
   const interacoes = await prisma.interacao.findMany({
     where: {
-      usuarioId: session.usuario.id,
+      usuarioId: session.user.id,
       ...(clienteId && { clienteId }),
     },
     include: { cliente: true, imovel: true },
@@ -35,7 +35,7 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const session = await auth();
-  if (!session?.usuario?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
   try {
     const body = await request.json();
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const interacao = await prisma.interacao.create({
       data: {
         ...parsed.data,
-        usuarioId: session.usuario.id,
+        usuarioId: session.user.id,
         dataInteracao: new Date(parsed.data.dataInteracao),
         proximoFollowUp: parsed.data.proximoFollowUp ? new Date(parsed.data.proximoFollowUp) : undefined,
       } as never,

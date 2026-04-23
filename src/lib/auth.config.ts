@@ -10,20 +10,20 @@ export const authConfig = {
     maxAge: 30 * 24 * 60 * 60, // 30 days
   },
   callbacks: {
-    async jwt({ token, usuario }) {
-      if (usuario) {
-        token.id = usuario.id;
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
-      if (token?.id) {
-        session.usuario.id = token.id as string;
+      if (token?.id && session.user) {
+        session.user.id = token.id as string;
       }
       return session;
     },
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.usuario;
+      const isLoggedIn = !!auth?.user;
       const isOnAuthPage = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/cadastro");
 
       if (isOnAuthPage) {

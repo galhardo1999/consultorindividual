@@ -1,4 +1,4 @@
-"use cliente";
+"use client";
 
 import { useEffect, useState, useCallback } from "react";
 import { MessageSquare, Phone, Mail, Calendar, Clock, CheckCircle2, Home, Filter, X } from "lucide-react";

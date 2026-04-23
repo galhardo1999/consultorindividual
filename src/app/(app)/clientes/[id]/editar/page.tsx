@@ -1,9 +1,10 @@
-"use cliente";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { maskTelefone, maskCPF, maskCurrency, parseCurrency } from "@/lib/utils";
 
 // Same constants as create page
 const LEAD_SOURCES = [
@@ -101,9 +102,9 @@ export default function EditarClientePage() {
       .then((data) => {
         setForm({
           nomeCompleto: data.nomeCompleto || "",
-          telefone: data.telefone || "",
+          telefone: maskTelefone(data.telefone || ""),
           email: data.email || "",
-          document: data.document || "",
+          document: maskCPF(data.document || ""),
           cidadeAtual: data.cidadeAtual || "",
           origemLead: data.origemLead || "INDICACAO",
           estagioJornada: data.estagioJornada || "NOVO_LEAD",
@@ -116,8 +117,8 @@ export default function EditarClientePage() {
         if (data.preferencia) {
           setPrefForm({
             tipoImovel: data.preferencia.tipoImovel || "",
-            precoMinimo: data.preferencia.precoMinimo?.toString() || "",
-            precoMaximo: data.preferencia.precoMaximo?.toString() || "",
+            precoMinimo: maskCurrency(data.preferencia.precoMinimo?.toString() || ""),
+            precoMaximo: maskCurrency(data.preferencia.precoMaximo?.toString() || ""),
             cidadeInteresse: data.preferencia.cidadeInteresse || "",
             bairrosInteresse: data.preferencia.bairrosInteresse || "",
             minQuartos: data.preferencia.minQuartos?.toString() || "",
@@ -159,8 +160,8 @@ export default function EditarClientePage() {
     // Save preferences
     const prefPayload = {
       ...prefForm,
-      precoMinimo: prefForm.precoMinimo ? parseFloat(prefForm.precoMinimo) : null,
-      precoMaximo: prefForm.precoMaximo ? parseFloat(prefForm.precoMaximo) : null,
+      precoMinimo: prefForm.precoMinimo ? parseCurrency(prefForm.precoMinimo) : null,
+      precoMaximo: prefForm.precoMaximo ? parseCurrency(prefForm.precoMaximo) : null,
       minQuartos: prefForm.minQuartos ? parseInt(prefForm.minQuartos) : null,
       areaMinima: prefForm.areaMinima ? parseFloat(prefForm.areaMinima) : null,
       tipoImovel: prefForm.tipoImovel || null,
@@ -231,7 +232,7 @@ export default function EditarClientePage() {
               </div>
               <div className="form-group">
                 <label className="label">Telefone *</label>
-                <input type="tel" className="input" value={form.telefone} onChange={(e) => update("telefone", e.target.value)} required />
+                <input type="tel" className="input" value={form.telefone} onChange={(e) => update("telefone", maskTelefone(e.target.value))} required />
               </div>
             </div>
 
@@ -292,11 +293,11 @@ export default function EditarClientePage() {
             <div className="form-row">
               <div className="form-group">
                 <label className="label">Preço Mínimo</label>
-                <input type="number" className="input" value={prefForm.precoMinimo} onChange={(e) => updatePref("precoMinimo", e.target.value)} />
+                <input type="text" className="input" placeholder="R$ 0,00" value={prefForm.precoMinimo} onChange={(e) => updatePref("precoMinimo", maskCurrency(e.target.value))} />
               </div>
               <div className="form-group">
                 <label className="label">Preço Máximo</label>
-                <input type="number" className="input" value={prefForm.precoMaximo} onChange={(e) => updatePref("precoMaximo", e.target.value)} />
+                <input type="text" className="input" placeholder="R$ 0,00" value={prefForm.precoMaximo} onChange={(e) => updatePref("precoMaximo", maskCurrency(e.target.value))} />
               </div>
             </div>
 

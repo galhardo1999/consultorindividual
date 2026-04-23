@@ -1,8 +1,8 @@
-"use cliente";
+"use client";
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
-import { Save, Loader2, Usuario, Mail, Phone } from "lucide-react";
+import { Save, Loader2, User, Mail, Phone } from "lucide-react";
 
 export default function PerfilPage() {
   const { data: session } = useSession();
@@ -25,14 +25,14 @@ export default function PerfilPage() {
             className="avatar"
             style={{ width: "72px", height: "72px", fontSize: "1.5rem" }}
           >
-            {session?.usuario?.nome?.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase() || "U"}
+            {session?.user?.name?.split(" ").slice(0, 2).map((n: string) => n[0]).join("").toUpperCase() || "U"}
           </div>
           <div>
             <div className="font-bold text-lg" style={{ color: "var(--color-surface-50)" }}>
-              {session?.usuario?.nome}
+              {session?.user?.name}
             </div>
             <div style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
-              {session?.usuario?.email}
+              {session?.user?.email}
             </div>
             <div className="badge badge-success mt-1" style={{ fontSize: "0.75rem" }}>Consultor Ativo</div>
           </div>
@@ -46,12 +46,12 @@ export default function PerfilPage() {
         <div className="form-group">
           <label className="label">Nome</label>
           <div className="search-bar">
-            <Usuario size={16} />
+            <User size={16} />
             <input
               type="text"
               className="input"
               style={{ paddingLeft: "2.5rem" }}
-              defaultValue={session?.usuario?.nome || ""}
+              defaultValue={session?.user?.name || ""}
               readOnly
             />
           </div>
@@ -65,7 +65,7 @@ export default function PerfilPage() {
               type="email"
               className="input"
               style={{ paddingLeft: "2.5rem" }}
-              defaultValue={session?.usuario?.email || ""}
+              defaultValue={session?.user?.email || ""}
               readOnly
             />
           </div>
@@ -76,7 +76,7 @@ export default function PerfilPage() {
           <input
             type="text"
             className="input"
-            value={session?.usuario?.id || ""}
+            value={session?.user?.id || ""}
             readOnly
             style={{ opacity: 0.6 }}
           />

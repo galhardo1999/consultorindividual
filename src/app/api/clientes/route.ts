@@ -7,7 +7,7 @@ const clientSchema = z.object({
   nomeCompleto: z.string().min(2),
   telefone: z.string().min(8),
   email: z.string().email().optional().or(z.literal("")),
-  document: z.string().optional(),
+  documento: z.string().optional(),
   cidadeAtual: z.string().optional(),
   origemLead: z.string().optional(),
   estagioJornada: z.string().optional(),
@@ -72,10 +72,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const dataToCreate = { ...parsed.data };
+    const { documento, ...rest } = parsed.data;
+    const dataToCreate: Record<string, unknown> = { ...rest, documento: documento || null };
     Object.keys(dataToCreate).forEach((key) => {
-      if ((dataToCreate as any)[key] === "") {
-        (dataToCreate as any)[key] = null;
+      if (dataToCreate[key] === "") {
+        dataToCreate[key] = null;
       }
     });
 

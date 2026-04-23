@@ -1,4 +1,4 @@
-"use cliente";
+"use client";
 
 import { useState } from "react";
 import { signIn } from "next-auth/react";
@@ -131,7 +131,7 @@ export default function LoginPage() {
         <button
           onClick={toggleTheme}
           className="btn btn-ghost btn-icon absolute top-6 right-6"
-          titulo="Alternar tema"
+          title="Alternar tema"
         >
           {theme === "light" ? <Moon size={20} /> : <Sun size={20} />}
         </button>
@@ -185,36 +185,40 @@ export default function LoginPage() {
               <label className="label" htmlFor="password">
                 Senha
               </label>
-              <div className="search-bar" style={{ position: "relative" }}>
+              <div className="search-bar">
                 <Lock size={16} />
-                <input
-                  id="password"
-                  type={showPassword ? "text" : "password"}
-                  className="input"
-                  style={{ paddingLeft: "2.5rem", paddingRight: "2.5rem" }}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                  autoComplete="current-password"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "0.875rem",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "var(--color-surface-400)",
-                    padding: 0,
-                  }}
-                >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                </button>
+                <div style={{ position: "relative", flex: 1 }}>
+                  <input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    className="input"
+                    style={{ paddingLeft: 0, paddingRight: "2rem", width: "100%" }}
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    style={{
+                      position: "absolute",
+                      right: "0.5rem",
+                      top: "50%",
+                      transform: "translateY(-50%)",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "var(--color-surface-400)",
+                      padding: 0,
+                      display: "flex",
+                      alignItems: "center",
+                    }}
+                  >
+                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
               </div>
             </div>
 

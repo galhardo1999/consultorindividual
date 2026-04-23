@@ -1,9 +1,10 @@
-"use cliente";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
+import { maskTelefone, maskCPF } from "@/lib/utils";
 
 const LEAD_SOURCES = [
   { value: "INDICACAO", label: "Indicação" },
@@ -163,7 +164,7 @@ export default function NovoClientePage() {
                   className="input"
                   placeholder="(11) 99999-9999"
                   value={form.telefone}
-                  onChange={(e) => update("telefone", e.target.value)}
+                  onChange={(e) => update("telefone", maskTelefone(e.target.value))}
                   required
                 />
               </div>
@@ -189,7 +190,7 @@ export default function NovoClientePage() {
                   className="input"
                   placeholder="000.000.000-00"
                   value={form.document}
-                  onChange={(e) => update("document", e.target.value)}
+                  onChange={(e) => update("document", maskCPF(e.target.value))}
                 />
               </div>
             </div>

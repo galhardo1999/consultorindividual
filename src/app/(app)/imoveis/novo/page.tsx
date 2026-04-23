@@ -1,9 +1,10 @@
-"use cliente";
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
+import { maskCurrency, parseCurrency } from "@/lib/utils";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -71,14 +72,14 @@ export default function NovoImovelPage() {
 
     const payload = {
       ...form,
-      preco: parseFloat(form.preco) || 0,
+      preco: parseCurrency(form.preco) || 0,
       quartos: form.quartos ? parseInt(form.quartos) : undefined,
       suites: form.suites ? parseInt(form.suites) : undefined,
       banheiros: form.banheiros ? parseInt(form.banheiros) : undefined,
       vagasGaragem: form.vagasGaragem ? parseInt(form.vagasGaragem) : undefined,
       areaUtil: form.areaUtil ? parseFloat(form.areaUtil) : undefined,
-      valorCondominio: form.valorCondominio ? parseFloat(form.valorCondominio) : undefined,
-      valorIptu: form.valorIptu ? parseFloat(form.valorIptu) : undefined,
+      valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : undefined,
+      valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : undefined,
     };
 
     const res = await fetch("/api/imoveis", {
@@ -189,18 +190,18 @@ export default function NovoImovelPage() {
           <div className="form-row-3">
             <div className="form-group">
               <label className="label" htmlFor="preco">Preço *</label>
-              <input id="preco" type="number" className="input" placeholder="500000"
-                value={form.preco} onChange={(e) => update("preco", e.target.value)} required min="0" />
+              <input id="preco" type="text" className="input" placeholder="R$ 0,00"
+                value={form.preco} onChange={(e) => update("preco", maskCurrency(e.target.value))} required />
             </div>
             <div className="form-group">
               <label className="label" htmlFor="valorCondominio">Condomínio</label>
-              <input id="valorCondominio" type="number" className="input" placeholder="800"
-                value={form.valorCondominio} onChange={(e) => update("valorCondominio", e.target.value)} min="0" />
+              <input id="valorCondominio" type="text" className="input" placeholder="R$ 0,00"
+                value={form.valorCondominio} onChange={(e) => update("valorCondominio", maskCurrency(e.target.value))} />
             </div>
             <div className="form-group">
               <label className="label" htmlFor="valorIptu">IPTU (anual)</label>
-              <input id="valorIptu" type="number" className="input" placeholder="2400"
-                value={form.valorIptu} onChange={(e) => update("valorIptu", e.target.value)} min="0" />
+              <input id="valorIptu" type="text" className="input" placeholder="R$ 0,00"
+                value={form.valorIptu} onChange={(e) => update("valorIptu", maskCurrency(e.target.value))} />
             </div>
           </div>
         </div>
