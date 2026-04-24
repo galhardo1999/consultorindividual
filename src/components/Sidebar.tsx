@@ -8,7 +8,7 @@ import {
   LayoutDashboard,
   Users,
   Home,
-  GitBranch,
+  Map,
   MessageSquare,
   LogOut,
   Menu,
@@ -19,6 +19,7 @@ const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/clientes", icon: Users, label: "Clientes" },
   { href: "/imoveis", icon: Home, label: "Imóveis" },
+  { href: "/mapa", icon: Map, label: "Mapa" },
   { href: "/interacoes", icon: MessageSquare, label: "Interações" },
   { href: "/perfil", icon: Settings, label: "Perfil" },
 ];
@@ -86,7 +87,7 @@ export function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) {
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`sidebar-nav-item ${isActive ? "ativo" : ""}`}
+                  className={`sidebar-nav-item ${isActive ? "active" : ""}`}
                   onClick={() => {
                     if (typeof window !== "undefined" && window.innerWidth <= 768) {
                       onClose?.();

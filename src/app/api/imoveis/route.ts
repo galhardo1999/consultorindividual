@@ -10,6 +10,7 @@ const propertySchema = z.object({
   preco: z.number().positive(),
   cidade: z.string().min(2),
   bairro: z.string().optional(),
+  cep: z.string().optional(),
   endereco: z.string().optional(),
   codigoInterno: z.string().optional(),
   descricao: z.string().optional(),

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { maskCurrency, parseCurrency } from "@/lib/utils";
+import { buscarEnderecoPorCep } from "@/lib/viacep";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -32,6 +33,7 @@ const STATUSES = [
   { value: "VENDIDO", label: "Vendido" },
   { value: "LOCADO", label: "Locado" },
   { value: "INDISPONIVEL", label: "Indisponível" },
+  { value: "ARQUIVADO", label: "Arquivado" },
 ];
 
 export default function EditarImovelPage() {
@@ -48,6 +50,7 @@ export default function EditarImovelPage() {
     preco: "",
     cidade: "",
     bairro: "",
+    cep: "",
     endereco: "",
     codigoInterno: "",
     descricao: "",
@@ -77,6 +80,7 @@ export default function EditarImovelPage() {
           preco: maskCurrency(data.preco?.toString() || ""),
           cidade: data.cidade || "",
           bairro: data.bairro || "",
+          cep: data.cep || "",
           endereco: data.endereco || "",
           codigoInterno: data.codigoInterno || "",
           descricao: data.descricao || "",
@@ -100,6 +104,26 @@ export default function EditarImovelPage() {
 
   function update(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleCepChange(e: React.ChangeEvent<HTMLInputElement>) {
+    let v = e.target.value.replace(/\D/g, "");
+    if (v.length > 8) v = v.slice(0, 8);
+    if (v.length > 5) v = `${v.slice(0, 5)}-${v.slice(5)}`;
+    
+    update("cep", v);
+    
+    if (v.replace(/\D/g, "").length === 8) {
+      const data = await buscarEnderecoPorCep(v);
+      if (data) {
+        setForm((f) => ({
+          ...f,
+          endereco: data.logradouro || f.endereco,
+          bairro: data.bairro || f.bairro,
+          cidade: data.localidade || f.cidade,
+        }));
+      }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -153,112 +177,135 @@ export default function EditarImovelPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Basic info */}
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Informações Básicas</h2>
 
           <div className="form-group">
-            <label className="label">Título *</label>
-            <input type="text" className="input" value={form.titulo} onChange={(e) => update("titulo", e.target.value)} required />
+            <label className="label" htmlFor="titulo">Título *</label>
+            <input id="titulo" type="text" className="input" placeholder="Ex: Apartamento 3 quartos no Centro"
+              value={form.titulo} onChange={(e) => update("titulo", e.target.value)} required />
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="label">Código Interno</label>
-              <input type="text" className="input" value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
+              <label className="label" htmlFor="codigoInterno">Código Interno</label>
+              <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
+                value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="label">Origem / Captador</label>
-              <input type="text" className="input" value={form.origemCaptacao} onChange={(e) => update("origemCaptacao", e.target.value)} />
+              <label className="label" htmlFor="origemCaptacao">Origem / Captador</label>
+              <input id="origemCaptacao" type="text" className="input" placeholder="Nome do proprietário ou captador"
+                value={form.origemCaptacao} onChange={(e) => update("origemCaptacao", e.target.value)} />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="label">Tipo *</label>
-              <select className="select" value={form.tipoImovel} onChange={(e) => update("tipoImovel", e.target.value)}>
+              <label className="label" htmlFor="tipoImovel">Tipo *</label>
+              <select id="tipoImovel" className="select" value={form.tipoImovel} onChange={(e) => update("tipoImovel", e.target.value)}>
                 {PROPERTY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="label">Finalidade *</label>
-              <select className="select" value={form.finalidade} onChange={(e) => update("finalidade", e.target.value)}>
+              <label className="label" htmlFor="finalidade">Finalidade *</label>
+              <select id="finalidade" className="select" value={form.finalidade} onChange={(e) => update("finalidade", e.target.value)}>
                 {PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
               </select>
             </div>
             <div className="form-group">
-              <label className="label">Status</label>
-              <select className="select" value={form.status} onChange={(e) => update("status", e.target.value)}>
+              <label className="label" htmlFor="status">Status</label>
+              <select id="status" className="select" value={form.status} onChange={(e) => update("status", e.target.value)}>
                 {STATUSES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
               </select>
             </div>
           </div>
         </div>
 
+        {/* Location */}
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Localização</h2>
 
-          <div className="form-row">
+          <div className="form-row-3">
             <div className="form-group">
-              <label className="label">Cidade *</label>
-              <input type="text" className="input" value={form.cidade} onChange={(e) => update("cidade", e.target.value)} required />
+              <label className="label" htmlFor="cep">CEP</label>
+              <input id="cep" type="text" className="input" placeholder="00000-000"
+                value={form.cep} onChange={handleCepChange} maxLength={9} />
             </div>
             <div className="form-group">
-              <label className="label">Bairro</label>
-              <input type="text" className="input" value={form.bairro} onChange={(e) => update("bairro", e.target.value)} />
+              <label className="label" htmlFor="cidade">Cidade *</label>
+              <input id="cidade" type="text" className="input" placeholder="São Paulo"
+                value={form.cidade} onChange={(e) => update("cidade", e.target.value)} required />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="bairro">Bairro</label>
+              <input id="bairro" type="text" className="input" placeholder="Centro"
+                value={form.bairro} onChange={(e) => update("bairro", e.target.value)} />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="label">Endereço</label>
-            <input type="text" className="input" value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
+            <label className="label" htmlFor="endereco">Endereço</label>
+            <input id="endereco" type="text" className="input" placeholder="Rua, número, complemento"
+              value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
           </div>
         </div>
 
+        {/* Price */}
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Valores</h2>
 
           <div className="form-row-3">
             <div className="form-group">
-              <label className="label">Preço *</label>
-              <input type="text" className="input" placeholder="R$ 0,00" value={form.preco} onChange={(e) => update("preco", maskCurrency(e.target.value))} required />
+              <label className="label" htmlFor="preco">Preço *</label>
+              <input id="preco" type="text" className="input" placeholder="R$ 0,00"
+                value={form.preco} onChange={(e) => update("preco", maskCurrency(e.target.value))} required />
             </div>
             <div className="form-group">
-              <label className="label">Condomínio</label>
-              <input type="text" className="input" placeholder="R$ 0,00" value={form.valorCondominio} onChange={(e) => update("valorCondominio", maskCurrency(e.target.value))} />
+              <label className="label" htmlFor="valorCondominio">Condomínio</label>
+              <input id="valorCondominio" type="text" className="input" placeholder="R$ 0,00"
+                value={form.valorCondominio} onChange={(e) => update("valorCondominio", maskCurrency(e.target.value))} />
             </div>
             <div className="form-group">
-              <label className="label">IPTU (anual)</label>
-              <input type="text" className="input" placeholder="R$ 0,00" value={form.valorIptu} onChange={(e) => update("valorIptu", maskCurrency(e.target.value))} />
+              <label className="label" htmlFor="valorIptu">IPTU (anual)</label>
+              <input id="valorIptu" type="text" className="input" placeholder="R$ 0,00"
+                value={form.valorIptu} onChange={(e) => update("valorIptu", maskCurrency(e.target.value))} />
             </div>
           </div>
         </div>
 
+        {/* Features */}
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Características</h2>
 
           <div className="form-row-3">
             <div className="form-group">
-              <label className="label">Quartos</label>
-              <input type="number" className="input" value={form.quartos} onChange={(e) => update("quartos", e.target.value)} min="0" />
+              <label className="label" htmlFor="quartos">Quartos</label>
+              <input id="quartos" type="number" className="input" placeholder="3" min="0"
+                value={form.quartos} onChange={(e) => update("quartos", e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="label">Suítes</label>
-              <input type="number" className="input" value={form.suites} onChange={(e) => update("suites", e.target.value)} min="0" />
+              <label className="label" htmlFor="suites">Suítes</label>
+              <input id="suites" type="number" className="input" placeholder="1" min="0"
+                value={form.suites} onChange={(e) => update("suites", e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="label">Banheiros</label>
-              <input type="number" className="input" value={form.banheiros} onChange={(e) => update("banheiros", e.target.value)} min="0" />
+              <label className="label" htmlFor="banheiros">Banheiros</label>
+              <input id="banheiros" type="number" className="input" placeholder="2" min="0"
+                value={form.banheiros} onChange={(e) => update("banheiros", e.target.value)} />
             </div>
           </div>
 
           <div className="form-row">
             <div className="form-group">
-              <label className="label">Vagas</label>
-              <input type="number" className="input" value={form.vagasGaragem} onChange={(e) => update("vagasGaragem", e.target.value)} min="0" />
+              <label className="label" htmlFor="vagasGaragem">Vagas</label>
+              <input id="vagasGaragem" type="number" className="input" placeholder="1" min="0"
+                value={form.vagasGaragem} onChange={(e) => update("vagasGaragem", e.target.value)} />
             </div>
             <div className="form-group">
-              <label className="label">Área (m²)</label>
-              <input type="number" className="input" value={form.areaUtil} onChange={(e) => update("areaUtil", e.target.value)} min="0" />
+              <label className="label" htmlFor="areaUtil">Área (m²)</label>
+              <input id="areaUtil" type="number" className="input" placeholder="85" min="0"
+                value={form.areaUtil} onChange={(e) => update("areaUtil", e.target.value)} />
             </div>
           </div>
 
@@ -269,29 +316,37 @@ export default function EditarImovelPage() {
               { field: "aceitaPermuta", label: "Aceita Permuta" },
             ].map((item) => (
               <label key={item.field} className="flex items-center gap-2 cursor-pointer" style={{ fontSize: "0.875rem", color: "var(--color-surface-200)" }}>
-                <input type="checkbox" checked={form[item.field as keyof typeof form] as boolean} onChange={(e) => update(item.field, e.target.checked)} />
+                <input
+                  type="checkbox"
+                  checked={form[item.field as keyof typeof form] as boolean}
+                  onChange={(e) => update(item.field, e.target.checked)}
+                />
                 {item.label}
               </label>
             ))}
           </div>
         </div>
 
+        {/* Description */}
         <div className="card mb-5">
           <h2 className="section-titulo mb-4">Descrição e Diferenciais</h2>
 
           <div className="form-group">
-            <label className="label">Descrição</label>
-            <textarea className="textarea" value={form.descricao} onChange={(e) => update("descricao", e.target.value)} />
+            <label className="label" htmlFor="descricao">Descrição</label>
+            <textarea id="descricao" className="textarea" placeholder="Descreva o imóvel..."
+              value={form.descricao} onChange={(e) => update("descricao", e.target.value)} />
           </div>
 
           <div className="form-group">
-            <label className="label">Diferenciais</label>
-            <textarea className="textarea" style={{ minHeight: "80px" }} value={form.destaques} onChange={(e) => update("destaques", e.target.value)} />
+            <label className="label" htmlFor="destaques">Diferenciais</label>
+            <textarea id="destaques" className="textarea" style={{ minHeight: "80px" }}
+              placeholder="Piscina, churrasqueira, varanda gourmet..."
+              value={form.destaques} onChange={(e) => update("destaques", e.target.value)} />
           </div>
         </div>
 
         {error && (
-          <div className="toast toast-error mb-4" style={{ position: "static" }}>
+          <div className="toast toast-error mb-4" style={{ position: "static", minWidth: "unset", animation: "none" }}>
             <span style={{ color: "#f87171" }}>{error}</span>
           </div>
         )}

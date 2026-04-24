@@ -4,11 +4,14 @@ import { useState } from "react";
 import { Sidebar } from "@/components/Sidebar";
 import { Header } from "@/components/Header";
 import { SessionProvider, useSession } from "next-auth/react";
+import { usePathname } from "next/navigation";
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const { data: session } = useSession();
+  const pathname = usePathname();
+  const isMapRoute = pathname === "/mapa";
 
   // Função para lidar com o botão do Header (Hamburger)
   const handleMenuToggle = () => {
@@ -33,10 +36,12 @@ function AppLayout({ children }: { children: React.ReactNode }) {
         }}
       />
       <div className={`main-content ${sidebarCollapsed ? "collapsed" : ""}`} style={{ flex: 1, minWidth: 0 }}>
-        <Header
-          usuario={session?.user}
-        />
-        <main>{children}</main>
+        {!isMapRoute && (
+          <Header
+            usuario={session?.user}
+          />
+        )}
+        <main style={{ height: isMapRoute ? "100vh" : "auto" }}>{children}</main>
       </div>
     </div>
   );

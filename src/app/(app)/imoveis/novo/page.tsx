@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { maskCurrency, parseCurrency } from "@/lib/utils";
+import { buscarEnderecoPorCep } from "@/lib/viacep";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -43,6 +44,7 @@ export default function NovoImovelPage() {
     preco: "",
     cidade: "",
     bairro: "",
+    cep: "",
     endereco: "",
     codigoInterno: "",
     descricao: "",
@@ -63,6 +65,26 @@ export default function NovoImovelPage() {
 
   function update(field: string, value: string | boolean) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function handleCepChange(e: React.ChangeEvent<HTMLInputElement>) {
+    let v = e.target.value.replace(/\D/g, "");
+    if (v.length > 8) v = v.slice(0, 8);
+    if (v.length > 5) v = `${v.slice(0, 5)}-${v.slice(5)}`;
+    
+    update("cep", v);
+    
+    if (v.replace(/\D/g, "").length === 8) {
+      const data = await buscarEnderecoPorCep(v);
+      if (data) {
+        setForm((f) => ({
+          ...f,
+          endereco: data.logradouro || f.endereco,
+          bairro: data.bairro || f.bairro,
+          cidade: data.localidade || f.cidade,
+        }));
+      }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -163,7 +185,12 @@ export default function NovoImovelPage() {
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Localização</h2>
 
-          <div className="form-row">
+          <div className="form-row-3">
+            <div className="form-group">
+              <label className="label" htmlFor="cep">CEP</label>
+              <input id="cep" type="text" className="input" placeholder="00000-000"
+                value={form.cep} onChange={handleCepChange} maxLength={9} />
+            </div>
             <div className="form-group">
               <label className="label" htmlFor="cidade">Cidade *</label>
               <input id="cidade" type="text" className="input" placeholder="São Paulo"

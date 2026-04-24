@@ -677,7 +677,7 @@ body {
   position: relative;
 }
 
-.search-bar svg {
+.search-bar > svg {
   position: absolute;
   left: 0.875rem;
   top: 50%;

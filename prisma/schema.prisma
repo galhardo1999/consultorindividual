@@ -112,6 +112,7 @@ model Imovel {
   valorIptu       Float?
   cidade          String
   bairro          String?
+  cep             String?
   endereco        String?
   quartos         Int?
   suites          Int?
@@ -124,6 +125,8 @@ model Imovel {
   status          StatusImovel @default(DISPONIVEL)
   origemCaptacao  String?
   destaques       String?
+  latitude        Float?
+  longitude       Float?
   arquivadoEm     DateTime?
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
