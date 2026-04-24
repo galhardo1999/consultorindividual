@@ -10,7 +10,9 @@ const updateSchema = z.object({
   preco: z.number().nonnegative().optional(),
   cidade: z.string().min(2).optional(),
   bairro: z.string().optional(),
+  cep: z.string().optional(),
   endereco: z.string().optional(),
+  numero: z.string().optional(),
   codigoInterno: z.string().optional(),
   descricao: z.string().optional(),
   quartos: z.number().int().nullable().optional(),
@@ -60,7 +62,21 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const imovel = await prisma.imovel.update({ where: { id }, data: parsed.data as never });
+  const dataToUpdate = { ...parsed.data } as Record<string, any>;
+
+  const addressChanged =
+    (dataToUpdate.cidade !== undefined && dataToUpdate.cidade !== existing.cidade) ||
+    (dataToUpdate.bairro !== undefined && dataToUpdate.bairro !== existing.bairro) ||
+    (dataToUpdate.cep !== undefined && dataToUpdate.cep !== existing.cep) ||
+    (dataToUpdate.endereco !== undefined && dataToUpdate.endereco !== existing.endereco) ||
+    (dataToUpdate.numero !== undefined && dataToUpdate.numero !== existing.numero);
+
+  if (addressChanged) {
+    dataToUpdate.latitude = null;
+    dataToUpdate.longitude = null;
+  }
+
+  const imovel = await prisma.imovel.update({ where: { id }, data: dataToUpdate as never });
   return NextResponse.json(imovel);
 }
 

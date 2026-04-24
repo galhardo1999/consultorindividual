@@ -14,7 +14,12 @@ export interface MapImovel {
   status: string;
   cidade: string;
   bairro: string | null;
+  endereco: string | null;
+  numero: string | null;
+  cep: string | null;
   quartos: number | null;
+  banheiros: number | null;
+  vagasGaragem: number | null;
   areaUtil: number | null;
   lat: number;
   lng: number;
@@ -171,27 +176,59 @@ export function MapaImoveis({ imoveis, onSearchCoords }: MapaImoveisProps) {
         popupAnchor: [0, -36],
       });
 
+      const buildAddress = () => {
+        const parts = [];
+        if (imovel.endereco) parts.push(imovel.endereco);
+        if (imovel.numero) parts.push(`Nº ${imovel.numero}`);
+        if (imovel.bairro) parts.push(imovel.bairro);
+        
+        let cityPart = imovel.cidade;
+        if (imovel.cep) cityPart += `, CEP ${imovel.cep}`;
+        parts.push(cityPart);
+        
+        return parts.join(", ");
+      };
+
+      const formatPlural = (count: number | null, singular: string, plural: string) => {
+        if (!count) return "";
+        return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
+      };
+
+      const featuresHtml = [
+        imovel.quartos ? `<span>🛏️ ${formatPlural(imovel.quartos, 'quarto', 'quartos')}</span>` : '',
+        imovel.banheiros ? `<span>🚿 ${formatPlural(imovel.banheiros, 'banheiro', 'banheiros')}</span>` : '',
+        imovel.vagasGaragem ? `<span>🚗 ${formatPlural(imovel.vagasGaragem, 'vaga', 'vagas')}</span>` : ''
+      ].filter(Boolean).join('<span style="color:#cbd5e1;margin:0 6px">•</span>');
+
+      const photoHtml = `<div style="width:100%;height:130px;background-color:#f1f5f9;border-radius:8px;margin-bottom:12px;background-image:url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80');background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:24px;border:1px solid #e2e8f0;"></div>`;
+
       const popupHtml = `
-        <div style="font-family:Inter,sans-serif;min-width:200px;max-width:260px;padding:4px">
-          <div style="font-weight:700;font-size:14px;margin-bottom:6px;color:#0f172a;line-height:1.3">${imovel.titulo}</div>
+        <div style="font-family:Inter,sans-serif;width:240px;padding:4px">
+          ${photoHtml}
+          <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#0f172a;line-height:1.2">${imovel.titulo}</div>
+          
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
             <span style="background:${color}22;color:${color};font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid ${color}44">
               ${statusLabel[imovel.status] ?? imovel.status}
             </span>
-            <span style="font-size:11px;color:#64748b">${tipoLabel[imovel.tipoImovel] ?? imovel.tipoImovel}</span>
+            <span style="font-size:11px;color:#64748b;font-weight:500;">${tipoLabel[imovel.tipoImovel] ?? imovel.tipoImovel}</span>
           </div>
-          <div style="font-size:13px;color:#64748b;margin-bottom:4px">
-            📍 ${[imovel.bairro, imovel.cidade].filter(Boolean).join(", ")}
+          
+          <div style="font-size:12px;color:#64748b;margin-bottom:8px;line-height:1.4">
+            📍 ${buildAddress()}
           </div>
-          ${imovel.quartos ? `<div style="font-size:12px;color:#94a3b8;margin-bottom:4px">🛏 ${imovel.quartos} quarto${imovel.quartos > 1 ? "s" : ""}${imovel.areaUtil ? ` · ${imovel.areaUtil}m²` : ""}</div>` : ""}
-          <div style="font-size:18px;font-weight:800;color:#4f46e5;margin-bottom:10px">
+          
+          ${featuresHtml ? `<div style="display:flex;align-items:center;flex-wrap:wrap;font-size:11px;color:#475569;margin-bottom:10px;font-weight:500;">${featuresHtml}</div>` : ''}
+          
+          <div style="font-size:18px;font-weight:800;color:#000000;margin-bottom:12px;letter-spacing:-0.5px;">
             ${formatCurrency(imovel.preco)}
           </div>
+          
           <a href="/imoveis/${imovel.id}" style="
-            display:block;text-align:center;background:#4f46e5;color:white;
-            text-decoration:none;padding:7px 12px;border-radius:8px;
-            font-size:12px;font-weight:600;transition:background 0.15s
-          " onmouseover="this.style.background='#4338ca'" onmouseout="this.style.background='#4f46e5'">
+            display:block;text-align:center;background:#0f172a;color:white;
+            text-decoration:none;padding:8px 12px;border-radius:8px;
+            font-size:13px;font-weight:600;transition:background 0.15s
+          " onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
             Ver detalhes
           </a>
         </div>

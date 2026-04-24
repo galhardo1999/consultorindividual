@@ -114,6 +114,7 @@ model Imovel {
   bairro          String?
   cep             String?
   endereco        String?
+  numero          String?
   quartos         Int?
   suites          Int?
   banheiros       Int?

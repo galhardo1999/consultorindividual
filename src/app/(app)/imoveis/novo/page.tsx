@@ -46,6 +46,7 @@ export default function NovoImovelPage() {
     bairro: "",
     cep: "",
     endereco: "",
+    numero: "",
     codigoInterno: "",
     descricao: "",
     quartos: "",
@@ -203,10 +204,17 @@ export default function NovoImovelPage() {
             </div>
           </div>
 
-          <div className="form-group">
-            <label className="label" htmlFor="endereco">Endereço</label>
-            <input id="endereco" type="text" className="input" placeholder="Rua, número, complemento"
-              value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
+          <div className="form-row">
+            <div className="form-group">
+              <label className="label" htmlFor="endereco">Endereço</label>
+              <input id="endereco" type="text" className="input" placeholder="Ex: Rua das Flores"
+                value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
+            </div>
+            <div className="form-group" style={{ maxWidth: "160px" }}>
+              <label className="label" htmlFor="numero">Número</label>
+              <input id="numero" type="text" className="input" placeholder="Ex: 123, Apto 45"
+                value={form.numero} onChange={(e) => update("numero", e.target.value)} />
+            </div>
           </div>
         </div>
 

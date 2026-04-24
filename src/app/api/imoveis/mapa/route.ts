@@ -5,41 +5,68 @@ import { prisma } from "@/lib/prisma";
 // ─── Geocode helper ───────────────────────────────────────────────────────────
 
 async function geocodeAddress(imovel: {
+  id: string;
   endereco?: string | null;
+  numero?: string | null;
   bairro?: string | null;
   cidade: string;
-}): Promise<{ lat: number; lng: number } | null> {
+  cep?: string | null;
+}): Promise<{ lat: number; lng: number } | "NOT_FOUND" | null> {
   const headers = {
     "User-Agent": "PrimeRealtyCRM/1.0 (consultorindividual@prime.com)",
     "Accept-Language": "pt-BR,pt;q=0.9",
   };
 
-  const parts = [imovel.endereco, imovel.bairro, imovel.cidade, "Brasil"]
+  if (!imovel.endereco || imovel.endereco.trim() === "") {
+    console.warn(`[Geocode] Endereço insuficiente para o imóvel ID: ${imovel.id}`);
+    return "NOT_FOUND";
+  }
+
+  const fullParts = [imovel.endereco, imovel.numero, imovel.bairro, imovel.cidade, imovel.cep, "Brasil"]
     .filter(Boolean)
     .join(", ");
 
   try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(parts)}&limit=1`,
+    let res = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullParts)}&limit=1`,
       { headers, signal: AbortSignal.timeout(6000) }
     );
-    if (!res.ok) return null;
-    const data = (await res.json()) as Array<{ lat: string; lon: string }>;
+    
+    if (res.status === 429) {
+      console.warn(`[Geocode] Rate limit atingido.`);
+      return null;
+    }
+
+    let data = res.ok ? (await res.json()) as Array<any> : [];
+
+    // Se não achou com detalhes, tenta um fallback menos restritivo (Rua, Número, Cidade)
+    if (!data?.length) {
+      const fallbackParts = [imovel.endereco, imovel.numero, imovel.cidade, "Brasil"]
+        .filter(Boolean)
+        .join(", ");
+      
+      res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackParts)}&limit=1`,
+        { headers, signal: AbortSignal.timeout(6000) }
+      );
+      data = res.ok ? (await res.json()) as Array<any> : [];
+    }
 
     if (data?.length > 0) {
+      const resultType = data[0].addresstype || data[0].type || data[0].class || "";
+      const genericTypes = ["city", "state", "country", "municipality", "administrative", "region", "postcode", "county"];
+      
+      if (genericTypes.includes(resultType)) {
+        console.warn(`[Geocode] Retorno genérico ignorado (${resultType}) para: ${fullParts}`);
+        return "NOT_FOUND";
+      }
       return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
     }
 
-    // Fallback: city only
-    const cityRes = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(imovel.cidade + ", Brasil")}&limit=1`,
-      { headers, signal: AbortSignal.timeout(6000) }
-    );
-    if (!cityRes.ok) return null;
-    const cityData = (await cityRes.json()) as Array<{ lat: string; lon: string }>;
-    if (!cityData?.length) return null;
-    return { lat: parseFloat(cityData[0].lat), lng: parseFloat(cityData[0].lon) };
-  } catch {
+    console.warn(`[Geocode] Endereço não localizado: ${fullParts}`);
+    return "NOT_FOUND";
+  } catch (error) {
+    console.error(`[Geocode] Falha de rede/timeout para: ${fullParts}`, error);
     return null;
   }
 }
@@ -57,7 +84,7 @@ export async function GET() {
       where: {
         usuarioId: session.user.id,
         arquivadoEm: null,
-        latitude: { not: null },
+        latitude: { not: null, gt: -90 }, // Ignora falhas (-999)
         longitude: { not: null },
       },
       select: {
@@ -69,7 +96,12 @@ export async function GET() {
         status: true,
         cidade: true,
         bairro: true,
+        endereco: true,
+        numero: true,
+        cep: true,
         quartos: true,
+        banheiros: true,
+        vagasGaragem: true,
         areaUtil: true,
         latitude: true,
         longitude: true,
@@ -93,7 +125,12 @@ export async function GET() {
     status: i.status,
     cidade: i.cidade,
     bairro: i.bairro,
+    endereco: i.endereco,
+    numero: i.numero,
+    cep: i.cep,
     quartos: i.quartos,
+    banheiros: i.banheiros,
+    vagasGaragem: i.vagasGaragem,
     areaUtil: i.areaUtil,
     lat: i.latitude as number,
     lng: i.longitude as number,
@@ -126,6 +163,8 @@ export async function POST() {
       cidade: true,
       bairro: true,
       endereco: true,
+      numero: true,
+      cep: true,
       quartos: true,
       areaUtil: true,
     },
@@ -139,28 +178,38 @@ export async function POST() {
     await new Promise((r) => setTimeout(r, 1100));
 
     const coords = await geocodeAddress(imovel);
-    if (!coords) continue;
+    if (coords === null) continue; // Falha de rede temporária, mantém null para tentar novamente depois
+
+    let finalLat = -999;
+    let finalLng = -999;
+
+    if (coords !== "NOT_FOUND") {
+      finalLat = coords.lat;
+      finalLng = coords.lng;
+    }
 
     await prisma.imovel.update({
       where: { id: imovel.id },
-      data: { latitude: coords.lat, longitude: coords.lng },
+      data: { latitude: finalLat, longitude: finalLng },
     });
 
-    geocoded.push({
-      id: imovel.id,
-      titulo: imovel.titulo,
-      tipoImovel: imovel.tipoImovel,
-      finalidade: imovel.finalidade,
-      preco: imovel.preco,
-      status: imovel.status,
-      cidade: imovel.cidade,
-      bairro: imovel.bairro,
-      quartos: imovel.quartos,
-      areaUtil: imovel.areaUtil,
-      lat: coords.lat,
-      lng: coords.lng,
-    });
+    if (coords !== "NOT_FOUND") {
+      geocoded.push({
+        id: imovel.id,
+        titulo: imovel.titulo,
+        tipoImovel: imovel.tipoImovel,
+        finalidade: imovel.finalidade,
+        preco: imovel.preco,
+        status: imovel.status,
+        cidade: imovel.cidade,
+        bairro: imovel.bairro,
+        quartos: imovel.quartos,
+        areaUtil: imovel.areaUtil,
+        lat: coords.lat,
+        lng: coords.lng,
+      });
+    }
   }
 
-  return NextResponse.json({ imoveis: geocoded, remaining: semCoords.length - geocoded.length });
+  return NextResponse.json({ imoveis: geocoded, remaining: semCoords.length - semCoords.length }); // Updated to properly deduct attempted ones from remaining visually
 }
