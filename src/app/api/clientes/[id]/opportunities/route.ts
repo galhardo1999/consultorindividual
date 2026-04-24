@@ -92,6 +92,8 @@ export async function GET(
         cidade: true,
         bairro: true,
         quartos: true,
+        banheiros: true,
+        vagasGaragem: true,
         areaUtil: true,
         codigoInterno: true,
       },

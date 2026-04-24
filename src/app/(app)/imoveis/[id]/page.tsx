@@ -90,7 +90,7 @@ export default function ImovelDetailPage() {
   ].filter(Boolean) as { icon: React.ElementType; label: string }[];
 
   return (
-    <div className="page" style={{ maxWidth: "900px", margin: "0 auto" }}>
+    <div className="page">
       {/* Header */}
       <div className="flex items-center gap-3 mb-5">
         <Link href="/imoveis" className="btn btn-ghost btn-icon">

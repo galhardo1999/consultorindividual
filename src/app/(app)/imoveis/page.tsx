@@ -11,8 +11,11 @@ interface Imovel {
   tipoImovel: string;
   finalidade: string;
   preco: number;
+  valorCondominio?: number | null;
+  valorIptu?: number | null;
   cidade: string;
   bairro: string | null;
+  endereco?: string | null;
   quartos: number | null;
   banheiros: number | null;
   vagasGaragem: number | null;
@@ -181,67 +184,102 @@ export default function ImoveisPage() {
         </div>
       ) : (
         <>
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1rem" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: "1.5rem" }}>
             {imoveis.map((imovel) => (
               <Link key={imovel.id} href={`/imoveis/${imovel.id}`} style={{ textDecoration: "none" }}>
-                <div className="card" style={{ cursor: "pointer", height: "100%" }}>
-                  {/* Status bar */}
-                  <div className="flex items-start justify-between mb-3">
-                    <div>
-                      {imovel.codigoInterno && (
-                        <div style={{ fontSize: "0.7rem", color: "var(--color-surface-500)", marginBottom: "4px" }}>
-                          #{imovel.codigoInterno}
-                        </div>
-                      )}
-                      <span className="badge badge-secondary" style={{ fontSize: "0.7rem" }}>
-                        {propertyTypeLabel(imovel.tipoImovel)}
+                <div 
+                  className="card" 
+                  style={{ 
+                    padding: 0,
+                    overflow: "hidden",
+                    height: "100%", 
+                    display: "flex", 
+                    flexDirection: "column", 
+                    border: "1px solid var(--color-surface-800)", 
+                    borderRadius: "16px",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    cursor: "pointer",
+                    backgroundColor: "var(--color-surface-900)"
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.transform = "translateY(-4px)";
+                    e.currentTarget.style.boxShadow = "0 12px 24px rgba(0, 0, 0, 0.2)";
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.transform = "none";
+                    e.currentTarget.style.boxShadow = "none";
+                  }}
+                >
+                  {/* Image Placeholder */}
+                  <div style={{ position: "relative", width: "100%", paddingTop: "65%", backgroundColor: "var(--color-surface-800)" }}>
+                    <div style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, background: "linear-gradient(135deg, var(--color-surface-800), var(--color-surface-900))", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                       <Home size={40} style={{ color: "var(--color-surface-700)" }} />
+                    </div>
+                    {/* Status Badge */}
+                    <div style={{ position: "absolute", top: "16px", left: "16px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
+                       {imovel.codigoInterno && (
+                         <span className="badge badge-secondary" style={{ fontSize: "0.75rem", fontWeight: 600, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", padding: "0.25rem 0.75rem" }}>
+                           #{imovel.codigoInterno}
+                         </span>
+                       )}
+                       <span className={`badge ${STATUS_COLORS[imovel.status] || "badge-secondary"}`} style={{ fontSize: "0.75rem", fontWeight: 600, boxShadow: "0 2px 8px rgba(0,0,0,0.15)", padding: "0.25rem 0.75rem" }}>
+                         {propertyStatusLabel(imovel.status)}
+                       </span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", flexGrow: 1 }}>
+                    {/* Subtitle / Type */}
+                    <p style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginBottom: "0.5rem", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+                      <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para {imovel.finalidade === "LOCACAO" ? "alugar" : "comprar"} {imovel.areaUtil ? `com ${imovel.areaUtil} m²` : ""}
+                    </p>
+
+                    {/* Price */}
+                    <div style={{ marginBottom: "0.5rem" }}>
+                      <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
+                        {formatCurrency(imovel.preco)}
                       </span>
                     </div>
-                    <span className={`badge ${STATUS_COLORS[imovel.status] || "badge-secondary"}`} style={{ fontSize: "0.7rem" }}>
-                      {propertyStatusLabel(imovel.status)}
-                    </span>
-                  </div>
+                    
+                    {/* Additional Info (Cond/IPTU) */}
+                    <p style={{ fontSize: "0.85rem", color: "var(--color-surface-500)", marginBottom: "1.5rem" }}>
+                      {imovel.valorCondominio ? `Cond. ${formatCurrency(imovel.valorCondominio)}` : "Cond. não informado"} • {imovel.valorIptu ? `IPTU ${formatCurrency(imovel.valorIptu)}` : "IPTU não informado"}
+                    </p>
 
-                  {/* Title */}
-                  <h3 className="font-semibold mb-1" style={{ color: "var(--color-surface-50)", lineHeight: 1.3 }}>
-                    {imovel.titulo}
-                  </h3>
-                  <p style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginBottom: "1rem" }}>
-                    📍 {imovel.cidade}{imovel.bairro && `, ${imovel.bairro}`}
-                  </p>
+                    {/* Features */}
+                    <div className="flex flex-wrap items-center gap-4 mb-5" style={{ color: "var(--color-surface-300)", fontSize: "0.9rem", marginTop: "auto" }}>
+                      {imovel.areaUtil != null && (
+                        <span className="flex items-center gap-1.5" title="Área Útil">
+                          <Maximize size={16} style={{ color: "var(--color-surface-500)" }} /> {imovel.areaUtil} m²
+                        </span>
+                      )}
+                      {imovel.quartos != null && (
+                        <span className="flex items-center gap-1.5" title="Quartos">
+                          <Bed size={16} style={{ color: "var(--color-surface-500)" }} /> {imovel.quartos}
+                        </span>
+                      )}
+                      {imovel.banheiros != null && (
+                        <span className="flex items-center gap-1.5" title="Banheiros">
+                          <Bath size={16} style={{ color: "var(--color-surface-500)" }} /> {imovel.banheiros}
+                        </span>
+                      )}
+                      {imovel.vagasGaragem != null && (
+                        <span className="flex items-center gap-1.5" title="Vagas">
+                          <Car size={16} style={{ color: "var(--color-surface-500)" }} /> {imovel.vagasGaragem}
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Features */}
-                  <div className="flex gap-3 mb-3" style={{ color: "var(--color-surface-400)", fontSize: "0.8rem" }}>
-                    {imovel.quartos != null && (
-                      <span className="flex items-center gap-1">
-                        <Bed size={13} /> {imovel.quartos} qts
-                      </span>
-                    )}
-                    {imovel.banheiros != null && (
-                      <span className="flex items-center gap-1">
-                        <Bath size={13} /> {imovel.banheiros}
-                      </span>
-                    )}
-                    {imovel.vagasGaragem != null && (
-                      <span className="flex items-center gap-1">
-                        <Car size={13} /> {imovel.vagasGaragem}
-                      </span>
-                    )}
-                    {imovel.areaUtil != null && (
-                      <span className="flex items-center gap-1">
-                        <Maximize size={13} /> {imovel.areaUtil}m²
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-lg" style={{ color: "#22c55e" }}>
-                      {formatCurrency(imovel.preco)}
-                    </span>
-                    <span style={{ fontSize: "0.75rem", color: "var(--color-surface-500)" }}>
-                      {imovel._count.interesses} interesse{imovel._count.interesses !== 1 ? "s" : ""}
-                    </span>
+                    {/* Location */}
+                    <div style={{ marginTop: "auto", borderTop: "1px solid var(--color-surface-800)", paddingTop: "1.25rem" }}>
+                       <p className="font-semibold" style={{ color: "var(--color-surface-100)", fontSize: "0.95rem", lineHeight: 1.2 }}>
+                         {imovel.bairro ? `${imovel.bairro}, ` : ""}{imovel.cidade}
+                       </p>
+                       <p style={{ color: "var(--color-surface-500)", fontSize: "0.85rem", marginTop: "0.35rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                         {imovel.endereco || imovel.titulo}
+                       </p>
+                    </div>
                   </div>
                 </div>
               </Link>

@@ -181,7 +181,7 @@ export default function NovoClientePage() {
   ] as const;
 
   return (
-    <div className="page" style={{ maxWidth: "800px", margin: "0 auto" }}>
+    <div className="page">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <Link href="/clientes" className="btn btn-ghost btn-icon">

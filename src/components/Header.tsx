@@ -11,8 +11,7 @@ interface HeaderProps {
   usuario?: { nome?: string | null; email?: string | null; image?: string | null };
 }
 
-export function Header({ onMenuToggle, usuario }: HeaderProps) {
-  const [showSearch, setShowSearch] = useState(false);
+export function Header({ usuario }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const router = useRouter();
 
@@ -36,57 +35,24 @@ export function Header({ onMenuToggle, usuario }: HeaderProps) {
       const q = e.currentTarget.value;
       if (q) {
         router.push(`/clientes?search=${encodeURIComponent(q)}`);
-        setShowSearch(false);
       }
     }
   }
 
   return (
     <header className="header">
-      <div className="flex items-center gap-3">
-        <button
-          className="btn btn-ghost btn-icon"
-          onClick={onMenuToggle}
-          id="menu-toggle"
-          title="Alternar menu"
-        >
-          <Menu size={20} />
-        </button>
-
-        {showSearch ? (
-          <div className="search-bar">
-            <Search size={16} />
-            <input
-              type="text"
-              className="input"
-              style={{ paddingLeft: "2.5rem", width: "280px" }}
-              placeholder="Buscar clientes... (Enter para buscar)"
-              autoFocus
-              onBlur={() => setShowSearch(false)}
-              onKeyDown={handleSearch}
-            />
-          </div>
-        ) : (
-          <button
-            className="btn btn-ghost btn-sm hidden sm:flex"
-            onClick={() => setShowSearch(true)}
-            style={{ gap: "0.5rem", color: "var(--color-surface-400)" }}
-          >
-            <Search size={16} />
-            <span style={{ fontSize: "0.8rem" }}>Buscar...</span>
-            <kbd
-              style={{
-                padding: "0.1rem 0.4rem",
-                borderRadius: "4px",
-                background: "var(--color-surface-700)",
-                fontSize: "0.7rem",
-                color: "var(--color-surface-400)",
-              }}
-            >
-              ⌘K
-            </kbd>
-          </button>
-        )}
+      <div className="flex items-center gap-3" style={{ flex: 1 }}>
+        <div className="search-bar" style={{ width: "100%", maxWidth: "800px" }}>
+          <Search size={16} />
+          <input
+            type="text"
+            className="input"
+            style={{ paddingLeft: "2.5rem", width: "100%" }}
+            placeholder="Buscar clientes, imóveis, interações..."
+            onKeyDown={handleSearch}
+            id="global-search"
+          />
+        </div>
       </div>
 
       <div className="flex items-center gap-2">

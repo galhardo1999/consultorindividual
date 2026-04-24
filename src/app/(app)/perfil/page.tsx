@@ -10,7 +10,7 @@ export default function PerfilPage() {
   const [saved, setSaved] = useState(false);
 
   return (
-    <div className="page" style={{ maxWidth: "600px", margin: "0 auto" }}>
+    <div className="page">
       <div className="mb-6">
         <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>Perfil</h1>
         <p style={{ color: "var(--color-surface-400)", fontSize: "0.9rem" }}>

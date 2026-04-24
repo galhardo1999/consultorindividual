@@ -11,7 +11,7 @@ import {
   GitBranch,
   MessageSquare,
   LogOut,
-  X,
+  Menu,
   Settings,
 } from "lucide-react";
 
@@ -71,9 +71,9 @@ export function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) {
           <button
             className="btn btn-ghost btn-icon ml-auto sidebar-close-btn"
             onClick={onClose}
-            titulo="Recolher menu"
+            title="Recolher menu"
           >
-            <X size={18} />
+            <Menu size={18} />
           </button>
         </div>
 

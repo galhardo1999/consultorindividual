@@ -73,7 +73,55 @@ export async function GET(request: Request) {
     prisma.cliente.count({ where }),
   ]);
 
-  return NextResponse.json({ clientes, total, page, limit });
+  const clientesWithOpportunities = await Promise.all(
+    clientes.map(async (cliente) => {
+      let oportunidadesCount = 0;
+      if (cliente.preferencia) {
+        const { preferencia } = cliente;
+        
+        // Fetch interests for this client
+        const interesses = await prisma.interesseClienteImovel.findMany({
+          where: { clienteId: cliente.id },
+          select: { imovelId: true }
+        });
+        const existingInterestIds = interesses.map((i) => i.imovelId);
+
+        const whereClause: Record<string, unknown> = {
+          usuarioId: session.user.id,
+          status: "DISPONIVEL",
+          id: { notIn: existingInterestIds },
+        };
+
+        if (preferencia.tipoImovel) whereClause.tipoImovel = preferencia.tipoImovel;
+        if (preferencia.cidadeInteresse) {
+          whereClause.cidade = { contains: preferencia.cidadeInteresse, mode: "insensitive" };
+        }
+        if (preferencia.precoMinimo !== null || preferencia.precoMaximo !== null) {
+          const priceFilter: Record<string, number> = {};
+          if (preferencia.precoMinimo !== null) priceFilter.gte = preferencia.precoMinimo;
+          if (preferencia.precoMaximo !== null) priceFilter.lte = preferencia.precoMaximo;
+          whereClause.preco = priceFilter;
+        }
+        if (preferencia.minQuartos !== null) whereClause.quartos = { gte: preferencia.minQuartos };
+        if (preferencia.minBanheiros !== null) whereClause.banheiros = { gte: preferencia.minBanheiros };
+        if (preferencia.minVagas !== null) whereClause.vagasGaragem = { gte: preferencia.minVagas };
+        if (preferencia.areaMinima !== null || preferencia.areaMaxima !== null) {
+          const areaFilter: Record<string, number> = {};
+          if (preferencia.areaMinima !== null) areaFilter.gte = preferencia.areaMinima;
+          if (preferencia.areaMaxima !== null) areaFilter.lte = preferencia.areaMaxima;
+          whereClause.areaUtil = areaFilter;
+        }
+
+        oportunidadesCount = await prisma.imovel.count({ where: whereClause as never });
+      }
+      return {
+        ...cliente,
+        oportunidadesCount
+      };
+    })
+  );
+
+  return NextResponse.json({ clientes: clientesWithOpportunities, total, page, limit });
 }
 
 export async function POST(request: Request) {

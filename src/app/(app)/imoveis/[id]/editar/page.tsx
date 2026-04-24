@@ -139,7 +139,7 @@ export default function EditarImovelPage() {
   if (loading) return <div className="page"><div className="skeleton" style={{ height: "400px" }}/></div>;
 
   return (
-    <div className="page" style={{ maxWidth: "800px", margin: "0 auto" }}>
+    <div className="page">
       <div className="flex items-center gap-3 mb-6">
         <Link href={`/imoveis/${id}`} className="btn btn-ghost btn-icon">
           <ArrowLeft size={18} />

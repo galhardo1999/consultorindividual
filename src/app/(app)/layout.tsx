@@ -34,7 +34,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
       />
       <div className={`main-content ${sidebarCollapsed ? "collapsed" : ""}`} style={{ flex: 1, minWidth: 0 }}>
         <Header
-          onMenuToggle={handleMenuToggle}
           usuario={session?.user}
         />
         <main>{children}</main>

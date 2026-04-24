@@ -22,6 +22,7 @@ interface Cliente {
   status: string;
   atualizadoEm: string;
   _count: { interacoes: number; interesses: number };
+  oportunidadesCount: number;
 }
 
 const JOURNEY_STAGES = [
@@ -240,6 +241,12 @@ export default function ClientesPage() {
                       <div style={{ fontSize: "0.75rem", color: "var(--color-surface-400)" }}>Interações</div>
                       <div className="font-semibold text-sm" style={{ color: "var(--color-surface-200)" }}>
                         {cliente._count.interacoes}
+                      </div>
+                    </div>
+                    <div className="text-right hidden sm:block">
+                      <div style={{ fontSize: "0.75rem", color: "var(--color-surface-400)" }}>Oportunidades</div>
+                      <div className="font-semibold text-sm" style={{ color: "var(--color-brand-400)" }}>
+                        {cliente.oportunidadesCount || 0}
                       </div>
                     </div>
                     <div className="text-right hidden sm:block">
