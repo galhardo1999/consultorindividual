@@ -138,6 +138,7 @@ model Imovel {
   caracteristicas CaracteristicaImovel[]
   interesses      InteresseClienteImovel[]
   interacoes      Interacao[]
+  fotos           FotoImovel[]
 
   @@map("imoveis")
 }
@@ -151,6 +152,19 @@ model CaracteristicaImovel {
   imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
 
   @@map("caracteristicas_imovel")
+}
+
+model FotoImovel {
+  id        String   @id @default(cuid())
+  imovelId  String
+  url       String
+  ordem     Int      @default(0)
+  isCapa    Boolean  @default(false)
+  criadoEm  DateTime @default(now())
+
+  imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@map("fotos_imovel")
 }
 
 model InteresseClienteImovel {

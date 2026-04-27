@@ -74,7 +74,7 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
   };
 
   const imagens = imovel.imagens || [];
-  
+
   const handleNextImage = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -96,14 +96,14 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
     if (!str) return "";
     return str.split('_').map(w => w.charAt(0) + w.slice(1).toLowerCase()).join(' ');
   };
-  
+
   const tipo = imovel.tipoImovel ? formatEnum(imovel.tipoImovel) : "Imóvel";
   const finalidadeText = imovel.finalidade ? formatEnum(imovel.finalidade).toLowerCase() : "venda";
-  
+
   const titleParts = [];
   if (quartos) titleParts.push(`${quartos} dormitório${imovel.quartos && imovel.quartos > 1 ? "s" : ""}`);
   if (imovel.areaUtil) titleParts.push(`${imovel.areaUtil} m²`);
-  
+
   const titleCenter = titleParts.length > 0 ? ` com ${titleParts.join(", ")}` : "";
   const title = `${tipo}${titleCenter} - ${finalidadeText} por ${formatCurrency(imovel.preco)}`;
 
@@ -119,7 +119,7 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
   return (
     <Link href={`/imoveis/${imovel.id}`} style={{ textDecoration: "none" }} className="block mb-4">
       <div className="flex flex-col md:flex-row gap-5 p-4 bg-surface-800 border border-surface-700/50 rounded-2xl transition-all duration-200 hover:bg-surface-700/50 cursor-pointer shadow-sm">
-        
+
         {/* Image Area */}
         <div className="relative w-full md:w-[340px] h-[240px] flex-shrink-0 rounded-xl overflow-hidden bg-surface-900/50 flex items-center justify-center group border border-surface-700/50">
           {imagens.length > 0 ? (
@@ -132,7 +132,7 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
           )}
 
           {/* Favorite Button */}
-          <button 
+          <button
             onClick={handleFavoriteClick}
             className="absolute top-3 right-3 w-8 h-8 bg-surface-900/80 hover:bg-surface-900 rounded-full flex items-center justify-center shadow-md transition-transform hover:scale-110 z-10"
           >
@@ -142,13 +142,13 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
           {/* Navigation Arrows */}
           {imagens.length > 1 && (
             <>
-              <button 
+              <button
                 onClick={handlePrevImage}
                 className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-surface-900/80 hover:bg-surface-900 rounded-full flex items-center justify-center shadow-sm text-surface-200 transition-colors z-10"
               >
                 <ChevronLeft size={16} />
               </button>
-              <button 
+              <button
                 onClick={handleNextImage}
                 className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 bg-surface-900/80 hover:bg-surface-900 rounded-full flex items-center justify-center shadow-sm text-surface-200 transition-colors z-10"
               >
@@ -161,8 +161,8 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
           {imagens.length > 1 && (
             <div className="absolute bottom-3 left-0 right-0 flex justify-center gap-1.5 z-10">
               {imagens.map((_, idx) => (
-                <div 
-                  key={idx} 
+                <div
+                  key={idx}
                   className={`w-1.5 h-1.5 rounded-full transition-all shadow-sm ${idx === currentImageIndex ? "bg-white scale-110" : "bg-white/40"}`}
                 />
               ))}
@@ -368,7 +368,7 @@ export default function ProprietarioDetailPage() {
             <div>
               <h2 className="text-xl font-bold text-surface-50 flex items-center gap-2">
                 <Home size={20} className="text-brand-400" />
-                Imóveis Vinculados
+                Imóveis Cadastrados
                 <span className="bg-surface-800 border border-surface-700 text-surface-200 text-xs py-0.5 px-2.5 rounded-full ml-2 font-medium">
                   {proprietario.imoveis.length}
                 </span>

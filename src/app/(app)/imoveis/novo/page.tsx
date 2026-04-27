@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { maskCurrency, parseCurrency } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
+import { UploadImagens } from "@/components/UploadImagens";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -38,6 +39,8 @@ export default function NovoImovelPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [proprietarios, setProprietarios] = useState<{ id: string; nomeCompleto: string }[]>([]);
+  const [fotos, setFotos] = useState<string[]>([]);
+  const [imovelId] = useState(() => crypto.randomUUID());
 
   const [form, setForm] = useState({
 
@@ -107,6 +110,7 @@ export default function NovoImovelPage() {
     setLoading(true);
 
     const payload = {
+      id: imovelId,
       ...form,
       preco: parseCurrency(form.preco) || 0,
       quartos: form.quartos ? parseInt(form.quartos) : undefined,
@@ -117,6 +121,7 @@ export default function NovoImovelPage() {
       valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : undefined,
       valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : undefined,
       proprietarioId: form.proprietarioId || null,
+      fotos,
     };
 
     const res = await fetch("/api/imoveis", {
@@ -152,6 +157,11 @@ export default function NovoImovelPage() {
 
       <form onSubmit={handleSubmit}>
         {/* Basic info */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Fotos do Imóvel</h2>
+          <UploadImagens pasta={imovelId} onUpload={(urls) => setFotos(prev => [...prev, ...urls])} />
+        </div>
+
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Informações Básicas</h2>
 

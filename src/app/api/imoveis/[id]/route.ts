@@ -28,6 +28,7 @@ const updateSchema = z.object({
   status: z.string().optional(),
   destaques: z.string().optional(),
   proprietarioId: z.string().optional().nullable(),
+  fotos: z.array(z.string()).optional(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -44,6 +45,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         include: { cliente: true },
         orderBy: { atualizadoEm: "desc" },
       },
+      fotos: { orderBy: { ordem: 'asc' } },
     },
   });
 
@@ -64,6 +66,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
   const dataToUpdate = { ...parsed.data } as Record<string, any>;
+  const fotos = dataToUpdate.fotos as string[] | undefined;
+  delete dataToUpdate.fotos;
 
   const addressChanged =
     (dataToUpdate.cidade !== undefined && dataToUpdate.cidade !== existing.cidade) ||
@@ -75,6 +79,17 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (addressChanged) {
     dataToUpdate.latitude = null;
     dataToUpdate.longitude = null;
+  }
+
+  if (fotos && fotos.length > 0) {
+    const existingFotosCount = await prisma.fotoImovel.count({ where: { imovelId: id } });
+    dataToUpdate.fotos = {
+      create: fotos.map((url, idx) => ({
+        url,
+        isCapa: existingFotosCount === 0 && idx === 0,
+        ordem: existingFotosCount + idx,
+      }))
+    };
   }
 
   const imovel = await prisma.imovel.update({ where: { id }, data: dataToUpdate as never });

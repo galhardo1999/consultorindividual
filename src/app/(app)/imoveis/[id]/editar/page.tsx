@@ -6,6 +6,7 @@ import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { maskCurrency, parseCurrency } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
+import { UploadImagens } from "@/components/UploadImagens";
 
 const PROPERTY_TYPES = [
   { value: "APARTAMENTO", label: "Apartamento" },
@@ -43,6 +44,8 @@ export default function EditarImovelPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [proprietarios, setProprietarios] = useState<{ id: string; nomeCompleto: string }[]>([]);
+  const [fotosAdicionais, setFotosAdicionais] = useState<string[]>([]);
+  const [fotosExistentes, setFotosExistentes] = useState<{ id: string; url: string; isCapa: boolean }[]>([]);
   
   const [form, setForm] = useState({
     titulo: "",
@@ -109,6 +112,9 @@ export default function EditarImovelPage() {
           destaques: data.destaques || "",
           proprietarioId: data.proprietarioId || "",
         });
+        if (data.fotos) {
+          setFotosExistentes(data.fotos);
+        }
         setLoading(false);
       });
   }, [id]);
@@ -153,6 +159,7 @@ export default function EditarImovelPage() {
       valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : null,
       valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : null,
       proprietarioId: form.proprietarioId || null,
+      fotos: fotosAdicionais.length > 0 ? fotosAdicionais : undefined,
     };
 
     const res = await fetch(`/api/imoveis/${id}`, {
@@ -189,6 +196,36 @@ export default function EditarImovelPage() {
       </div>
 
       <form onSubmit={handleSubmit}>
+        {/* Photos */}
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Fotos do Imóvel</h2>
+          
+          {fotosExistentes.length > 0 && (
+            <div className="mb-6">
+              <h3 className="text-sm font-medium mb-3" style={{ color: "var(--color-surface-400)" }}>
+                Fotos Salvas ({fotosExistentes.length})
+              </h3>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                {fotosExistentes.map((foto) => (
+                  <div key={foto.id} className="relative group rounded-md overflow-hidden aspect-square bg-gray-100 border border-gray-200" style={{ borderColor: "var(--color-surface-700)" }}>
+                    <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
+                    {foto.isCapa && (
+                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-1 font-medium">
+                        CAPA
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <h3 className="text-sm font-medium mb-3" style={{ color: "var(--color-surface-400)" }}>
+            Adicionar Mais Fotos
+          </h3>
+          <UploadImagens pasta={id} onUpload={(urls) => setFotosAdicionais(prev => [...prev, ...urls])} />
+        </div>
+
         {/* Basic info */}
         <div className="card mb-4">
           <h2 className="section-titulo mb-4">Informações Básicas</h2>

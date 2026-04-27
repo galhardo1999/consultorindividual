@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
 const propertySchema = z.object({
+  id: z.string().uuid().optional(),
   titulo: z.string().min(2),
   tipoImovel: z.string(),
   finalidade: z.string(),
@@ -28,6 +29,7 @@ const propertySchema = z.object({
   status: z.string().optional(),
   destaques: z.string().optional(),
   proprietarioId: z.string().optional().nullable(),
+  fotos: z.array(z.string()).optional(),
 });
 
 export async function GET(request: Request) {
@@ -72,6 +74,7 @@ export async function GET(request: Request) {
         caracteristicas: true,
         _count: { select: { interesses: true } },
         proprietario: { select: { id: true, nomeCompleto: true } },
+        fotos: { select: { url: true, isCapa: true } },
       },
       orderBy: { atualizadoEm: "desc" },
       skip,
@@ -94,10 +97,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
     }
 
+    const { fotos, ...imovelData } = parsed.data;
+
     const imovel = await prisma.imovel.create({
       data: {
-        ...parsed.data,
+        ...imovelData,
         usuarioId: session.user.id,
+        fotos: fotos && fotos.length > 0 ? {
+          create: fotos.map((url, idx) => ({
+            url,
+            isCapa: idx === 0,
+            ordem: idx
+          }))
+        } : undefined
       } as never,
     });
 
