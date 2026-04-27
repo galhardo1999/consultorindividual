@@ -37,7 +37,10 @@ export default function NovoImovelPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [proprietarios, setProprietarios] = useState<{ id: string; nomeCompleto: string }[]>([]);
+
   const [form, setForm] = useState({
+
     titulo: "",
     tipoImovel: "APARTAMENTO",
     finalidade: "VENDA",
@@ -60,8 +63,18 @@ export default function NovoImovelPage() {
     aceitaFinanciamento: false,
     aceitaPermuta: false,
     status: "DISPONIVEL",
-    origemCaptacao: "",
     destaques: "",
+    proprietarioId: "",
+  });
+
+  // Load proprietarios
+  useState(() => {
+    fetch("/api/proprietarios?limit=100")
+      .then(res => res.json())
+      .then(data => {
+        if (data.proprietarios) setProprietarios(data.proprietarios);
+      })
+      .catch(console.error);
   });
 
   function update(field: string, value: string | boolean) {
@@ -103,6 +116,7 @@ export default function NovoImovelPage() {
       areaUtil: form.areaUtil ? parseFloat(form.areaUtil) : undefined,
       valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : undefined,
       valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : undefined,
+      proprietarioId: form.proprietarioId || null,
     };
 
     const res = await fetch("/api/imoveis", {
@@ -147,16 +161,19 @@ export default function NovoImovelPage() {
               value={form.titulo} onChange={(e) => update("titulo", e.target.value)} required />
           </div>
 
+          <div className="form-group">
+            <label className="label" htmlFor="codigoInterno">Código Interno</label>
+            <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
+              value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
+          </div>
+
           <div className="form-row">
             <div className="form-group">
-              <label className="label" htmlFor="codigoInterno">Código Interno</label>
-              <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
-                value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="label" htmlFor="origemCaptacao">Origem / Captador</label>
-              <input id="origemCaptacao" type="text" className="input" placeholder="Nome do proprietário ou captador"
-                value={form.origemCaptacao} onChange={(e) => update("origemCaptacao", e.target.value)} />
+              <label className="label" htmlFor="proprietarioId">Proprietário</label>
+              <select id="proprietarioId" className="select" value={form.proprietarioId} onChange={(e) => update("proprietarioId", e.target.value)}>
+                <option value="">Selecione um proprietário (opcional)</option>
+                {proprietarios.map((p) => <option key={p.id} value={p.id}>{p.nomeCompleto}</option>)}
+              </select>
             </div>
           </div>
 

@@ -13,11 +13,13 @@ import {
   LogOut,
   Menu,
   Settings,
+  Contact,
 } from "lucide-react";
 
 const navItems = [
   { href: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
   { href: "/clientes", icon: Users, label: "Clientes" },
+  { href: "/proprietarios", icon: Contact, label: "Proprietários" },
   { href: "/imoveis", icon: Home, label: "Imóveis" },
   { href: "/mapa", icon: Map, label: "Mapa" },
   { href: "/interacoes", icon: MessageSquare, label: "Interações" },

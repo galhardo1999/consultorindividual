@@ -28,7 +28,6 @@ interface PropertyDetail {
   aceitaFinanciamento: boolean;
   aceitaPermuta: boolean;
   status: string;
-  origemCaptacao: string | null;
   destaques: string | null;
   descricao: string | null;
   codigoInterno: string | null;
@@ -40,6 +39,12 @@ interface PropertyDetail {
     ehFavorito: boolean;
     cliente: { id: string; nomeCompleto: string; telefone: string };
   }[];
+  proprietario?: {
+    id: string;
+    nomeCompleto: string;
+    telefone: string | null;
+    email: string | null;
+  } | null;
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -151,13 +156,31 @@ export default function ImovelDetailPage() {
               imovel.valorCondominio && { label: "Condomínio", value: formatCurrency(imovel.valorCondominio) },
               imovel.valorIptu && { label: "IPTU/ano", value: formatCurrency(imovel.valorIptu) },
               { label: "Finalidade", value: imovel.finalidade },
-              imovel.origemCaptacao && { label: "Origem", value: imovel.origemCaptacao },
             ].filter(Boolean).map((item) => item && (
               <div key={item.label} className="flex justify-between gap-4 mb-2" style={{ fontSize: "0.85rem" }}>
                 <span style={{ color: "var(--color-surface-400)" }}>{item.label}</span>
                 <span style={{ color: "var(--color-surface-100)", fontWeight: 500 }}>{item.value}</span>
               </div>
             ))}
+
+            {imovel.proprietario && (
+              <div className="mt-4 pt-4" style={{ borderTop: "1px solid var(--color-surface-800)" }}>
+                <span style={{ color: "var(--color-surface-400)", fontSize: "0.85rem", display: "block", marginBottom: "0.5rem" }}>Proprietário</span>
+                <Link href={`/proprietarios/${imovel.proprietario.id}`} style={{ textDecoration: "none" }}>
+                  <div className="flex items-center gap-3 p-3 rounded-lg" style={{ background: "var(--color-surface-900)", transition: "background 0.2s" }}>
+                    <div className="w-8 h-8 rounded-full bg-brand/20 flex items-center justify-center text-brand font-medium">
+                      {imovel.proprietario.nomeCompleto.charAt(0)}
+                    </div>
+                    <div>
+                      <div style={{ color: "var(--color-surface-50)", fontSize: "0.9rem", fontWeight: 500 }}>{imovel.proprietario.nomeCompleto}</div>
+                      {imovel.proprietario.telefone && (
+                        <div style={{ color: "var(--color-surface-400)", fontSize: "0.8rem" }}>{imovel.proprietario.telefone}</div>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            )}
           </div>
         </div>
 

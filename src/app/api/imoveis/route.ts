@@ -26,8 +26,8 @@ const propertySchema = z.object({
   aceitaFinanciamento: z.boolean().optional(),
   aceitaPermuta: z.boolean().optional(),
   status: z.string().optional(),
-  origemCaptacao: z.string().optional(),
   destaques: z.string().optional(),
+  proprietarioId: z.string().optional().nullable(),
 });
 
 export async function GET(request: Request) {
@@ -68,7 +68,11 @@ export async function GET(request: Request) {
   const [imoveis, total] = await Promise.all([
     prisma.imovel.findMany({
       where,
-      include: { caracteristicas: true, _count: { select: { interesses: true } } },
+      include: {
+        caracteristicas: true,
+        _count: { select: { interesses: true } },
+        proprietario: { select: { id: true, nomeCompleto: true } },
+      },
       orderBy: { atualizadoEm: "desc" },
       skip,
       take: limit,

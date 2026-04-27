@@ -125,10 +125,7 @@ body {
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 
-.card:hover {
-  border-color: var(--color-surface-500);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
-}
+
 
 .card-sm {
   padding: 1rem;
@@ -366,6 +363,15 @@ body {
 
 .table tbody tr:hover {
   background: var(--color-surface-800);
+}
+
+.table tbody tr.clickable-row {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.table tbody tr.clickable-row:hover {
+  background-color: rgba(100, 112, 243, 0.08);
 }
 
 /* Sidebar */

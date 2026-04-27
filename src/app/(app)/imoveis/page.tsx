@@ -24,6 +24,7 @@ interface Imovel {
   codigoInterno: string | null;
   criadoEm: string;
   _count: { interesses: number };
+  proprietario?: { id: string; nomeCompleto: string } | null;
 }
 
 const PROPERTY_TYPES = [
@@ -240,6 +241,11 @@ export default function ImoveisPage() {
                       <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
                         {formatCurrency(imovel.preco)}
                       </span>
+                      {imovel.proprietario && (
+                        <div style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginTop: "4px" }}>
+                          <span style={{ color: "var(--color-brand-400)" }}>Proprietário:</span> {imovel.proprietario.nomeCompleto}
+                        </div>
+                      )}
                     </div>
                     
                     {/* Additional Info (Cond/IPTU) */}

@@ -42,6 +42,7 @@ export default function EditarImovelPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+  const [proprietarios, setProprietarios] = useState<{ id: string; nomeCompleto: string }[]>([]);
   
   const [form, setForm] = useState({
     titulo: "",
@@ -66,11 +67,19 @@ export default function EditarImovelPage() {
     aceitaFinanciamento: false,
     aceitaPermuta: false,
     status: "DISPONIVEL",
-    origemCaptacao: "",
     destaques: "",
+    proprietarioId: "",
   });
 
   useEffect(() => {
+    // Load proprietarios
+    fetch("/api/proprietarios?limit=100")
+      .then(res => res.json())
+      .then(data => {
+        if (data.proprietarios) setProprietarios(data.proprietarios);
+      })
+      .catch(console.error);
+
     fetch(`/api/imoveis/${id}`)
       .then((r) => r.json())
       .then((data) => {
@@ -97,8 +106,8 @@ export default function EditarImovelPage() {
           aceitaFinanciamento: data.aceitaFinanciamento || false,
           aceitaPermuta: data.aceitaPermuta || false,
           status: data.status || "DISPONIVEL",
-          origemCaptacao: data.origemCaptacao || "",
           destaques: data.destaques || "",
+          proprietarioId: data.proprietarioId || "",
         });
         setLoading(false);
       });
@@ -143,6 +152,7 @@ export default function EditarImovelPage() {
       areaUtil: form.areaUtil ? parseFloat(form.areaUtil) : null,
       valorCondominio: form.valorCondominio ? parseCurrency(form.valorCondominio) : null,
       valorIptu: form.valorIptu ? parseCurrency(form.valorIptu) : null,
+      proprietarioId: form.proprietarioId || null,
     };
 
     const res = await fetch(`/api/imoveis/${id}`, {
@@ -189,16 +199,19 @@ export default function EditarImovelPage() {
               value={form.titulo} onChange={(e) => update("titulo", e.target.value)} required />
           </div>
 
+          <div className="form-group">
+            <label className="label" htmlFor="codigoInterno">Código Interno</label>
+            <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
+              value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
+          </div>
+
           <div className="form-row">
             <div className="form-group">
-              <label className="label" htmlFor="codigoInterno">Código Interno</label>
-              <input id="codigoInterno" type="text" className="input" placeholder="AP-001"
-                value={form.codigoInterno} onChange={(e) => update("codigoInterno", e.target.value)} />
-            </div>
-            <div className="form-group">
-              <label className="label" htmlFor="origemCaptacao">Origem / Captador</label>
-              <input id="origemCaptacao" type="text" className="input" placeholder="Nome do proprietário ou captador"
-                value={form.origemCaptacao} onChange={(e) => update("origemCaptacao", e.target.value)} />
+              <label className="label" htmlFor="proprietarioId">Proprietário</label>
+              <select id="proprietarioId" className="select" value={form.proprietarioId} onChange={(e) => update("proprietarioId", e.target.value)}>
+                <option value="">Selecione um proprietário (opcional)</option>
+                {proprietarios.map((p) => <option key={p.id} value={p.id}>{p.nomeCompleto}</option>)}
+              </select>
             </div>
           </div>
 

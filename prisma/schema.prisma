@@ -21,10 +21,11 @@ model Usuario {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  clientes     Cliente[]
-  imoveis      Imovel[]
-  interacoes   Interacao[]
-  etiquetas    Etiqueta[]
+  clientes      Cliente[]
+  imoveis       Imovel[]
+  interacoes    Interacao[]
+  etiquetas     Etiqueta[]
+  proprietarios Proprietario[]
 
   @@map("usuarios")
 }
@@ -102,6 +103,7 @@ model PreferenciaCliente {
 model Imovel {
   id              String    @id @default(cuid())
   usuarioId       String
+  proprietarioId  String?
   codigoInterno   String?
   titulo          String
   descricao       String?
@@ -124,7 +126,6 @@ model Imovel {
   aceitaFinanciamento Boolean @default(false)
   aceitaPermuta   Boolean @default(false)
   status          StatusImovel @default(DISPONIVEL)
-  origemCaptacao  String?
   destaques       String?
   latitude        Float?
   longitude       Float?
@@ -132,7 +133,8 @@ model Imovel {
   criadoEm        DateTime @default(now())
   atualizadoEm    DateTime @updatedAt
 
-  usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  proprietario    Proprietario? @relation(fields: [proprietarioId], references: [id], onDelete: SetNull)
   caracteristicas CaracteristicaImovel[]
   interesses      InteresseClienteImovel[]
   interacoes      Interacao[]
@@ -204,6 +206,35 @@ model Etiqueta {
   @@map("etiquetas")
 }
 
+model Proprietario {
+  id           String   @id @default(cuid())
+  usuarioId    String
+  nomeCompleto String
+  email        String?
+  telefone     String?
+  whatsapp     String?
+  documento    String?
+  tipoPessoa   TipoPessoaProprietario @default(PESSOA_FISICA)
+
+  cidade       String?
+  estado       String?
+  endereco     String?
+  numero       String?
+  bairro       String?
+  cep          String?
+
+  observacoes  String?
+  status       StatusProprietario @default(ATIVO)
+
+  criadoEm     DateTime @default(now())
+  atualizadoEm DateTime @updatedAt
+
+  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  imoveis      Imovel[]
+
+  @@map("proprietarios")
+}
+
 model EtiquetaCliente {
   id         String @id @default(cuid())
   clienteId  String
@@ -217,6 +248,18 @@ model EtiquetaCliente {
 }
 
 // Enums
+
+enum TipoPessoaProprietario {
+  PESSOA_FISICA
+  PESSOA_JURIDICA
+}
+
+enum StatusProprietario {
+  ATIVO
+  INATIVO
+  ARQUIVADO
+}
+
 enum OrigemLead {
   INDICACAO
   PORTAL_IMOBILIARIO

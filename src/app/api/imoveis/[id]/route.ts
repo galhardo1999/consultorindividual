@@ -26,8 +26,8 @@ const updateSchema = z.object({
   aceitaFinanciamento: z.boolean().optional(),
   aceitaPermuta: z.boolean().optional(),
   status: z.string().optional(),
-  origemCaptacao: z.string().optional(),
   destaques: z.string().optional(),
+  proprietarioId: z.string().optional().nullable(),
 });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -39,6 +39,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
     where: { id, usuarioId: session.user.id },
     include: {
       caracteristicas: true,
+      proprietario: { select: { id: true, nomeCompleto: true, telefone: true, email: true } },
       interesses: {
         include: { cliente: true },
         orderBy: { atualizadoEm: "desc" },
