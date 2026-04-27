@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   Plus, Search, Filter, Users, ChevronRight, Phone, Mail,
-  Archive, X, Loader2
+  Archive, X, Loader2, MessageSquare
 } from "lucide-react";
 import {
   journeyStageLabel, journeyStageColor, urgencyLabel, formatDate, leadSourceLabel
@@ -82,10 +82,16 @@ export default function ClientesPage() {
             {total} cliente{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
           </p>
         </div>
-        <Link href="/clientes/novo" className="btn btn-primary" id="new-cliente-btn">
-          <Plus size={16} />
-          Novo Cliente
-        </Link>
+        <div className="flex items-center gap-3">
+          <Link href="/interacoes" className="btn btn-secondary">
+            <MessageSquare size={16} />
+            Interações
+          </Link>
+          <Link href="/clientes/novo" className="btn btn-primary" id="new-cliente-btn">
+            <Plus size={16} />
+            Novo Cliente
+          </Link>
+        </div>
       </div>
 
       {/* Search and filters */}

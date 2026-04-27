@@ -22,7 +22,6 @@ const navItems = [
   { href: "/proprietarios", icon: Contact, label: "Proprietários" },
   { href: "/imoveis", icon: Home, label: "Imóveis" },
   { href: "/mapa", icon: Map, label: "Mapa" },
-  { href: "/interacoes", icon: MessageSquare, label: "Interações" },
   { href: "/perfil", icon: Settings, label: "Perfil" },
 ];
 
