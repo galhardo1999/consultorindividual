@@ -59,22 +59,23 @@ export async function GET(request: Request) {
     ...(nivelUrgencia && { nivelUrgencia: nivelUrgencia as never }),
   };
 
-  const [clientes, total] = await Promise.all([
-    prisma.cliente.findMany({
-      where,
-      include: {
-        preferencia: true,
-        _count: { select: { interacoes: true, interesses: true } },
-      },
-      orderBy: { atualizadoEm: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.cliente.count({ where }),
-  ]);
+  try {
+    const [clientes, total] = await prisma.$transaction([
+      prisma.cliente.findMany({
+        where,
+        include: {
+          preferencia: true,
+          _count: { select: { interacoes: true, interesses: true } },
+        },
+        orderBy: { atualizadoEm: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.cliente.count({ where }),
+    ]);
 
-  const clientesWithOpportunities = await Promise.all(
-    clientes.map(async (cliente) => {
+    const clientesWithOpportunities = [];
+    for (const cliente of clientes) {
       let oportunidadesCount = 0;
       if (cliente.preferencia) {
         const { preferencia } = cliente;
@@ -114,14 +115,17 @@ export async function GET(request: Request) {
 
         oportunidadesCount = await prisma.imovel.count({ where: whereClause as never });
       }
-      return {
+      clientesWithOpportunities.push({
         ...cliente,
         oportunidadesCount
-      };
-    })
-  );
+      });
+    }
 
-  return NextResponse.json({ clientes: clientesWithOpportunities, total, page, limit });
+    return NextResponse.json({ clientes: clientesWithOpportunities, total, page, limit });
+  } catch (error) {
+    console.error("[CLIENTES GET]", error);
+    return NextResponse.json({ error: "Erro interno", clientes: [], total: 0 }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {

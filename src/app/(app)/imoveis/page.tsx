@@ -219,11 +219,21 @@ export default function ImoveisPage() {
     if (cidade) params.set("cidade", cidade);
     params.set("page", String(page));
 
-    const res = await fetch(`/api/imoveis?${params}`);
-    const data = await res.json();
-    setProperties(data.imoveis || []);
-    setTotal(data.total || 0);
-    setLoading(false);
+    try {
+      const res = await fetch(`/api/imoveis?${params}`);
+      if (!res.ok) {
+        throw new Error("Failed to fetch properties");
+      }
+      const data = await res.json();
+      setProperties(data.imoveis || []);
+      setTotal(data.total || 0);
+    } catch (error) {
+      console.error("Error fetching properties:", error);
+      setProperties([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
   }, [search, tipoImovel, status, cidade, page]);
 
   useEffect(() => {

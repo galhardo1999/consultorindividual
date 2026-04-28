@@ -67,23 +67,28 @@ export async function GET(request: Request) {
     ...(minQuartos && { quartos: { gte: minQuartos } }),
   };
 
-  const [imoveis, total] = await Promise.all([
-    prisma.imovel.findMany({
-      where,
-      include: {
-        caracteristicas: true,
-        _count: { select: { interesses: true } },
-        proprietario: { select: { id: true, nomeCompleto: true } },
-        fotos: { select: { url: true, isCapa: true } },
-      },
-      orderBy: { atualizadoEm: "desc" },
-      skip,
-      take: limit,
-    }),
-    prisma.imovel.count({ where }),
-  ]);
+  try {
+    const [imoveis, total] = await prisma.$transaction([
+      prisma.imovel.findMany({
+        where,
+        include: {
+          caracteristicas: true,
+          _count: { select: { interesses: true } },
+          proprietario: { select: { id: true, nomeCompleto: true } },
+          fotos: { select: { url: true, isCapa: true } },
+        },
+        orderBy: { atualizadoEm: "desc" },
+        skip,
+        take: limit,
+      }),
+      prisma.imovel.count({ where }),
+    ]);
 
-  return NextResponse.json({ imoveis, total, page, limit });
+    return NextResponse.json({ imoveis, total, page, limit });
+  } catch (error) {
+    console.error("[IMOVEIS GET]", error);
+    return NextResponse.json({ error: "Erro interno", imoveis: [], total: 0 }, { status: 500 });
+  }
 }
 
 export async function POST(request: Request) {
