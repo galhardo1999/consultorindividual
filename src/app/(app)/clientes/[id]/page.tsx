@@ -59,7 +59,7 @@ interface ClientDetail {
     statusInteresse: string;
     ehFavorito: boolean;
     feedback: string | null;
-    imovel: { id: string; titulo: string; tipoImovel: string; preco: number; cidade: string; bairro: string | null };
+    imovel: { id: string; titulo: string; tipoImovel: string; precoVenda: number; cidade: string; bairro: string | null };
   }[];
 }
 
@@ -94,7 +94,7 @@ export default function ClienteDetailPage() {
     id: string;
     titulo: string;
     tipoImovel: string;
-    preco: number;
+    precoVenda: number;
     cidade: string;
     bairro: string | null;
     quartos: number | null;
@@ -518,7 +518,7 @@ export default function ClienteDetailPage() {
                         </div>
                         <div className="flex flex-row sm:flex-col items-center sm:items-end justify-between sm:justify-center gap-2 border-t sm:border-t-0 sm:border-l border-surface-700 pt-3 sm:pt-0 sm:pl-4 min-w-[120px]">
                           <div className="font-bold text-green-400 text-lg">
-                            {formatCurrency(interesse.imovel.preco)}
+                            {formatCurrency(interesse.imovel.precoVenda)}
                           </div>
                           <span className="badge badge-secondary text-[10px]">
                             {interesse.statusInteresse}
@@ -583,7 +583,7 @@ export default function ClienteDetailPage() {
                           transition: "background 0.15s",
                           padding: "1.25rem",
                           alignItems: "flex-start",
-                          gap: "1.25rem",
+                          flexDirection: "column",
                         }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-800)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-900)")}  
@@ -650,7 +650,7 @@ export default function ClienteDetailPage() {
 
                           {/* Price */}
                           <div style={{ fontWeight: 700, fontSize: "1.3rem", color: "var(--color-surface-50)", letterSpacing: "-0.5px", marginBottom: "0.5rem" }}>
-                            {formatCurrency(prop.preco)}
+                            {formatCurrency(prop.precoVenda)}
                           </div>
 
                           {/* Location + Chat button row */}
@@ -662,7 +662,7 @@ export default function ClienteDetailPage() {
 
                             <button
                               onClick={() => {
-                                const msg = encodeURIComponent(`Olá! Tenho interesse no imóvel: ${prop.titulo} — ${formatCurrency(prop.preco)}`);
+                                const msg = encodeURIComponent(`Olá! Tenho interesse no imóvel: ${prop.titulo} — ${formatCurrency(prop.precoVenda)}`);
                                 window.open(`https://wa.me/?text=${msg}`, "_blank");
                               }}
                               style={{

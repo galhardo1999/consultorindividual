@@ -10,7 +10,7 @@ interface Imovel {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
-  preco: number;
+  precoVenda: number;
   valorCondominio?: number | null;
   valorIptu?: number | null;
   cidade: string;
@@ -146,7 +146,7 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
           {/* Price */}
           <div style={{ marginBottom: "0.5rem" }}>
             <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
-              {formatCurrency(imovel.preco)}
+              {formatCurrency(imovel.precoVenda)}
             </span>
             {imovel.proprietario && (
               <div style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginTop: "4px" }}>

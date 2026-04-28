@@ -82,7 +82,7 @@ export async function GET() {
   const [imoveisComCoords, pendingCount] = await Promise.all([
     prisma.imovel.findMany({
       where: {
-        usuarioId: session.user.id,
+        usuarioId: session?.user?.id || "",
         arquivadoEm: null,
         latitude: { not: null, gt: -90 }, // Ignora falhas (-999)
         longitude: { not: null },
@@ -92,7 +92,7 @@ export async function GET() {
         titulo: true,
         tipoImovel: true,
         finalidade: true,
-        preco: true,
+        precoVenda: true,
         status: true,
         cidade: true,
         bairro: true,
@@ -109,7 +109,7 @@ export async function GET() {
     }),
     prisma.imovel.count({
       where: {
-        usuarioId: session.user.id,
+        usuarioId: session?.user?.id || "",
         arquivadoEm: null,
         latitude: null,
       },
@@ -121,7 +121,7 @@ export async function GET() {
     titulo: i.titulo,
     tipoImovel: i.tipoImovel,
     finalidade: i.finalidade,
-    preco: i.preco,
+    precoVenda: i.precoVenda,
     status: i.status,
     cidade: i.cidade,
     bairro: i.bairro,
@@ -149,7 +149,7 @@ export async function POST() {
 
   const semCoords = await prisma.imovel.findMany({
     where: {
-      usuarioId: session.user.id,
+      usuarioId: session?.user?.id || "",
       arquivadoEm: null,
       latitude: null,
     },
@@ -158,7 +158,7 @@ export async function POST() {
       titulo: true,
       tipoImovel: true,
       finalidade: true,
-      preco: true,
+      precoVenda: true,
       status: true,
       cidade: true,
       bairro: true,
@@ -199,7 +199,7 @@ export async function POST() {
         titulo: imovel.titulo,
         tipoImovel: imovel.tipoImovel,
         finalidade: imovel.finalidade,
-        preco: imovel.preco,
+        precoVenda: imovel.precoVenda,
         status: imovel.status,
         cidade: imovel.cidade,
         bairro: imovel.bairro,

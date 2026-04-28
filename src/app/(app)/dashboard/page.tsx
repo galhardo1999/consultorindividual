@@ -18,7 +18,7 @@ interface DashboardData {
   totalActiveClients: number;
   totalActiveProperties: number;
   clientsByStage: { estagioJornada: string; _count: number }[];
-  recentProperties: { id: string; titulo: string; cidade: string; preco: number; criadoEm: string }[];
+  recentProperties: { id: string; titulo: string; cidade: string; precoVenda: number; criadoEm: string }[];
   pendingFollowUps: { id: string; titulo: string; proximoFollowUp: string; cliente: { id: string; nomeCompleto: string } }[];
   clientsWithoutRecentContact: { id: string; nomeCompleto: string; telefone: string; atualizadoEm: string }[];
   urgentClients: { id: string; nomeCompleto: string; estagioJornada: string }[];
@@ -281,7 +281,7 @@ export default function DashboardPage() {
                       </div>
                     </div>
                     <div className="text-sm font-semibold" style={{ color: "#22c55e" }}>
-                      {formatCurrency(p.preco)}
+                      {formatCurrency(p.precoVenda)}
                     </div>
                   </div>
                 </Link>

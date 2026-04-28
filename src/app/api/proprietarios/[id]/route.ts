@@ -52,7 +52,7 @@ export async function GET(_req: Request, { params }: RouteContext) {
   const { id } = await params;
 
   const proprietario = await prisma.proprietario.findFirst({
-    where: { id, usuarioId: session.user.id },
+    where: { id, usuarioId: session?.user?.id || "" },
     include: {
       imoveis: { orderBy: { atualizadoEm: "desc" } },
     },
@@ -70,7 +70,7 @@ export async function PATCH(req: Request, { params }: RouteContext) {
   const { id } = await params;
 
   const [existing, body] = await Promise.all([
-    resolveOwner(id, session.user.id),
+    resolveOwner(id, session?.user?.id || ""),
     req.json(),
   ]);
 
@@ -98,7 +98,7 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
 
   const { id } = await params;
 
-  const existing = await resolveOwner(id, session.user.id);
+  const existing = await resolveOwner(id, session?.user?.id || "");
   if (!existing) return notFound();
 
   // onDelete: SetNull handles clearing proprietarioId on imoveis

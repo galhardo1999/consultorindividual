@@ -46,7 +46,7 @@ export async function PUT(
     }
 
     const cliente = await prisma.cliente.findUnique({
-      where: { id, usuarioId: session.user.id },
+      where: { id, usuarioId: session?.user?.id || "" },
     });
 
     if (!cliente) {
@@ -61,10 +61,10 @@ export async function PUT(
 
     const preferencia = await prisma.preferenciaCliente.upsert({
       where: { clienteId: id },
-      update: data as never,
+      update: data as any,
       create: {
         clienteId: id,
-        ...(data as never),
+        ...(data as any),
       },
     });
 

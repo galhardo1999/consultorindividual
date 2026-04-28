@@ -6,8 +6,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
-  titulo: "Prime Realty CRM",
-  descricao: "Sistema de gestão consultiva para consultores imobiliários individuais. Gerencie clientes, imóveis e oportunidades de negócio.",
+  title: "Prime Realty CRM",
+  description: "Sistema de gestão consultiva para consultores imobiliários individuais. Gerencie clientes, imóveis e oportunidades de negócio.",
   keywords: "CRM imobiliário, gestão de clientes, consultor imobiliário, imóveis",
 };
 

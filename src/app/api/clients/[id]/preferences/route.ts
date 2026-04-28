@@ -16,14 +16,14 @@ export async function PUT(
     const data = await request.json();
 
     const cliente = await prisma.cliente.findUnique({
-      where: { id, usuarioId: session.user.id },
+      where: { id, usuarioId: session?.user?.id || "" },
     });
 
     if (!cliente) {
       return NextResponse.json({ error: "Cliente not found" }, { status: 404 });
     }
 
-    const preferencia = await prisma.clientPreference.upsert({
+    const preferencia = await prisma.preferenciaCliente.upsert({
       where: { clienteId: id },
       update: data,
       create: {

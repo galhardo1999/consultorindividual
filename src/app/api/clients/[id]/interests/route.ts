@@ -19,15 +19,15 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
   const { id: clienteId } = await params;
 
   // Verify cliente belongs to usuario
-  const cliente = await prisma.cliente.findFirst({ where: { id: clienteId, usuarioId: session.user.id } });
+  const cliente = await prisma.cliente.findFirst({ where: { id: clienteId, usuarioId: session?.user?.id || "" } });
   if (!cliente) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
   const parsed = interestSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
 
-  const interesse = await prisma.clientPropertyInterest.upsert({
-    where: { clientId_propertyId: { clienteId, imovelId: parsed.data.imovelId } },
+  const interesse = await prisma.interesseClienteImovel.upsert({
+    where: { clienteId_imovelId: { clienteId, imovelId: parsed.data.imovelId } },
     create: {
       clienteId,
       ...parsed.data,
@@ -47,8 +47,8 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id: clienteId } = await params;
 
-  const interesses = await prisma.clientPropertyInterest.findMany({
-    where: { clienteId, cliente: { usuarioId: session.user.id } },
+  const interesses = await prisma.interesseClienteImovel.findMany({
+    where: { clienteId, cliente: { usuarioId: session?.user?.id || "" } },
     include: { imovel: true },
     orderBy: { atualizadoEm: "desc" },
   });

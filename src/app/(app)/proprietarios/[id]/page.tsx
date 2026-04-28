@@ -11,7 +11,7 @@ interface Imovel {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
-  preco: number;
+  precoVenda: number;
   valorCondominio: number | null;
   valorIptu: number | null;
   cidade: string;
@@ -105,7 +105,7 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
   if (imovel.areaUtil) titleParts.push(`${imovel.areaUtil} m²`);
 
   const titleCenter = titleParts.length > 0 ? ` com ${titleParts.join(", ")}` : "";
-  const title = `${tipo}${titleCenter} - ${finalidadeText} por ${formatCurrency(imovel.preco)}`;
+  const title = `${tipo}${titleCenter} - ${finalidadeText} por ${formatCurrency(imovel.precoVenda)}`;
 
   const features = [
     { icon: BedDouble, value: quartos },
@@ -193,7 +193,7 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
           <div className="mt-auto">
             {/* Main Price */}
             <div className="text-[1.65rem] font-bold text-surface-50 mb-1">
-              {formatCurrency(imovel.preco)}
+              {formatCurrency(imovel.precoVenda)}
             </div>
 
             {/* Additional Costs */}

@@ -12,7 +12,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const usuarioId = session.user.id;
+  const usuarioId = session?.user?.id || "";
 
   try {
     const cliente = await prisma.cliente.findFirst({
@@ -88,7 +88,7 @@ export async function GET(
         id: true,
         titulo: true,
         tipoImovel: true,
-        preco: true,
+        precoVenda: true,
         cidade: true,
         bairro: true,
         quartos: true,

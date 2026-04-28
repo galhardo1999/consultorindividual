@@ -27,7 +27,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
 
   const cliente = await prisma.cliente.findFirst({
-    where: { id, usuarioId: session.user.id },
+    where: { id, usuarioId: session?.user?.id || "" },
     include: {
       preferencia: true,
       interacoes: { orderBy: { dataInteracao: "desc" } },
@@ -35,7 +35,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
         include: { imovel: true },
         orderBy: { atualizadoEm: "desc" },
       },
-      etiquetasCliente: { include: { tag: true } },
+      etiquetasCliente: { include: { etiqueta: true } },
     },
   });
 
@@ -48,7 +48,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const existing = await getClient(id, session.user.id);
+  const existing = await getClient(id, session?.user?.id || "");
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -75,7 +75,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const existing = await getClient(id, session.user.id);
+  const existing = await getClient(id, session?.user?.id || "");
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   // Soft delete / archive

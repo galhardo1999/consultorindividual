@@ -13,12 +13,13 @@ interface PropertyDetail {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
-  preco: number;
+  precoVenda: number;
   valorCondominio: number | null;
   valorIptu: number | null;
   cidade: string;
   bairro: string | null;
   endereco: string | null;
+  numero: string | null;
   quartos: number | null;
   suites: number | null;
   banheiros: number | null;
@@ -279,7 +280,7 @@ export default function ImovelDetailPage() {
               <div className="mb-6 pb-6 border-b border-surface-800">
                 <span className="text-surface-400 font-medium text-sm block mb-1">Preço de {imovel.finalidade === 'LOCACAO' ? 'Locação' : 'Venda'}</span>
                 <div className="text-4xl font-extrabold text-surface-50 tracking-tight">
-                  {formatCurrency(imovel.preco)}
+                  {formatCurrency(imovel.precoVenda)}
                 </div>
                 
                 <div className="mt-4 space-y-2">

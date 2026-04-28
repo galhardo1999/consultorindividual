@@ -104,34 +104,207 @@ model Imovel {
   id              String    @id @default(cuid())
   usuarioId       String
   proprietarioId  String?
+
+  // Identificação
   codigoInterno   String?
   titulo          String
   descricao       String?
+  observacoesInternas String?
   tipoImovel      TipoImovel
   finalidade      FinalidadeImovel
-  preco           Float
-  valorCondominio Float?
-  valorIptu       Float?
+  status          StatusImovel @default(DISPONIVEL)
+
+  // Valores - venda
+  precoVenda              Float?
+  aceitaFinanciamento     Boolean @default(false)
+  aceitaPermuta           Boolean @default(false)
+  aceitaProposta          Boolean @default(true)
+  imovelQuitado           Boolean @default(false)
+  saldoDevedor            Float?
+  valorMinimoAceito       Float?
+
+  // Valores - locação
+  valorAluguel            Float?
+  valorCondominio         Float?
+  valorIptu               Float?
+  valorSeguroIncendio     Float?
+  valorSeguroFianca       Float?
+  valorCaucao             Float?
+  mesesCaucao             Int?
+  aceitaFiador            Boolean @default(false)
+  aceitaSeguroFianca      Boolean @default(false)
+  aceitaTituloCapitalizacao Boolean @default(false)
+  aceitaCaucao            Boolean @default(false)
+  contratoMinimoMeses     Int?
+  disponivelApartirDe     DateTime?
+
+  // Valores - temporada
+  valorTemporadaDiaria    Float?
+  valorTemporadaSemanal   Float?
+  valorTemporadaMensal    Float?
+  taxaLimpeza             Float?
+  taxaServico             Float?
+  quantidadeMaxHospedes   Int?
+  quantidadeMinDiarias    Int?
+  horarioCheckin          String?
+  horarioCheckout         String?
+
+  // Endereço
+  cep             String?
+  estado          String?
   cidade          String
   bairro          String?
-  cep             String?
   endereco        String?
   numero          String?
+  complemento     String?
+  latitude        Float?
+  longitude       Float?
+
+  // Áreas
+  areaUtil        Float?
+  areaTotal       Float?
+  areaConstruida  Float?
+  areaTerreno     Float?
+  areaPrivativa   Float?
+  areaComum       Float?
+
+  // Características residenciais
   quartos         Int?
   suites          Int?
   banheiros       Int?
+  lavabos         Int?
   vagasGaragem    Int?
-  areaUtil        Float?
-  mobiliado       Boolean  @default(false)
-  aceitaFinanciamento Boolean @default(false)
-  aceitaPermuta   Boolean @default(false)
-  status          StatusImovel @default(DISPONIVEL)
-  destaques       String?
-  latitude        Float?
-  longitude       Float?
-  arquivadoEm     DateTime?
-  criadoEm        DateTime @default(now())
-  atualizadoEm    DateTime @updatedAt
+  salas           Int?
+  cozinhas        Int?
+  andar           Int?
+  totalAndares    Int?
+  unidadesPorAndar Int?
+  numeroApartamento String?
+  bloco           String?
+
+  mobiliado       Boolean @default(false)
+  semiMobiliado   Boolean @default(false)
+  aceitaPets      Boolean @default(false)
+  varanda         Boolean @default(false)
+  sacada          Boolean @default(false)
+  varandaGourmet  Boolean @default(false)
+  quintal         Boolean @default(false)
+  piscina         Boolean @default(false)
+  churrasqueira   Boolean @default(false)
+  areaGourmet     Boolean @default(false)
+  closet          Boolean @default(false)
+  escritorio      Boolean @default(false)
+  despensa        Boolean @default(false)
+  deposito        Boolean @default(false)
+  areaServico     Boolean @default(false)
+
+  // Condomínio / prédio
+  nomeCondominio      String?
+  elevador            Boolean @default(false)
+  quantidadeElevadores Int?
+  portaria            Boolean @default(false)
+  portaria24h         Boolean @default(false)
+  seguranca24h        Boolean @default(false)
+  academia            Boolean @default(false)
+  salaoFestas         Boolean @default(false)
+  playground          Boolean @default(false)
+  quadra              Boolean @default(false)
+  sauna               Boolean @default(false)
+  coworking           Boolean @default(false)
+
+  // Terreno
+  frenteTerreno       Float?
+  fundoTerreno        Float?
+  ladoDireitoTerreno  Float?
+  ladoEsquerdoTerreno Float?
+  topografia          TopografiaTerreno?
+  tipoSolo            String?
+  murado              Boolean @default(false)
+  cercado             Boolean @default(false)
+  esquina             Boolean @default(false)
+  possuiAgua          Boolean @default(false)
+  possuiEnergia       Boolean @default(false)
+  possuiEsgoto        Boolean @default(false)
+  zoneamento          String?
+
+  // Comercial / industrial
+  peDireito           Float?
+  quantidadeSalas     Int?
+  recepcao            Boolean @default(false)
+  copa                Boolean @default(false)
+  estoque             Boolean @default(false)
+  vitrine             Boolean @default(false)
+  doca                Boolean @default(false)
+  acessoCaminhao      Boolean @default(false)
+  energiaTrifasica    Boolean @default(false)
+  mezanino            Boolean @default(false)
+  elevadorCarga       Boolean @default(false)
+  tipoPiso            String?
+  fachada             String?
+
+  // Rural
+  areaHectares        Float?
+  areaAlqueires       Float?
+  casaSede            Boolean @default(false)
+  casaCaseiro         Boolean @default(false)
+  curral              Boolean @default(false)
+  barracao            Boolean @default(false)
+  pocoArtesiano       Boolean @default(false)
+  rio                 Boolean @default(false)
+  lago                Boolean @default(false)
+  nascente            Boolean @default(false)
+  pomar               Boolean @default(false)
+  pasto               Boolean @default(false)
+  tipoAcesso          String?
+  distanciaCidadeKm   Float?
+  estradaAsfaltada    Boolean @default(false)
+
+  // Documentação
+  documentacaoRegularizada Boolean @default(false)
+  possuiEscritura          Boolean @default(false)
+  possuiMatricula          Boolean @default(false)
+  possuiHabiteSe           Boolean @default(false)
+  possuiAvcb               Boolean @default(false)
+  possuiPlantaAprovada     Boolean @default(false)
+  possuiCar                Boolean @default(false)
+  possuiCcir               Boolean @default(false)
+  possuiItr                Boolean @default(false)
+  observacoesDocumentacao  String?
+
+  // Estratégia comercial
+  exclusividade            Boolean @default(false)
+  inicioExclusividade      DateTime?
+  fimExclusividade         DateTime?
+  comissaoPercentual       Float?
+  comissaoValorFixo        Float?
+  motivoVendaLocacao       String?
+  urgenciaProprietario     UrgenciaNegociacao?
+  margemNegociacao         Float?
+  pontosFortes             String?
+  pontosAtencao            String?
+  perfilClienteIdeal       String?
+
+  // Divulgação
+  destaques                String?
+  tags                     String?
+  autorizadoDivulgacao     Boolean @default(true)
+  autorizadoPlaca          Boolean @default(false)
+  autorizadoPortais        Boolean @default(true)
+  linkTourVirtual          String?
+  linkVideo                String?
+  linkAnuncioExterno       String?
+
+  // Chaves / visita
+  chaveDisponivel          Boolean @default(false)
+  localChave               String?
+  instrucoesVisita         String?
+
+  // Controle
+  origemCadastro           OrigemCadastroImovel?
+  dataCaptacao             DateTime?
+  arquivadoEm              DateTime?
+  criadoEm                 DateTime @default(now())
+  atualizadoEm             DateTime @updatedAt
 
   usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   proprietario    Proprietario? @relation(fields: [proprietarioId], references: [id], onDelete: SetNull)
@@ -140,6 +313,13 @@ model Imovel {
   interacoes      Interacao[]
   fotos           FotoImovel[]
 
+  @@index([usuarioId])
+  @@index([proprietarioId])
+  @@index([tipoImovel])
+  @@index([finalidade])
+  @@index([status])
+  @@index([cidade])
+  @@index([bairro])
   @@map("imoveis")
 }
 
@@ -357,14 +537,19 @@ enum TipoImovel {
   GALPAO
   CHACARA
   FAZENDA
+  COBERTURA
+  KITNET
+  STUDIO
+  PREDIO_COMERCIAL
+  AREA_RURAL
   OUTRO
 }
 
 enum FinalidadeImovel {
   VENDA
   LOCACAO
+  VENDA_LOCACAO
   TEMPORADA
-  PERMUTA
 }
 
 enum CondicaoImovel {
@@ -409,4 +594,29 @@ enum TipoInteracao {
   ATUALIZACAO_PERFIL
   OBSERVACAO_INTERNA
   FOLLOW_UP
+}
+
+enum TopografiaTerreno {
+  PLANO
+  ACLIVE
+  DECLIVE
+  IRREGULAR
+}
+
+enum UrgenciaNegociacao {
+  BAIXA
+  MEDIA
+  ALTA
+  URGENTE
+}
+
+enum OrigemCadastroImovel {
+  MANUAL
+  INDICACAO
+  CAPTACAO_ATIVA
+  PORTAL
+  SITE
+  REDES_SOCIAIS
+  WHATSAPP
+  OUTRO
 }

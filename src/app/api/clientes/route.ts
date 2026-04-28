@@ -46,7 +46,7 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit;
 
   const where = {
-    usuarioId: session.user.id,
+    usuarioId: session?.user?.id || "",
     arquivadoEm: status === "ARQUIVADO" ? { not: null } : null,
     ...(search && {
       OR: [
@@ -88,7 +88,7 @@ export async function GET(request: Request) {
         const existingInterestIds = interesses.map((i) => i.imovelId);
 
         const whereClause: Record<string, unknown> = {
-          usuarioId: session.user.id,
+          usuarioId: session?.user?.id || "",
           status: "DISPONIVEL",
           id: { notIn: existingInterestIds },
         };
@@ -156,7 +156,7 @@ export async function POST(request: Request) {
     const cliente = await prisma.cliente.create({
       data: {
         ...dataToCreate,
-        usuarioId: session.user.id,
+        usuarioId: session?.user?.id || "",
       } as never,
     });
 

@@ -1,5 +1,18 @@
-<!-- BEGIN:nextjs-agent-rules -->
-# This is NOT the Next.js you know
-
-This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` before writing any code. Heed deprecation notices.
-<!-- END:nextjs-agent-rules -->
+- **Idioma:** Todo o código (comentários, variáveis, funções, rotas e retornos de API) DEVE ser em Português do Brasil.
+- **Tipagem:** TypeScript rigoroso (strict mode). O uso de `any` é terminantemente proibido. Use interfaces claras para Tipos Globais.
+- **Estilo de Código:** Prefira Arrow Functions (`const Example = () => {}`). Mantenha funções pequenas e com responsabilidade única.
+- **Estilização:** APENAS Tailwind CSS. Siga o padrão de design "Clean & Premium". Use variáveis de cores do `globals.css` (CSS variables) se disponíveis.
+- **Stack de Dados:** Prisma + PostgreSQL. Nunca sugira alternativas (Drizzle/Mongoose). Ao sugerir schemas, foque em normalização e performance (índices).
+- **Ícones:** Use exclusivamente `lucide-react`.
+- **Arquitetura Next.js:** - Prioridade Total para Server Components. 
+    - Use `"use client"` apenas no menor nível possível da árvore de componentes.
+    - Coloque componentes reutilizáveis em `/components/ui` e lógicas de banco em `/lib/db`.
+    - Server Actions devem estar em arquivos `actions.ts` dedicados para separação de preocupações.
+- **Tratamento de Erros:** Sempre envolva Server Actions em blocos `try/catch` e retorne um objeto padrão `{ success: boolean, data?: T, error?: string }`.
+- **UI/UX Premium:**
+    - Ao criar interfaces, implemente estados de `loading` (Skeleton screens) e feedback de erro/sucesso (Toasts).
+    - Design responsivo (mobile-first) é obrigatório.
+    - Imagens devem ser preferencialmente SVG inline ou componentes React que renderizam SVG.
+- **Comportamento do Agente:** - Não remova comentários existentes.
+    - Seja direto: Código primeiro, explicação técnica breve depois. Sem "prosa" desnecessária.
+    - Se encontrar um erro de lógica no prompt do usuário, corrija-o gentilmente no código gerado.

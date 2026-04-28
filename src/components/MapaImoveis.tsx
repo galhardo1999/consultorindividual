@@ -10,7 +10,7 @@ export interface MapImovel {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
-  preco: number;
+  precoVenda: number;
   status: string;
   cidade: string;
   bairro: string | null;
@@ -221,7 +221,7 @@ export function MapaImoveis({ imoveis, onSearchCoords }: MapaImoveisProps) {
           ${featuresHtml ? `<div style="display:flex;align-items:center;flex-wrap:wrap;font-size:11px;color:#475569;margin-bottom:10px;font-weight:500;">${featuresHtml}</div>` : ''}
           
           <div style="font-size:18px;font-weight:800;color:#000000;margin-bottom:12px;letter-spacing:-0.5px;">
-            ${formatCurrency(imovel.preco)}
+            ${formatCurrency(imovel.precoVenda)}
           </div>
           
           <a href="/imoveis/${imovel.id}" style="

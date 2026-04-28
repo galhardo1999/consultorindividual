@@ -57,7 +57,7 @@ export async function GET(request: Request) {
     const { page, limit, skip } = parsePagination(searchParams);
 
     const where = {
-      usuarioId: session.user.id,
+      usuarioId: session?.user?.id || "",
       ...(search && {
         OR: [
           { nomeCompleto: { contains: search, mode: "insensitive" as const } },
@@ -105,7 +105,7 @@ export async function POST(request: Request) {
     const { email, ...rest } = parsed.data;
 
     const proprietario = await prisma.proprietario.create({
-      data: { ...rest, email: email || undefined, usuarioId: session.user.id } as never,
+      data: { ...rest, email: email || undefined, usuarioId: session?.user?.id || "" } as never,
     });
 
     return NextResponse.json(proprietario, { status: 201 });

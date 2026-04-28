@@ -7,7 +7,7 @@ const updateSchema = z.object({
   titulo: z.string().min(2).optional(),
   tipoImovel: z.string().optional(),
   finalidade: z.string().optional(),
-  preco: z.number().nonnegative().optional(),
+  precoVenda: z.number().nonnegative().optional(),
   cidade: z.string().min(2).optional(),
   bairro: z.string().optional(),
   cep: z.string().optional(),
@@ -37,7 +37,7 @@ export async function GET(_req: Request, { params }: { params: Promise<{ id: str
   const { id } = await params;
 
   const imovel = await prisma.imovel.findFirst({
-    where: { id, usuarioId: session.user.id },
+    where: { id, usuarioId: session?.user?.id || "" },
     include: {
       caracteristicas: true,
       proprietario: { select: { id: true, nomeCompleto: true, telefone: true, email: true } },
@@ -58,7 +58,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const existing = await prisma.imovel.findFirst({ where: { id, usuarioId: session.user.id } });
+  const existing = await prisma.imovel.findFirst({ where: { id, usuarioId: session?.user?.id || "" } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const body = await req.json();
@@ -101,7 +101,7 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   const { id } = await params;
 
-  const existing = await prisma.imovel.findFirst({ where: { id, usuarioId: session.user.id } });
+  const existing = await prisma.imovel.findFirst({ where: { id, usuarioId: session?.user?.id || "" } });
   if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const imovel = await prisma.imovel.update({

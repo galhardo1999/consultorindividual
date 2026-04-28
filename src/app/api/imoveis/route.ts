@@ -8,7 +8,7 @@ const propertySchema = z.object({
   titulo: z.string().min(2),
   tipoImovel: z.string(),
   finalidade: z.string(),
-  preco: z.number().positive(),
+  precoVenda: z.number().positive(),
   cidade: z.string().min(2),
   bairro: z.string().optional(),
   cep: z.string().optional(),
@@ -49,7 +49,7 @@ export async function GET(request: Request) {
   const skip = (page - 1) * limit;
 
   const where = {
-    usuarioId: session.user.id,
+    usuarioId: session?.user?.id || "",
     arquivadoEm: status === "ARQUIVADO" ? { not: null } : (status ? undefined : null),
     ...(search && {
       OR: [
@@ -62,8 +62,8 @@ export async function GET(request: Request) {
     ...(tipoImovel && { tipoImovel: tipoImovel as never }),
     ...(cidade && { cidade: { contains: cidade, mode: "insensitive" as const } }),
     ...(status && status !== "ARQUIVADO" && { status: status as never }),
-    ...(precoMinimo && { preco: { gte: precoMinimo } }),
-    ...(precoMaximo && { preco: { lte: precoMaximo } }),
+    ...(precoMinimo && { precoVenda: { gte: precoMinimo } }),
+    ...(precoMaximo && { precoVenda: { lte: precoMaximo } }),
     ...(minQuartos && { quartos: { gte: minQuartos } }),
   };
 
@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     const imovel = await prisma.imovel.create({
       data: {
         ...imovelData,
-        usuarioId: session.user.id,
+        usuarioId: session?.user?.id || "",
         fotos: fotos && fotos.length > 0 ? {
           create: fotos.map((url, idx) => ({
             url,

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
   const interacoes = await prisma.interacao.findMany({
     where: {
-      usuarioId: session.user.id,
+      usuarioId: session?.user?.id || "",
       ...(clienteId && { clienteId }),
     },
     include: { cliente: true, imovel: true },
@@ -47,7 +47,7 @@ export async function POST(request: Request) {
     const interacao = await prisma.interacao.create({
       data: {
         ...parsed.data,
-        usuarioId: session.user.id,
+        usuarioId: session?.user?.id || "",
         dataInteracao: new Date(parsed.data.dataInteracao),
         proximoFollowUp: parsed.data.proximoFollowUp ? new Date(parsed.data.proximoFollowUp) : undefined,
       } as never,

@@ -1,0 +1,30 @@
+prisma/seed.ts(40,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'Without<ImovelCreateInput, ImovelUncheckedCreateInput> & ImovelUncheckedCreateInput'.
+prisma/seed.ts(62,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'Without<ImovelCreateInput, ImovelUncheckedCreateInput> & ImovelUncheckedCreateInput'.
+prisma/seed.ts(83,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'Without<ImovelCreateInput, ImovelUncheckedCreateInput> & ImovelUncheckedCreateInput'.
+src/app/(app)/clientes/[id]/page.tsx(586,27): error TS1117: An object literal cannot have multiple properties with the same name.
+src/app/(app)/imoveis/[id]/page.tsx(220,113): error TS2339: Property 'numero' does not exist on type 'PropertyDetail'.
+src/app/(app)/layout.tsx(40,12): error TS2741: Property 'onMenuToggle' is missing in type '{ usuario: User | undefined; }' but required in type 'HeaderProps'.
+src/app/api/clientes/[id]/interests/route.ts(29,34): error TS2339: Property 'clientPropertyInterest' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/clientes/[id]/interests/route.ts(50,35): error TS2339: Property 'clientPropertyInterest' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/clientes/[id]/opportunities/route.ts(91,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'ImovelSelect<DefaultArgs>'.
+src/app/api/clientes/[id]/preferences/route.ts(67,9): error TS2698: Spread types may only be created from object types.
+src/app/api/clients/[id]/interests/route.ts(29,34): error TS2339: Property 'clientPropertyInterest' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/clients/[id]/interests/route.ts(50,35): error TS2339: Property 'clientPropertyInterest' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/clients/[id]/opportunities/route.ts(91,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'ImovelSelect<DefaultArgs>'.
+src/app/api/clients/[id]/preferences/route.ts(26,38): error TS2339: Property 'clientPreference' does not exist on type 'PrismaClient<PrismaClientOptions, never, DefaultArgs>'.
+src/app/api/clients/[id]/route.ts(38,38): error TS2353: Object literal may only specify known properties, and 'tag' does not exist in type 'EtiquetaClienteInclude<DefaultArgs>'.
+src/app/api/imoveis/mapa/route.ts(95,9): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'ImovelSelect<DefaultArgs>'.
+src/app/api/imoveis/mapa/route.ts(124,14): error TS2339: Property 'preco' does not exist on type '{ id: string; criadoEm: Date; atualizadoEm: Date; codigoInterno: string | null; titulo: string; descricao: string | null; observacoesInternas: string | null; tipoImovel: TipoImovel; ... 162 more ...; proprietarioId: string | null; }'.
+src/app/api/imoveis/mapa/route.ts(161,7): error TS2353: Object literal may only specify known properties, and 'preco' does not exist in type 'ImovelSelect<DefaultArgs>'.
+src/app/api/imoveis/mapa/route.ts(202,23): error TS2339: Property 'preco' does not exist on type '{ id: string; criadoEm: Date; atualizadoEm: Date; codigoInterno: string | null; titulo: string; descricao: string | null; observacoesInternas: string | null; tipoImovel: TipoImovel; ... 162 more ...; proprietarioId: string | null; }'.
+src/app/api/proprietarios/[id]/route.ts(55,29): error TS18048: 'session.user' is possibly 'undefined'.
+src/app/api/proprietarios/[id]/route.ts(73,22): error TS18048: 'session.user' is possibly 'undefined'.
+src/app/api/proprietarios/[id]/route.ts(73,22): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/api/proprietarios/[id]/route.ts(101,43): error TS18048: 'session.user' is possibly 'undefined'.
+src/app/api/proprietarios/[id]/route.ts(101,43): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+src/app/api/proprietarios/route.ts(60,18): error TS18048: 'session.user' is possibly 'undefined'.
+src/app/api/proprietarios/route.ts(108,62): error TS18048: 'session.user' is possibly 'undefined'.
+src/app/layout.tsx(9,3): error TS2353: Object literal may only specify known properties, and 'titulo' does not exist in type 'Metadata'.
+src/lib/auth.ts(17,7): error TS2353: Object literal may only specify known properties, and 'nome' does not exist in type 'Partial<CredentialsConfig<{ email: { label: string; type: string; }; password: { label: string; type: string; }; }>>'.
