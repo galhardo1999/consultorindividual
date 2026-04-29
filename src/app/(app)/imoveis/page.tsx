@@ -10,7 +10,9 @@ interface Imovel {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
-  precoVenda: number;
+  precoVenda: number | null;
+  valorAluguel: number | null;
+  valorTemporadaDiaria: number | null;
   valorCondominio?: number | null;
   valorIptu?: number | null;
   cidade: string;
@@ -29,7 +31,14 @@ interface Imovel {
 }
 
 const PROPERTY_TYPES = [
-  "APARTAMENTO", "CASA", "CASA_CONDOMINIO", "TERRENO", "SALA_COMERCIAL", "LOJA", "GALPAO", "CHACARA", "FAZENDA", "OUTRO"
+  "APARTAMENTO", "CASA", "CASA_CONDOMINIO", "TERRENO", "SALA_COMERCIAL", "LOJA", "GALPAO", "CHACARA", "FAZENDA", "COBERTURA", "KITNET", "STUDIO", "PREDIO_COMERCIAL", "AREA_RURAL", "OUTRO"
+];
+
+const PURPOSES = [
+  { value: "VENDA", label: "Venda" },
+  { value: "LOCACAO", label: "Locação" },
+  { value: "VENDA_LOCACAO", label: "Venda e Locação" },
+  { value: "TEMPORADA", label: "Temporada" },
 ];
 
 const PROPERTY_STATUSES = ["DISPONIVEL", "RESERVADO", "VENDIDO", "LOCADO", "INDISPONIVEL"];
@@ -41,6 +50,19 @@ const STATUS_COLORS: Record<string, string> = {
   LOCADO: "badge-info",
   INDISPONIVEL: "badge-secondary",
 };
+
+function formatPropertyPrice(imovel: Imovel) {
+  if (imovel.finalidade === 'VENDA' && imovel.precoVenda) return formatCurrency(imovel.precoVenda);
+  if (imovel.finalidade === 'LOCACAO' && imovel.valorAluguel) return `${formatCurrency(imovel.valorAluguel)}/mês`;
+  if (imovel.finalidade === 'TEMPORADA' && imovel.valorTemporadaDiaria) return `${formatCurrency(imovel.valorTemporadaDiaria)}/dia`;
+  if (imovel.finalidade === 'VENDA_LOCACAO') {
+     const venda = imovel.precoVenda ? formatCurrency(imovel.precoVenda) : '';
+     const locacao = imovel.valorAluguel ? `${formatCurrency(imovel.valorAluguel)}/mês` : '';
+     if (venda && locacao) return `${venda} ou ${locacao}`;
+     return venda || locacao || 'Sob consulta';
+  }
+  return 'Sob consulta';
+}
 
 function ImovelCard({ imovel }: { imovel: Imovel }) {
   const [photoIndex, setPhotoIndex] = useState(0);
@@ -61,9 +83,6 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
       setPhotoIndex((prev) => (prev - 1 + fotos.length) % fotos.length);
     }
   };
-
-  // Reorder photos so capa is first, if we want to ensure capa is index 0.
-  // Assuming the API already returns them sorted by ordem, we just use photoIndex.
 
   return (
     <Link href={`/imoveis/${imovel.id}`} style={{ textDecoration: "none" }}>
@@ -101,7 +120,6 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
               />
               {fotos.length > 1 && (
                 <>
-                  {/* Controls - visible on hover via CSS or always. Let's make them always visible or partially transparent */}
                   <button onClick={prevPhoto} className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center rounded-full bg-black/40 text-white hover:bg-black/70 transition-colors z-10 opacity-0 group-hover:opacity-100 backdrop-blur-sm">
                     <ChevronLeft size={18} />
                   </button>
@@ -109,7 +127,6 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
                     <ChevronRight size={18} />
                   </button>
                   
-                  {/* Dots */}
                   <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 z-10 bg-black/20 px-2 py-1 rounded-full backdrop-blur-sm">
                     {fotos.map((_, i) => (
                       <div key={i} className={`w-1.5 h-1.5 rounded-full transition-colors ${i === photoIndex ? 'bg-white' : 'bg-white/50'}`} />
@@ -140,13 +157,13 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
         <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", flexGrow: 1 }}>
           {/* Subtitle / Type */}
           <p style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginBottom: "0.5rem", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
-            <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para {imovel.finalidade === "LOCACAO" ? "alugar" : "comprar"} {imovel.areaUtil ? `com ${imovel.areaUtil} m²` : ""}
+            <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para <span style={{ textTransform: "lowercase" }}>{PURPOSES.find(p => p.value === imovel.finalidade)?.label || imovel.finalidade}</span> {imovel.areaUtil ? `com ${imovel.areaUtil} m²` : ""}
           </p>
 
           {/* Price */}
           <div style={{ marginBottom: "0.5rem" }}>
-            <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
-              {formatCurrency(imovel.precoVenda)}
+            <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.3rem", letterSpacing: "-0.5px" }}>
+              {formatPropertyPrice(imovel)}
             </span>
             {imovel.proprietario && (
               <div style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginTop: "4px" }}>
@@ -156,9 +173,11 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
           </div>
           
           {/* Additional Info (Cond/IPTU) */}
-          <p style={{ fontSize: "0.85rem", color: "var(--color-surface-500)", marginBottom: "1.5rem" }}>
-            {imovel.valorCondominio ? `Cond. ${formatCurrency(imovel.valorCondominio)}` : "Cond. não informado"} • {imovel.valorIptu ? `IPTU ${formatCurrency(imovel.valorIptu)}` : "IPTU não informado"}
-          </p>
+          {(imovel.finalidade !== 'TEMPORADA') && (
+              <p style={{ fontSize: "0.85rem", color: "var(--color-surface-500)", marginBottom: "1.5rem" }}>
+                {imovel.valorCondominio ? `Cond. ${formatCurrency(imovel.valorCondominio)}` : "Cond. não informado"} • {imovel.valorIptu ? `IPTU ${formatCurrency(imovel.valorIptu)}` : "IPTU não informado"}
+              </p>
+          )}
 
           {/* Features */}
           <div className="flex flex-wrap items-center gap-4 mb-5" style={{ color: "var(--color-surface-300)", fontSize: "0.9rem", marginTop: "auto" }}>
@@ -205,8 +224,10 @@ export default function ImoveisPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [tipoImovel, setPropertyType] = useState("");
+  const [finalidade, setFinalidade] = useState("");
   const [status, setStatus] = useState("");
   const [cidade, setCity] = useState("");
+  const [bairro, setBairro] = useState("");
   const [page, setPage] = useState(1);
   const [showFilters, setShowFilters] = useState(false);
 
@@ -215,8 +236,10 @@ export default function ImoveisPage() {
     const params = new URLSearchParams();
     if (search) params.set("search", search);
     if (tipoImovel) params.set("tipoImovel", tipoImovel);
+    if (finalidade) params.set("finalidade", finalidade);
     if (status) params.set("status", status);
     if (cidade) params.set("cidade", cidade);
+    if (bairro) params.set("bairro", bairro);
     params.set("page", String(page));
 
     try {
@@ -234,7 +257,7 @@ export default function ImoveisPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, tipoImovel, status, cidade, page]);
+  }, [search, tipoImovel, finalidade, status, cidade, bairro, page]);
 
   useEffect(() => {
     const t = setTimeout(fetchProperties, 300);
@@ -243,13 +266,15 @@ export default function ImoveisPage() {
 
   function clearFilters() {
     setPropertyType("");
+    setFinalidade("");
     setStatus("");
     setCity("");
+    setBairro("");
     setSearch("");
     setPage(1);
   }
 
-  const hasFilters = search || tipoImovel || status || cidade;
+  const hasFilters = search || tipoImovel || finalidade || status || cidade || bairro;
 
   return (
     <div className="page">
@@ -275,7 +300,7 @@ export default function ImoveisPage() {
               type="text"
               className="input"
               style={{ paddingLeft: "2.5rem" }}
-              placeholder="Buscar por título, bairro, cidade, código..."
+              placeholder="Buscar por título, cidade, bairro, código..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             />
@@ -297,7 +322,14 @@ export default function ImoveisPage() {
 
         {showFilters && (
           <div style={{ marginTop: "1rem", paddingTop: "1rem", borderTop: "1px solid var(--color-surface-700)" }}>
-            <div className="form-row">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="label">Finalidade</label>
+                <select className="select" value={finalidade} onChange={(e) => { setFinalidade(e.target.value); setPage(1); }}>
+                  <option value="">Todas</option>
+                  {PURPOSES.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
+                </select>
+              </div>
               <div>
                 <label className="label">Tipo</label>
                 <select className="select" value={tipoImovel} onChange={(e) => { setPropertyType(e.target.value); setPage(1); }}>
@@ -313,9 +345,9 @@ export default function ImoveisPage() {
                 </select>
               </div>
               <div>
-                <label className="label">Cidade</label>
-                <input type="text" className="input" placeholder="Filtrar por cidade..." value={cidade}
-                  onChange={(e) => { setCity(e.target.value); setPage(1); }} />
+                <label className="label">Bairro</label>
+                <input type="text" className="input" placeholder="Filtrar por bairro..." value={bairro}
+                  onChange={(e) => { setBairro(e.target.value); setPage(1); }} />
               </div>
             </div>
           </div>
