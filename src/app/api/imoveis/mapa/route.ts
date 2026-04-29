@@ -211,5 +211,13 @@ export async function POST() {
     }
   }
 
-  return NextResponse.json({ imoveis: geocoded, remaining: semCoords.length - semCoords.length }); // Updated to properly deduct attempted ones from remaining visually
+  const remainingCount = await prisma.imovel.count({
+    where: {
+      usuarioId: session?.user?.id || "",
+      arquivadoEm: null,
+      latitude: null,
+    },
+  });
+
+  return NextResponse.json({ imoveis: geocoded, remaining: remainingCount });
 }

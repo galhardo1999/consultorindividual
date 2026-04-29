@@ -11,7 +11,7 @@ interface ActionResponse<T> {
 }
 
 export const criarImovel = async (
-  data: Omit<Prisma.ImovelUncheckedCreateInput, "usuarioId" | "id" | "criadoEm" | "atualizadoEm">
+  data: Omit<Prisma.ImovelUncheckedCreateInput, "usuarioId" | "id" | "criadoEm" | "atualizadoEm"> & { fotos?: string[] }
 ): Promise<ActionResponse<Prisma.ImovelGetPayload<{}>>> => {
   try {
     const session = await auth();
@@ -19,10 +19,19 @@ export const criarImovel = async (
       return { success: false, error: "Não autorizado" };
     }
 
+    const { fotos, ...restoDados } = data;
+
     const imovel = await prisma.imovel.create({
       data: {
-        ...data,
+        ...restoDados,
         usuarioId: session.user.id,
+        ...(fotos && fotos.length > 0
+          ? {
+              fotos: {
+                create: fotos.map((url) => ({ url })),
+              },
+            }
+          : {}),
       },
     });
 
@@ -36,7 +45,7 @@ export const criarImovel = async (
 
 export const atualizarImovel = async (
   id: string,
-  data: Omit<Prisma.ImovelUncheckedUpdateInput, "usuarioId" | "id" | "criadoEm" | "atualizadoEm">
+  data: Omit<Prisma.ImovelUncheckedUpdateInput, "usuarioId" | "id" | "criadoEm" | "atualizadoEm"> & { fotos?: string[] }
 ): Promise<ActionResponse<Prisma.ImovelGetPayload<{}>>> => {
   try {
     const session = await auth();
@@ -44,9 +53,33 @@ export const atualizarImovel = async (
       return { success: false, error: "Não autorizado" };
     }
 
+    const { fotos, ...restoDados } = data;
+
+    // Se o endereço for alterado, resetamos a geolocalização para forçar nova busca no mapa
+    const hasAddressChange =
+      "endereco" in restoDados ||
+      "numero" in restoDados ||
+      "bairro" in restoDados ||
+      "cidade" in restoDados ||
+      "estado" in restoDados ||
+      "cep" in restoDados;
+
+    const dataToUpdate: Prisma.ImovelUpdateInput = {
+      ...restoDados,
+      ...(hasAddressChange ? { latitude: null, longitude: null } : {}),
+      ...(fotos !== undefined
+        ? {
+            fotos: {
+              deleteMany: {},
+              create: fotos.map((url) => ({ url })),
+            },
+          }
+        : {}),
+    };
+
     const imovel = await prisma.imovel.update({
       where: { id, usuarioId: session.user.id },
-      data,
+      data: dataToUpdate,
     });
 
     return { success: true, data: imovel };

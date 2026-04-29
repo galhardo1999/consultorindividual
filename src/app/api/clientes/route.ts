@@ -17,19 +17,28 @@ const clientSchema = z.object({
   rendaMensal: z.number().optional(),
   cidadeAtual: z.string().optional(),
   origemLead: z.string().optional(),
-  responsavel: z.string().optional(),
   // Jornada / Status
   estagioJornada: z.string().optional(),
-  temperaturaLead: z.string().optional(),
   objetivoCompra: z.string().optional(),
   formaPagamento: z.string().optional(),
   nivelUrgencia: z.string().optional(),
   prazoCompra: z.string().optional(),
   budgetMaximo: z.number().optional(),
-  possuiImovelVender: z.boolean().optional(),
   preAprovacaoCredito: z.string().optional(),
   proximoContato: z.string().optional(),
   observacoes: z.string().optional(),
+  preferencia: z.object({
+    tipoImovel: z.string().optional().nullable(),
+    precoMinimo: z.number().optional().nullable(),
+    precoMaximo: z.number().optional().nullable(),
+    cidadeInteresse: z.string().optional().nullable(),
+    bairrosInteresse: z.string().optional().nullable(),
+    minQuartos: z.number().optional().nullable(),
+    areaMinima: z.number().optional().nullable(),
+    aceitaFinanciamento: z.boolean().optional().nullable(),
+    aceitaPermuta: z.boolean().optional().nullable(),
+    notasPessoais: z.string().optional().nullable(),
+  }).optional(),
 });
 
 export async function GET(request: Request) {
@@ -139,13 +148,17 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { documento, dataNascimento, proximoContato, ...rest } = parsed.data;
+    const { documento, dataNascimento, proximoContato, preferencia, ...rest } = parsed.data;
     const dataToCreate: Record<string, unknown> = {
       ...rest,
       documento: documento || null,
       // Convert date strings to proper Date objects for Prisma
-      dataNascimento: dataNascimento ? new Date(`${dataNascimento}T00:00:00.000Z`) : null,
-      proximoContato: proximoContato ? new Date(proximoContato) : null,
+      dataNascimento: dataNascimento && !isNaN(new Date(`${dataNascimento}T00:00:00.000Z`).getTime()) 
+        ? new Date(`${dataNascimento}T00:00:00.000Z`) 
+        : null,
+      proximoContato: proximoContato && !isNaN(new Date(proximoContato).getTime()) 
+        ? new Date(proximoContato) 
+        : null,
     };
     Object.keys(dataToCreate).forEach((key) => {
       if (dataToCreate[key] === "") {
@@ -157,6 +170,9 @@ export async function POST(request: Request) {
       data: {
         ...dataToCreate,
         usuarioId: session?.user?.id || "",
+        preferencia: preferencia ? {
+          create: preferencia
+        } : undefined
       } as never,
     });
 

@@ -14,6 +14,7 @@ interface PropertyDetail {
   tipoImovel: string;
   finalidade: string;
   precoVenda: number;
+  valorAluguel: number | null;
   valorCondominio: number | null;
   valorIptu: number | null;
   cidade: string;
@@ -212,7 +213,7 @@ export default function ImovelDetailPage() {
           <div className="hidden lg:block border-b border-surface-800 pb-6">
             <div className="flex items-center gap-2 text-brand-400 text-sm font-semibold tracking-wider uppercase mb-2">
               <Building size={16} />
-              {propertyTypeLabel(imovel.tipoImovel)} para {imovel.finalidade === 'LOCACAO' ? 'Locação' : 'Venda'}
+              {propertyTypeLabel(imovel.tipoImovel)} para {imovel.finalidade === 'LOCACAO' ? 'Locação' : imovel.finalidade === 'VENDA_LOCACAO' ? 'Venda ou Locação' : 'Venda'}
             </div>
             <h1 className="text-4xl font-extrabold text-surface-50 mb-3 tracking-tight">{imovel.titulo}</h1>
             <div className="flex items-center gap-2 text-surface-400 text-lg">
@@ -278,10 +279,38 @@ export default function ImovelDetailPage() {
             {/* Price Card */}
             <div className="bg-surface-900 border border-surface-800 rounded-3xl p-6 shadow-xl">
               <div className="mb-6 pb-6 border-b border-surface-800">
-                <span className="text-surface-400 font-medium text-sm block mb-1">Preço de {imovel.finalidade === 'LOCACAO' ? 'Locação' : 'Venda'}</span>
-                <div className="text-4xl font-extrabold text-surface-50 tracking-tight">
-                  {formatCurrency(imovel.precoVenda)}
-                </div>
+                {imovel.finalidade === 'VENDA' && (
+                  <>
+                    <span className="text-surface-400 font-medium text-sm block mb-1">Preço de Venda</span>
+                    <div className="text-4xl font-extrabold text-surface-50 tracking-tight">
+                      {formatCurrency(imovel.precoVenda)}
+                    </div>
+                  </>
+                )}
+                {imovel.finalidade === 'LOCACAO' && (
+                  <>
+                    <span className="text-surface-400 font-medium text-sm block mb-1">Preço de Locação</span>
+                    <div className="text-4xl font-extrabold text-surface-50 tracking-tight">
+                      {formatCurrency(imovel.valorAluguel || 0)}<span className="text-lg font-normal text-surface-400 ml-1">/mês</span>
+                    </div>
+                  </>
+                )}
+                {imovel.finalidade === 'VENDA_LOCACAO' && (
+                  <div className="space-y-4">
+                    <div>
+                      <span className="text-surface-400 font-medium text-sm block mb-1">Preço de Venda</span>
+                      <div className="text-3xl font-extrabold text-surface-50 tracking-tight">
+                        {formatCurrency(imovel.precoVenda)}
+                      </div>
+                    </div>
+                    <div>
+                      <span className="text-surface-400 font-medium text-sm block mb-1">Preço de Locação</span>
+                      <div className="text-3xl font-extrabold text-surface-50 tracking-tight">
+                        {formatCurrency(imovel.valorAluguel || 0)}<span className="text-lg font-normal text-surface-400 ml-1">/mês</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 
                 <div className="mt-4 space-y-2">
                   {imovel.valorCondominio && (

@@ -45,16 +45,13 @@ model Cliente {
   rendaMensal         Float?
   cidadeAtual         String?
   origemLead          OrigemLead @default(INDICACAO)
-  responsavel         String?
   status              StatusCliente @default(ATIVO)
   estagioJornada      EstagioJornada @default(NOVO_LEAD)
-  temperaturaLead     TemperaturaLead @default(MORNO)
   objetivoCompra      ObjetivoCompra?
   formaPagamento      FormaPagamento?
   nivelUrgencia       NivelUrgencia @default(MEDIA)
   prazoCompra         String?
   budgetMaximo        Float?
-  possuiImovelVender  Boolean @default(false)
   preAprovacaoCredito PreAprovacaoCredito @default(NAO)
   proximoContato      DateTime?
   observacoes         String?
@@ -506,11 +503,6 @@ enum NivelUrgencia {
   SEM_URGENCIA
 }
 
-enum TemperaturaLead {
-  QUENTE
-  MORNO
-  FRIO
-}
 
 enum EstadoCivil {
   SOLTEIRO

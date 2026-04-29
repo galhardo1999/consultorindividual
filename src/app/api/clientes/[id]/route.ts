@@ -18,19 +18,28 @@ const updateSchema = z.object({
   rendaMensal: z.number().optional(),
   cidadeAtual: z.string().optional(),
   origemLead: z.string().optional(),
-  responsavel: z.string().optional(),
   // Jornada / Status
   estagioJornada: z.string().optional(),
-  temperaturaLead: z.string().optional(),
   objetivoCompra: z.string().optional(),
   formaPagamento: z.string().optional(),
   nivelUrgencia: z.string().optional(),
   prazoCompra: z.string().optional(),
   budgetMaximo: z.number().optional(),
-  possuiImovelVender: z.boolean().optional(),
   preAprovacaoCredito: z.string().optional(),
   proximoContato: z.string().optional(),
   observacoes: z.string().optional(),
+  preferencia: z.object({
+    tipoImovel: z.string().optional().nullable(),
+    precoMinimo: z.number().optional().nullable(),
+    precoMaximo: z.number().optional().nullable(),
+    cidadeInteresse: z.string().optional().nullable(),
+    bairrosInteresse: z.string().optional().nullable(),
+    minQuartos: z.number().optional().nullable(),
+    areaMinima: z.number().optional().nullable(),
+    aceitaFinanciamento: z.boolean().optional().nullable(),
+    aceitaPermuta: z.boolean().optional().nullable(),
+    notasPessoais: z.string().optional().nullable(),
+  }).optional(),
 });
 
 async function getClient(id: string, usuarioId: string) {
@@ -71,11 +80,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
   const parsed = updateSchema.safeParse(body);
   if (!parsed.success) return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
 
-  const { dataNascimento, proximoContato, ...rest } = parsed.data;
+  const { dataNascimento, proximoContato, preferencia, ...rest } = parsed.data;
   const dataToUpdate: Record<string, unknown> = {
     ...rest,
-    dataNascimento: dataNascimento ? new Date(`${dataNascimento}T00:00:00.000Z`) : dataNascimento === "" ? null : undefined,
-    proximoContato: proximoContato ? new Date(proximoContato) : proximoContato === "" ? null : undefined,
+    dataNascimento: dataNascimento && !isNaN(new Date(`${dataNascimento}T00:00:00.000Z`).getTime()) 
+      ? new Date(`${dataNascimento}T00:00:00.000Z`) 
+      : dataNascimento === "" ? null : undefined,
+    proximoContato: proximoContato && !isNaN(new Date(proximoContato).getTime()) 
+      ? new Date(proximoContato) 
+      : proximoContato === "" ? null : undefined,
   };
   // Remove undefined keys so Prisma doesn't try to set them
   Object.keys(dataToUpdate).forEach((key) => {
@@ -85,7 +98,15 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const cliente = await prisma.cliente.update({
     where: { id },
-    data: dataToUpdate as never,
+    data: {
+      ...dataToUpdate,
+      preferencia: preferencia ? {
+        upsert: {
+          create: preferencia as any,
+          update: preferencia as any
+        }
+      } : undefined
+    } as any,
   });
 
   return NextResponse.json(cliente);

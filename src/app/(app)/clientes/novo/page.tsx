@@ -52,10 +52,12 @@ const URGENCY_LEVELS = [
   { value: "SEM_URGENCIA", label: "Sem Urgência" },
 ];
 
-const LEAD_TEMPERATURES = [
-  { value: "QUENTE", label: "🔥 Quente" },
-  { value: "MORNO", label: "🌤️ Morno" },
-  { value: "FRIO", label: "❄️ Frio" },
+const PROPERTY_TYPES = [
+  { value: "APARTAMENTO", label: "Apartamento" },
+  { value: "CASA", label: "Casa" },
+  { value: "CASA_CONDOMINIO", label: "Casa em Condomínio" },
+  { value: "TERRENO", label: "Terreno" },
+  { value: "OUTRO", label: "Outro" },
 ];
 
 const CIVIL_STATUS = [
@@ -100,22 +102,30 @@ export default function NovoClientePage() {
     rendaMensal: "",
     cidadeAtual: "",
     origemLead: "INDICACAO",
-    responsavel: "",
     // Jornada / Status
     estagioJornada: "NOVO_LEAD",
-    temperaturaLead: "MORNO",
     objetivoCompra: "",
     formaPagamento: "",
     nivelUrgencia: "MEDIA",
     prazoCompra: "",
     budgetMaximo: "",
-    possuiImovelVender: "",
     preAprovacaoCredito: "NAO",
     proximoContato: "",
     observacoes: "",
+    // Perfil de Busca
+    tipoImovel: "",
+    precoMinimo: "",
+    precoMaximo: "",
+    cidadeInteresse: "",
+    bairrosInteresse: "",
+    minQuartos: "",
+    areaMinima: "",
+    aceitaFinanciamento: false,
+    aceitaPermuta: false,
+    notasPessoais: "",
   });
 
-  function update(field: string, value: string) {
+  function update(field: string, value: any) {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
@@ -137,18 +147,27 @@ export default function NovoClientePage() {
       rendaMensal: form.rendaMensal ? parseFloat(form.rendaMensal.replace(/\D/g, "")) / 100 : undefined,
       cidadeAtual: form.cidadeAtual || undefined,
       origemLead: form.origemLead || undefined,
-      responsavel: form.responsavel || undefined,
       estagioJornada: form.estagioJornada || undefined,
-      temperaturaLead: form.temperaturaLead || undefined,
       objetivoCompra: form.objetivoCompra || undefined,
       formaPagamento: form.formaPagamento || undefined,
       nivelUrgencia: form.nivelUrgencia || undefined,
       prazoCompra: form.prazoCompra || undefined,
       budgetMaximo: form.budgetMaximo ? parseFloat(form.budgetMaximo.replace(/\D/g, "")) / 100 : undefined,
-      possuiImovelVender: form.possuiImovelVender === "true",
       preAprovacaoCredito: form.preAprovacaoCredito || undefined,
       proximoContato: form.proximoContato || undefined,
       observacoes: form.observacoes || undefined,
+      preferencia: {
+        tipoImovel: form.tipoImovel || null,
+        precoMinimo: form.precoMinimo ? parseFloat(form.precoMinimo.replace(/\D/g, "")) / 100 : null,
+        precoMaximo: form.precoMaximo ? parseFloat(form.precoMaximo.replace(/\D/g, "")) / 100 : null,
+        cidadeInteresse: form.cidadeInteresse || null,
+        bairrosInteresse: form.bairrosInteresse || null,
+        minQuartos: form.minQuartos ? parseInt(form.minQuartos) : null,
+        areaMinima: form.areaMinima ? parseFloat(form.areaMinima) : null,
+        aceitaFinanciamento: form.aceitaFinanciamento,
+        aceitaPermuta: form.aceitaPermuta,
+        notasPessoais: form.notasPessoais || null,
+      }
     };
 
     const res = await fetch("/api/clientes", {
@@ -360,20 +379,6 @@ export default function NovoClientePage() {
                 </select>
               </div>
             </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label" htmlFor="responsavel">Responsável / Corretor</label>
-                <input
-                  id="responsavel"
-                  type="text"
-                  className="input"
-                  placeholder="Nome do corretor responsável"
-                  value={form.responsavel}
-                  onChange={(e) => update("responsavel", e.target.value)}
-                />
-              </div>
-            </div>
           </div>
         )}
 
@@ -387,12 +392,6 @@ export default function NovoClientePage() {
                 <label className="label" htmlFor="estagioJornada">Estágio da Jornada</label>
                 <select id="estagioJornada" className="select" value={form.estagioJornada} onChange={(e) => update("estagioJornada", e.target.value)}>
                   {JOURNEY_STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
-                </select>
-              </div>
-              <div className="form-group">
-                <label className="label" htmlFor="temperaturaLead">Temperatura do Lead</label>
-                <select id="temperaturaLead" className="select" value={form.temperaturaLead} onChange={(e) => update("temperaturaLead", e.target.value)}>
-                  {LEAD_TEMPERATURES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
             </div>
@@ -452,14 +451,6 @@ export default function NovoClientePage() {
 
             <div className="form-row">
               <div className="form-group">
-                <label className="label" htmlFor="possuiImovelVender">Possui Imóvel para Vender?</label>
-                <select id="possuiImovelVender" className="select" value={form.possuiImovelVender} onChange={(e) => update("possuiImovelVender", e.target.value)}>
-                  <option value="">Selecionar...</option>
-                  <option value="true">Sim</option>
-                  <option value="false">Não</option>
-                </select>
-              </div>
-              <div className="form-group">
                 <label className="label" htmlFor="proximoContato">Próximo Contato Agendado</label>
                 <input
                   id="proximoContato"
@@ -487,12 +478,58 @@ export default function NovoClientePage() {
         {/* ─── ABA: PERFIL DE BUSCA ─── */}
         {activeTab === "profile" && (
           <div className="card">
-            <h2 className="section-titulo mb-4">Perfil de Busca</h2>
-            <p style={{ color: "var(--color-surface-400)", fontSize: "0.875rem", marginBottom: "1.25rem" }}>
-              Essas informações serão salvas após criar o cliente. Você poderá editá-las no perfil completo.
-            </p>
-            <div className="empty-state" style={{ padding: "2rem" }}>
-              <p>Salve o cliente primeiro, depois preencha o perfil detalhado de busca no cadastro completo.</p>
+            <h2 className="section-titulo mb-4">Perfil de Busca Ideal</h2>
+            
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label">Tipo de Imóvel</label>
+                <select className="select" value={form.tipoImovel} onChange={(e) => update("tipoImovel", e.target.value)}>
+                  <option value="">Indiferente</option>
+                  {PROPERTY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="label">Cidade de Interesse</label>
+                <input type="text" className="input" placeholder="Ex: São Paulo" value={form.cidadeInteresse} onChange={(e) => update("cidadeInteresse", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label">Preço Mínimo</label>
+                <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMinimo} onChange={(e) => update("precoMinimo", maskCurrency(e.target.value))} />
+              </div>
+              <div className="form-group">
+                <label className="label">Preço Máximo</label>
+                <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMaximo} onChange={(e) => update("precoMaximo", maskCurrency(e.target.value))} />
+              </div>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label className="label">Quartos (mín.)</label>
+                <input type="number" className="input" value={form.minQuartos} onChange={(e) => update("minQuartos", e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="label">Área mín. (m²)</label>
+                <input type="number" className="input" value={form.areaMinima} onChange={(e) => update("areaMinima", e.target.value)} />
+              </div>
+            </div>
+
+            <div className="flex gap-6 flex-wrap mt-3 mb-5">
+              <label className="flex items-center gap-2 cursor-pointer" style={{ fontSize: "0.875rem", color: "var(--color-surface-200)" }}>
+                <input type="checkbox" checked={form.aceitaFinanciamento} onChange={(e) => update("aceitaFinanciamento", e.target.checked)} />
+                Necessita Financiamento
+              </label>
+              <label className="flex items-center gap-2 cursor-pointer" style={{ fontSize: "0.875rem", color: "var(--color-surface-200)" }}>
+                <input type="checkbox" checked={form.aceitaPermuta} onChange={(e) => update("aceitaPermuta", e.target.checked)} />
+                Possui Permuta
+              </label>
+            </div>
+
+            <div className="form-group">
+              <label className="label">Anotações do Perfil</label>
+              <textarea className="textarea" placeholder="Busca imóvel perto de metrô, andar alto..." value={form.notasPessoais} onChange={(e) => update("notasPessoais", e.target.value)} />
             </div>
           </div>
         )}

@@ -10,9 +10,14 @@ interface Imovel {
   titulo: string;
   tipoImovel: string;
   finalidade: string;
+<<<<<<< Updated upstream
   precoVenda: number | null;
   valorAluguel: number | null;
   valorTemporadaDiaria: number | null;
+=======
+  precoVenda: number;
+  valorAluguel: number | null;
+>>>>>>> Stashed changes
   valorCondominio?: number | null;
   valorIptu?: number | null;
   cidade: string;
@@ -157,14 +162,47 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
         <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", flexGrow: 1 }}>
           {/* Subtitle / Type */}
           <p style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginBottom: "0.5rem", lineHeight: 1.4, display: "-webkit-box", WebkitLineClamp: 1, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
+<<<<<<< Updated upstream
             <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para <span style={{ textTransform: "lowercase" }}>{PURPOSES.find(p => p.value === imovel.finalidade)?.label || imovel.finalidade}</span> {imovel.areaUtil ? `com ${imovel.areaUtil} m²` : ""}
+=======
+            <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para {imovel.finalidade === "LOCACAO" ? "alugar" : imovel.finalidade === "VENDA_LOCACAO" ? "comprar ou alugar" : "comprar"} {imovel.areaUtil ? `com ${imovel.areaUtil} m²` : ""}
+>>>>>>> Stashed changes
           </p>
 
           {/* Price */}
           <div style={{ marginBottom: "0.5rem" }}>
+<<<<<<< Updated upstream
             <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.3rem", letterSpacing: "-0.5px" }}>
               {formatPropertyPrice(imovel)}
             </span>
+=======
+            {imovel.finalidade === 'VENDA' && (
+              <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
+                {formatCurrency(imovel.precoVenda)}
+              </span>
+            )}
+            {imovel.finalidade === 'LOCACAO' && (
+              <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.6rem", letterSpacing: "-0.5px" }}>
+                {formatCurrency(imovel.valorAluguel || 0)}<span className="text-sm font-normal text-surface-400">/mês</span>
+              </span>
+            )}
+            {imovel.finalidade === 'VENDA_LOCACAO' && (
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-surface-400">Venda:</span>
+                  <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.4rem", letterSpacing: "-0.5px" }}>
+                    {formatCurrency(imovel.precoVenda)}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-surface-400">Aluguel:</span>
+                  <span className="font-bold" style={{ color: "var(--color-surface-50)", fontSize: "1.4rem", letterSpacing: "-0.5px" }}>
+                    {formatCurrency(imovel.valorAluguel || 0)}<span className="text-sm font-normal text-surface-400">/mês</span>
+                  </span>
+                </div>
+              </div>
+            )}
+>>>>>>> Stashed changes
             {imovel.proprietario && (
               <div style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginTop: "4px" }}>
                 <span style={{ color: "var(--color-brand-400)" }}>Proprietário:</span> {imovel.proprietario.nomeCompleto}
