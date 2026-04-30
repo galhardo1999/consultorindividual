@@ -51,17 +51,49 @@ export async function GET(request: Request) {
 
   const usuarioId = session.user.id;
   const { searchParams } = new URL(request.url);
+
+  // ── Parâmetros básicos ──────────────────────────────────────────────────────
   const busca = searchParams.get("search") || "";
-  const estagioJornada = searchParams.get("estagioJornada") || undefined;
-  const nivelUrgencia = searchParams.get("nivelUrgencia") || undefined;
-  const status = searchParams.get("status") || undefined;
   const pagina = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limite = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
   const pular = (pagina - 1) * limite;
 
+  // ── Filtros de status / jornada ─────────────────────────────────────────────
+  const estagioJornada = searchParams.get("estagioJornada") || undefined;
+  const nivelUrgencia = searchParams.get("nivelUrgencia") || undefined;
+  const status = searchParams.get("status") || undefined;
+
+  // ── Perfil do cliente ───────────────────────────────────────────────────────
+  const estadoCivil = searchParams.get("estadoCivil") || undefined;
+  const temFilhosParam = searchParams.get("temFilhos");
+  const temFilhos = temFilhosParam === "true" ? true : temFilhosParam === "false" ? false : undefined;
+  const profissao = searchParams.get("profissao") || undefined;
+
+  // ── Qualificação financeira ─────────────────────────────────────────────────
+  const rendaMensalMin = searchParams.get("rendaMensalMin") ? parseFloat(searchParams.get("rendaMensalMin")!) : undefined;
+  const rendaMensalMax = searchParams.get("rendaMensalMax") ? parseFloat(searchParams.get("rendaMensalMax")!) : undefined;
+  const budgetMaximoMin = searchParams.get("budgetMaximoMin") ? parseFloat(searchParams.get("budgetMaximoMin")!) : undefined;
+  const budgetMaximoMax = searchParams.get("budgetMaximoMax") ? parseFloat(searchParams.get("budgetMaximoMax")!) : undefined;
+  const preAprovacaoCredito = searchParams.get("preAprovacaoCredito") || undefined;
+
+  // ── Intenção de compra ──────────────────────────────────────────────────────
+  const objetivoCompra = searchParams.get("objetivoCompra") || undefined;
+  const formaPagamento = searchParams.get("formaPagamento") || undefined;
+  const prazoCompra = searchParams.get("prazoCompra") || undefined;
+
+  // ── Gestão comercial ────────────────────────────────────────────────────────
+  const origemLead = searchParams.get("origemLead") || undefined;
+  const proximoContatoAtrasado = searchParams.get("proximoContatoAtrasado") === "true";
+  const criadoEmInicio = searchParams.get("criadoEmInicio") || undefined;
+  const criadoEmFim = searchParams.get("criadoEmFim") || undefined;
+  const atualizadoEmInicio = searchParams.get("atualizadoEmInicio") || undefined;
+  const atualizadoEmFim = searchParams.get("atualizadoEmFim") || undefined;
+
+  // ── Montagem do where ───────────────────────────────────────────────────────
   const where = {
     usuarioId,
     arquivadoEm: status === "ARQUIVADO" ? { not: null } : null,
+
     ...(busca && {
       OR: [
         { nomeCompleto: { contains: busca, mode: "insensitive" as const } },
@@ -69,8 +101,57 @@ export async function GET(request: Request) {
         { telefone: { contains: busca } },
       ],
     }),
-    ...(estagioJornada && { estagioJornada: estagioJornada as never }),
-    ...(nivelUrgencia && { nivelUrgencia: nivelUrgencia as never }),
+
+    // Enums de jornada — cast seguro para o tipo literal correto
+    ...(estagioJornada && { estagioJornada: estagioJornada as "NOVO_LEAD" | "EM_QUALIFICACAO" | "BUSCANDO_OPCOES" | "VISITANDO_IMOVEIS" | "NEGOCIANDO" | "PROPOSTA_ENVIADA" | "FECHADO" | "PERDIDO" | "PAUSADO" }),
+    ...(nivelUrgencia && { nivelUrgencia: nivelUrgencia as "ALTA" | "MEDIA" | "BAIXA" | "SEM_URGENCIA" }),
+
+    // Perfil
+    ...(estadoCivil && { estadoCivil: estadoCivil as "SOLTEIRO" | "CASADO" | "DIVORCIADO" | "VIUVO" | "UNIAO_ESTAVEL" | "OUTRO" }),
+    ...(temFilhos !== undefined && { temFilhos }),
+    ...(profissao && { profissao: { contains: profissao, mode: "insensitive" as const } }),
+
+    // Renda mensal
+    ...((rendaMensalMin !== undefined || rendaMensalMax !== undefined) && {
+      rendaMensal: {
+        ...(rendaMensalMin !== undefined && { gte: rendaMensalMin }),
+        ...(rendaMensalMax !== undefined && { lte: rendaMensalMax }),
+      },
+    }),
+
+    // Budget
+    ...((budgetMaximoMin !== undefined || budgetMaximoMax !== undefined) && {
+      budgetMaximo: {
+        ...(budgetMaximoMin !== undefined && { gte: budgetMaximoMin }),
+        ...(budgetMaximoMax !== undefined && { lte: budgetMaximoMax }),
+      },
+    }),
+
+    // Qualificação financeira
+    ...(preAprovacaoCredito && { preAprovacaoCredito: preAprovacaoCredito as "SIM" | "NAO" | "EM_ANALISE" }),
+
+    // Intenção de compra
+    ...(objetivoCompra && { objetivoCompra: objetivoCompra as "MORADIA_PROPRIA" | "INVESTIMENTO" | "LOCACAO" | "VERANEIO" | "OUTRO" }),
+    ...(formaPagamento && { formaPagamento: formaPagamento as "FINANCIAMENTO" | "PERMUTA" | "VISTA" | "MISTO" | "A_DEFINIR" }),
+    ...(prazoCompra && { prazoCompra }),
+
+    // Gestão comercial
+    ...(origemLead && { origemLead: origemLead as "INDICACAO" | "PORTAL_IMOBILIARIO" | "REDES_SOCIAIS" | "WHATSAPP" | "SITE_PROPRIO" | "CAPTACAO_ATIVA" | "EVENTO" | "OUTRO" }),
+    ...(proximoContatoAtrasado && { proximoContato: { lt: new Date() } }),
+
+    // Ranges de datas
+    ...((criadoEmInicio || criadoEmFim) && {
+      criadoEm: {
+        ...(criadoEmInicio && { gte: new Date(criadoEmInicio) }),
+        ...(criadoEmFim && { lte: new Date(`${criadoEmFim}T23:59:59.999Z`) }),
+      },
+    }),
+    ...((atualizadoEmInicio || atualizadoEmFim) && {
+      atualizadoEm: {
+        ...(atualizadoEmInicio && { gte: new Date(atualizadoEmInicio) }),
+        ...(atualizadoEmFim && { lte: new Date(`${atualizadoEmFim}T23:59:59.999Z`) }),
+      },
+    }),
   };
 
   try {
@@ -89,7 +170,6 @@ export async function GET(request: Request) {
     ]);
 
     // ─── Contagem de oportunidades sem N+1 ────────────────────────────────────
-    // 1. Uma única query batch para todos os interesses dos clientes desta página
     const idsClientesComPreferencia = clientes
       .filter((c) => c.preferencia)
       .map((c) => c.id);
@@ -99,15 +179,12 @@ export async function GET(request: Request) {
       select: { clienteId: true, imovelId: true },
     });
 
-    // Mapa: clienteId → array de imovelIds já vinculados
     const mapaInteresses = new Map<string, string[]>();
     for (const i of interessesExistentes) {
       if (!mapaInteresses.has(i.clienteId)) mapaInteresses.set(i.clienteId, []);
       mapaInteresses.get(i.clienteId)!.push(i.imovelId);
     }
 
-    // 2. Conta oportunidades em paralelo — uma query por cliente com preferência,
-    //    mas sem o findMany de interesses repetido (já temos o mapa acima)
     const clientesComOportunidades = await Promise.all(
       clientes.map(async (cliente) => {
         if (!cliente.preferencia) return { ...cliente, oportunidadesCount: 0 };
@@ -133,7 +210,7 @@ export async function GET(request: Request) {
           ...(p.areaMinima !== null && { areaUtil: { gte: p.areaMinima } }),
         };
 
-        const oportunidadesCount = await prisma.imovel.count({ where: filtro as never });
+        const oportunidadesCount = await prisma.imovel.count({ where: filtro as any });
         return { ...cliente, oportunidadesCount };
       })
     );

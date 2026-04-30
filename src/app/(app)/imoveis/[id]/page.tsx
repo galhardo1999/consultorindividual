@@ -26,9 +26,16 @@ interface PropertyDetail {
   banheiros: number | null;
   vagasGaragem: number | null;
   areaUtil: number | null;
+  areaTotal: number | null;
   mobiliado: boolean;
   aceitaFinanciamento: boolean;
   aceitaPermuta: boolean;
+  piscina: boolean;
+  churrasqueira: boolean;
+  varandaGourmet: boolean;
+  elevador: boolean;
+  portaria24h: boolean;
+  academia: boolean;
   status: string;
   destaques: string | null;
   descricao: string | null;
@@ -99,7 +106,8 @@ export default function ImovelDetailPage() {
   if (!imovel) return null;
 
   const features = [
-    imovel.areaUtil != null && { icon: Maximize, label: `${imovel.areaUtil} m²` },
+    imovel.areaUtil != null && { icon: Maximize, label: `${imovel.areaUtil} m² Útil` },
+    imovel.areaTotal != null && { icon: Maximize, label: `${imovel.areaTotal} m² Total` },
     imovel.quartos != null && { icon: Bed, label: `${imovel.quartos} Quartos` },
     imovel.suites != null && { icon: Bed, label: `${imovel.suites} Suítes` },
     imovel.banheiros != null && { icon: Bath, label: `${imovel.banheiros} Banheiros` },
@@ -110,6 +118,12 @@ export default function ImovelDetailPage() {
     imovel.mobiliado && "Mobiliado",
     imovel.aceitaFinanciamento && "Aceita Financiamento",
     imovel.aceitaPermuta && "Aceita Permuta",
+    imovel.piscina && "Piscina",
+    imovel.churrasqueira && "Churrasqueira",
+    imovel.varandaGourmet && "Varanda Gourmet",
+    imovel.elevador && "Elevador",
+    imovel.portaria24h && "Portaria 24h",
+    imovel.academia && "Academia",
   ].filter(Boolean) as string[];
 
   const hasPhotos = imovel.fotos && imovel.fotos.length > 0;

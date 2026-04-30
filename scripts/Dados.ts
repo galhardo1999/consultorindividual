@@ -112,9 +112,23 @@ const criarClientes = async (usuarioId: string, quantidade: number) => {
     "Felipe Nunes", "Gabriela Ramos", "Henrique Melo", "Isabela Dias", "João Ferreira"];
   const cidades = ["São Paulo", "Rio de Janeiro", "Curitiba", "Belo Horizonte", "Porto Alegre"];
   const origens = ["INDICACAO", "PORTAL_IMOBILIARIO", "REDES_SOCIAIS", "WHATSAPP", "SITE_PROPRIO"] as const;
+  
+  const estadosCivis = ["SOLTEIRO", "CASADO", "DIVORCIADO", "UNIAO_ESTAVEL"] as const;
+  const profissoes = ["Engenheiro", "Médico", "Advogado", "Empresário", "Professor", "Desenvolvedor"];
+  const estagios = ["NOVO_LEAD", "EM_QUALIFICACAO", "BUSCANDO_OPCOES", "VISITANDO_IMOVEIS", "NEGOCIANDO"] as const;
+  const objetivos = ["MORADIA_PROPRIA", "INVESTIMENTO", "LOCACAO", "VERANEIO"] as const;
+  const formasPgto = ["FINANCIAMENTO", "VISTA", "MISTO", "A_DEFINIR"] as const;
+  const prazos = ["Imediato", "3 meses", "6 meses", "1 ano", "Indefinido"];
+  const preAprovacoes = ["SIM", "NAO", "EM_ANALISE"] as const;
 
   for (let i = 0; i < quantidade; i++) {
     const nome = `${nomes[i % nomes.length]} ${i + 1}`;
+    
+    // Calcula datas relativas para proximoContato (entre -5 e +9 dias a partir de hoje)
+    const hoje = new Date();
+    const proximoContato = new Date(hoje);
+    proximoContato.setDate(hoje.getDate() + (Math.floor(Math.random() * 14) - 5));
+
     await prisma.cliente.create({
       data: {
         usuarioId,
@@ -123,8 +137,27 @@ const criarClientes = async (usuarioId: string, quantidade: number) => {
         email: `${nome.toLowerCase().replace(/ /g, ".")}@exemplo.com`,
         cidadeAtual: cidades[i % cidades.length],
         origemLead: origens[i % origens.length],
+        
+        // Perfil
+        estadoCivil: estadosCivis[i % estadosCivis.length],
+        temFilhos: i % 2 === 0,
+        profissao: profissoes[i % profissoes.length],
+        
+        // Qualificação
+        rendaMensal: 8000 + i * 2000,
         budgetMaximo: 200000 + i * 50000,
+        preAprovacaoCredito: preAprovacoes[i % preAprovacoes.length],
+        
+        // Jornada e Intenção
+        estagioJornada: estagios[i % estagios.length],
         nivelUrgencia: i % 3 === 0 ? "ALTA" : i % 3 === 1 ? "MEDIA" : "BAIXA",
+        objetivoCompra: objetivos[i % objetivos.length],
+        formaPagamento: formasPgto[i % formasPgto.length],
+        prazoCompra: prazos[i % prazos.length],
+        
+        // Gestão Comercial
+        proximoContato,
+        
         preferencia: {
           create: {
             tipoImovel: "CASA",
@@ -132,6 +165,7 @@ const criarClientes = async (usuarioId: string, quantidade: number) => {
             precoMaximo: 500000,
             cidadeInteresse: cidades[i % cidades.length],
             minQuartos: 2,
+            aceitaFinanciamento: i % 2 === 0,
           },
         },
       },
@@ -156,19 +190,38 @@ const criarImoveis = async (usuarioId: string, quantidade: number) => {
       data: {
         usuarioId,
         titulo: `${titulos[i % titulos.length]} ${i + 1}`,
+        descricao: "Imóvel excelente localizado em um dos melhores bairros da cidade. Conta com ótima ventilação, iluminação natural e infraestrutura completa ao redor.",
         tipoImovel: tipos[i % tipos.length],
         finalidade: "VENDA",
         status: "DISPONIVEL",
+        
+        // Endereço
         cidade: cidades[i % cidades.length],
         bairro: bairros[i % bairros.length],
         endereco: ruas[i % ruas.length],
         numero: String(100 + i * 10),
         cep: "01310-100",
+        
+        // Valores e Condições
         precoVenda: 250000 + i * 50000,
+        aceitaFinanciamento: i % 2 === 0,
+        aceitaPermuta: i % 3 === 0,
+        
+        // Estrutura
         quartos: (i % 4) + 1,
         banheiros: (i % 3) + 1,
         vagasGaragem: i % 3,
         areaUtil: 60 + i * 10,
+        areaTotal: 100 + i * 20,
+        
+        // Características Adicionais
+        mobiliado: i % 4 === 0,
+        piscina: i % 3 === 0,
+        churrasqueira: i % 2 === 0,
+        varandaGourmet: i % 5 === 0,
+        elevador: tipos[i % tipos.length] === "APARTAMENTO" || tipos[i % tipos.length] === "COBERTURA",
+        portaria24h: i % 2 === 0,
+        academia: i % 3 === 0,
       },
     });
   }
