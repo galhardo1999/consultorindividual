@@ -42,6 +42,16 @@ export function Header({ usuario }: HeaderProps) {
   return (
     <header className="header">
       <div className="flex items-center gap-3" style={{ flex: 1 }}>
+        {/* Botão hambúrguer — visível apenas em mobile */}
+        <button
+          className="btn btn-ghost btn-icon lg:hidden flex-shrink-0"
+          onClick={onMenuToggle}
+          aria-label="Abrir menu"
+          title="Abrir menu"
+        >
+          <Menu size={20} />
+        </button>
+
         <div className="search-bar" style={{ width: "100%", maxWidth: "800px" }}>
           <Search size={16} />
           <input

@@ -562,11 +562,25 @@ body {
 .toast-container {
   position: fixed;
   bottom: 1.5rem;
-  right: 1.5rem;
+  right: 1rem;
+  left: 1rem;
   z-index: 100;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  pointer-events: none;
+}
+
+@media (min-width: 480px) {
+  .toast-container {
+    left: auto;
+    right: 1.5rem;
+    width: auto;
+  }
+}
+
+.toast-container > * {
+  pointer-events: auto;
 }
 
 .toast {
@@ -580,7 +594,8 @@ body {
   font-size: 0.875rem;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
   animation: slideInRight 0.25s ease;
-  min-width: 300px;
+  min-width: min(300px, calc(100vw - 2rem));
+  max-width: calc(100vw - 2rem);
 }
 
 .toast-success { border-left: 3px solid var(--color-success); }
@@ -782,6 +797,15 @@ body {
 
   .main-content {
     margin-left: 0;
+  }
+
+  .page {
+    padding: 1rem;
+  }
+
+  .section-header {
+    flex-wrap: wrap;
+    gap: 0.75rem;
   }
 
   .form-row, .form-row-3 {
