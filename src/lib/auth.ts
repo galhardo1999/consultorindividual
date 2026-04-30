@@ -31,8 +31,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!usuario || !usuario.ativo) return null;
 
-        const isValid = await bcrypt.compare(password, usuario.senhaHash);
-        if (!isValid) return null;
+        const senhaValida = await bcrypt.compare(password, usuario.senhaHash);
+        if (!senhaValida) return null;
 
         return {
           id: usuario.id,
@@ -43,5 +43,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  // ─── Callbacks JWT e Session ────────────────────────────────────────────────
+  // Ficam aqui (auth.ts) e não em auth.config.ts pois o config.ts roda no
+  // Edge Runtime, que não suporta dependências como Prisma ou bcrypt.
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      // Persiste id e nome do usuário no token JWT no momento do login
+      if (user) {
+        token.id = user.id;
+        token.nome = (user as { nome?: string }).nome;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      // Expõe o id tipado para todos os server components e route handlers
+      if (token?.id && session.user) {
+        session.user.id = token.id as string;
+      }
+      return session;
+    },
+  },
   secret: process.env.AUTH_SECRET,
 });

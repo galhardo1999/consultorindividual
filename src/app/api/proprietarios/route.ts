@@ -33,9 +33,10 @@ function serverError(label: string, error: unknown) {
   return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
 }
 
-async function getSession() {
+async function obterSessao() {
   const session = await auth();
-  return session?.user?.id ? session : null;
+  if (!session?.user?.id) return null;
+  return session as typeof session & { user: { id: string } };
 }
 
 function parsePagination(searchParams: URLSearchParams) {
@@ -47,23 +48,23 @@ function parsePagination(searchParams: URLSearchParams) {
 // ─── GET /proprietarios ───────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
-  const session = await getSession();
+  const session = await obterSessao();
   if (!session) return unauthorized();
 
   try {
     const { searchParams } = new URL(request.url);
-    const search = searchParams.get("search") ?? undefined;
+    const busca = searchParams.get("search") ?? undefined;
     const status = searchParams.get("status") ?? undefined;
     const { page, limit, skip } = parsePagination(searchParams);
 
     const where = {
-      usuarioId: session?.user?.id || "",
-      ...(search && {
+      usuarioId: session.user.id,
+      ...(busca && {
         OR: [
-          { nomeCompleto: { contains: search, mode: "insensitive" as const } },
-          { email: { contains: search, mode: "insensitive" as const } },
-          { cidade: { contains: search, mode: "insensitive" as const } },
-          { documento: { contains: search, mode: "insensitive" as const } },
+          { nomeCompleto: { contains: busca, mode: "insensitive" as const } },
+          { email: { contains: busca, mode: "insensitive" as const } },
+          { cidade: { contains: busca, mode: "insensitive" as const } },
+          { documento: { contains: busca, mode: "insensitive" as const } },
         ],
       }),
       ...(status && { status: status as never }),
@@ -89,12 +90,12 @@ export async function GET(request: Request) {
 // ─── POST /proprietarios ──────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
-  const session = await getSession();
+  const session = await obterSessao();
   if (!session) return unauthorized();
 
   try {
-    const body = await request.json();
-    const parsed = proprietarioSchema.safeParse(body);
+    const corpo = await request.json();
+    const parsed = proprietarioSchema.safeParse(corpo);
 
     if (!parsed.success)
       return NextResponse.json(
@@ -102,14 +103,14 @@ export async function POST(request: Request) {
         { status: 400 }
       );
 
-    const { email, ...rest } = parsed.data;
+    const { email, ...resto } = parsed.data;
 
     const proprietario = await prisma.proprietario.create({
-      data: { ...rest, email: email || undefined, usuarioId: session?.user?.id || "" } as never,
+      data: { ...resto, email: email || undefined, usuarioId: session.user.id },
     });
 
     return NextResponse.json(proprietario, { status: 201 });
-  } catch (error) {
-    return serverError("[PROPRIETARIOS POST]", error);
+  } catch (erro) {
+    return serverError("[PROPRIETARIOS POST]", erro);
   }
 }

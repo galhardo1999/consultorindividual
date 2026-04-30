@@ -576,14 +576,13 @@ export default function ClienteDetailPage() {
                         key={prop.id}
                         style={{
                           display: "flex",
-                          flexDirection: "row",
+                          flexDirection: "column",
                           gap: 0,
                           backgroundColor: "var(--color-surface-900)",
                           borderBottom: idx < opportunities.length - 1 ? "1px solid var(--color-surface-800)" : "none",
                           transition: "background 0.15s",
                           padding: "1.25rem",
                           alignItems: "flex-start",
-                          flexDirection: "column",
                         }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-800)")}
                         onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-900)")}  

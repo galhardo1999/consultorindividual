@@ -44,17 +44,25 @@ export default function ClientesPage() {
 
   const fetchClients = useCallback(async () => {
     setLoading(true);
-    const params = new URLSearchParams();
-    if (search) params.set("search", search);
-    if (estagioJornada) params.set("estagioJornada", estagioJornada);
-    if (nivelUrgencia) params.set("nivelUrgencia", nivelUrgencia);
-    params.set("page", String(page));
+    try {
+      const params = new URLSearchParams();
+      if (search) params.set("search", search);
+      if (estagioJornada) params.set("estagioJornada", estagioJornada);
+      if (nivelUrgencia) params.set("nivelUrgencia", nivelUrgencia);
+      params.set("page", String(page));
 
-    const res = await fetch(`/api/clientes?${params}`);
-    const data = await res.json();
-    setClients(data.clientes || []);
-    setTotal(data.total || 0);
-    setLoading(false);
+      const res = await fetch(`/api/clientes?${params}`);
+      if (!res.ok) throw new Error("Falha ao buscar clientes");
+      const data = await res.json();
+      setClients(data.clientes || []);
+      setTotal(data.total || 0);
+    } catch (erro) {
+      console.error("Erro ao buscar clientes:", erro);
+      setClients([]);
+      setTotal(0);
+    } finally {
+      setLoading(false);
+    }
   }, [search, estagioJornada, nivelUrgencia, page]);
 
   useEffect(() => {

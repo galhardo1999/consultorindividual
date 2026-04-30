@@ -7,35 +7,29 @@ export const authConfig = {
   },
   session: {
     strategy: "jwt",
-    maxAge: 30 * 24 * 60 * 60, // 30 days
+    maxAge: 7 * 24 * 60 * 60, // 7 dias
   },
   callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (token?.id && session.user) {
-        session.user.id = token.id as string;
-      }
-      return session;
-    },
     authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user;
-      const isOnAuthPage = nextUrl.pathname.startsWith("/login") || nextUrl.pathname.startsWith("/cadastro");
+      const estaLogado = !!auth?.user;
+      const caminho = nextUrl.pathname;
 
-      if (isOnAuthPage) {
-        if (isLoggedIn) return Response.redirect(new URL("/dashboard", nextUrl));
+      // Rotas de auth (públicas): redireciona para dashboard se já logado
+      const ehPaginaAuth =
+        caminho.startsWith("/login") || caminho.startsWith("/cadastro");
+
+      if (ehPaginaAuth) {
+        if (estaLogado) return Response.redirect(new URL("/dashboard", nextUrl));
         return true;
       }
 
-      if (!isLoggedIn) {
-        return false;
-      }
-      return true;
+      // Rotas de API: o middleware não bloqueia — cada handler faz sua própria
+      // verificação via auth(). O middleware só protege páginas do App Router.
+      if (caminho.startsWith("/api")) return true;
+
+      // Demais páginas: exige autenticação
+      return estaLogado;
     },
   },
-  providers: [], // Adicionado no auth.ts para não quebrar o Edge Runtime
+  providers: [], // Providers são adicionados no auth.ts (não roda no Edge Runtime)
 } satisfies NextAuthConfig;

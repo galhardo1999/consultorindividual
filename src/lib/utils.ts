@@ -79,8 +79,8 @@ export function urgencyLabel(level: string): string {
   return labels[level] || level;
 }
 
-export function propertyTypeLabel(type: string): string {
-  const labels: Record<string, string> = {
+export function propertyTypeLabel(tipo: string): string {
+  const rotulos: Record<string, string> = {
     APARTAMENTO: "Apartamento",
     CASA: "Casa",
     CASA_CONDOMINIO: "Casa em Condomínio",
@@ -90,9 +90,14 @@ export function propertyTypeLabel(type: string): string {
     GALPAO: "Galpão",
     CHACARA: "Chácara",
     FAZENDA: "Fazenda",
+    COBERTURA: "Cobertura",
+    KITNET: "Kitnet",
+    STUDIO: "Studio",
+    PREDIO_COMERCIAL: "Prédio Comercial",
+    AREA_RURAL: "Área Rural",
     OUTRO: "Outro",
   };
-  return labels[type] || type;
+  return rotulos[tipo] ?? tipo;
 }
 
 export function propertyStatusLabel(status: string): string {

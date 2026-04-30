@@ -3,7 +3,9 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
 
-const clientSchema = z.object({
+// ─── Schema de validação ───────────────────────────────────────────────────────
+
+const clienteSchema = z.object({
   // Dados Básicos
   nomeCompleto: z.string().min(2),
   telefone: z.string().min(8),
@@ -41,27 +43,30 @@ const clientSchema = z.object({
   }).optional(),
 });
 
+// ─── GET /api/clientes ────────────────────────────────────────────────────────
+
 export async function GET(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const usuarioId = session.user.id;
   const { searchParams } = new URL(request.url);
-  const search = searchParams.get("search") || "";
+  const busca = searchParams.get("search") || "";
   const estagioJornada = searchParams.get("estagioJornada") || undefined;
   const nivelUrgencia = searchParams.get("nivelUrgencia") || undefined;
   const status = searchParams.get("status") || undefined;
-  const page = parseInt(searchParams.get("page") || "1");
-  const limit = parseInt(searchParams.get("limit") || "20");
-  const skip = (page - 1) * limit;
+  const pagina = Math.max(1, parseInt(searchParams.get("page") || "1"));
+  const limite = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+  const pular = (pagina - 1) * limite;
 
   const where = {
-    usuarioId: session?.user?.id || "",
+    usuarioId,
     arquivadoEm: status === "ARQUIVADO" ? { not: null } : null,
-    ...(search && {
+    ...(busca && {
       OR: [
-        { nomeCompleto: { contains: search, mode: "insensitive" as const } },
-        { email: { contains: search, mode: "insensitive" as const } },
-        { telefone: { contains: search } },
+        { nomeCompleto: { contains: busca, mode: "insensitive" as const } },
+        { email: { contains: busca, mode: "insensitive" as const } },
+        { telefone: { contains: busca } },
       ],
     }),
     ...(estagioJornada && { estagioJornada: estagioJornada as never }),
@@ -77,108 +82,115 @@ export async function GET(request: Request) {
           _count: { select: { interacoes: true, interesses: true } },
         },
         orderBy: { atualizadoEm: "desc" },
-        skip,
-        take: limit,
+        skip: pular,
+        take: limite,
       }),
       prisma.cliente.count({ where }),
     ]);
 
-    const clientesWithOpportunities = [];
-    for (const cliente of clientes) {
-      let oportunidadesCount = 0;
-      if (cliente.preferencia) {
-        const { preferencia } = cliente;
-        
-        // Fetch interests for this client
-        const interesses = await prisma.interesseClienteImovel.findMany({
-          where: { clienteId: cliente.id },
-          select: { imovelId: true }
-        });
-        const existingInterestIds = interesses.map((i) => i.imovelId);
+    // ─── Contagem de oportunidades sem N+1 ────────────────────────────────────
+    // 1. Uma única query batch para todos os interesses dos clientes desta página
+    const idsClientesComPreferencia = clientes
+      .filter((c) => c.preferencia)
+      .map((c) => c.id);
 
-        const whereClause: Record<string, unknown> = {
-          usuarioId: session?.user?.id || "",
-          status: "DISPONIVEL",
-          id: { notIn: existingInterestIds },
-        };
+    const interessesExistentes = await prisma.interesseClienteImovel.findMany({
+      where: { clienteId: { in: idsClientesComPreferencia } },
+      select: { clienteId: true, imovelId: true },
+    });
 
-        if (preferencia.tipoImovel) whereClause.tipoImovel = preferencia.tipoImovel;
-        if (preferencia.cidadeInteresse) {
-          whereClause.cidade = { contains: preferencia.cidadeInteresse, mode: "insensitive" };
-        }
-        if (preferencia.precoMinimo !== null || preferencia.precoMaximo !== null) {
-          const priceFilter: Record<string, number> = {};
-          if (preferencia.precoMinimo !== null) priceFilter.gte = preferencia.precoMinimo;
-          if (preferencia.precoMaximo !== null) priceFilter.lte = preferencia.precoMaximo;
-          whereClause.precoVenda = priceFilter;
-        }
-        if (preferencia.minQuartos !== null) whereClause.quartos = { gte: preferencia.minQuartos };
-        if (preferencia.minBanheiros !== null) whereClause.banheiros = { gte: preferencia.minBanheiros };
-        if (preferencia.minVagas !== null) whereClause.vagasGaragem = { gte: preferencia.minVagas };
-        if (preferencia.areaMinima !== null || preferencia.areaMaxima !== null) {
-          const areaFilter: Record<string, number> = {};
-          if (preferencia.areaMinima !== null) areaFilter.gte = preferencia.areaMinima;
-          if (preferencia.areaMaxima !== null) areaFilter.lte = preferencia.areaMaxima;
-          whereClause.areaUtil = areaFilter;
-        }
-
-        oportunidadesCount = await prisma.imovel.count({ where: whereClause as never });
-      }
-      clientesWithOpportunities.push({
-        ...cliente,
-        oportunidadesCount
-      });
+    // Mapa: clienteId → array de imovelIds já vinculados
+    const mapaInteresses = new Map<string, string[]>();
+    for (const i of interessesExistentes) {
+      if (!mapaInteresses.has(i.clienteId)) mapaInteresses.set(i.clienteId, []);
+      mapaInteresses.get(i.clienteId)!.push(i.imovelId);
     }
 
-    return NextResponse.json({ clientes: clientesWithOpportunities, total, page, limit });
-  } catch (error) {
-    console.error("[CLIENTES GET]", error);
+    // 2. Conta oportunidades em paralelo — uma query por cliente com preferência,
+    //    mas sem o findMany de interesses repetido (já temos o mapa acima)
+    const clientesComOportunidades = await Promise.all(
+      clientes.map(async (cliente) => {
+        if (!cliente.preferencia) return { ...cliente, oportunidadesCount: 0 };
+
+        const p = cliente.preferencia;
+        const imovelIdsVinculados = mapaInteresses.get(cliente.id) ?? [];
+
+        const filtro: Record<string, unknown> = {
+          usuarioId,
+          status: "DISPONIVEL",
+          id: { notIn: imovelIdsVinculados },
+          ...(p.tipoImovel && { tipoImovel: p.tipoImovel }),
+          ...(p.cidadeInteresse && {
+            cidade: { contains: p.cidadeInteresse, mode: "insensitive" },
+          }),
+          ...((p.precoMinimo !== null || p.precoMaximo !== null) && {
+            precoVenda: {
+              ...(p.precoMinimo !== null && { gte: p.precoMinimo }),
+              ...(p.precoMaximo !== null && { lte: p.precoMaximo }),
+            },
+          }),
+          ...(p.minQuartos !== null && { quartos: { gte: p.minQuartos } }),
+          ...(p.areaMinima !== null && { areaUtil: { gte: p.areaMinima } }),
+        };
+
+        const oportunidadesCount = await prisma.imovel.count({ where: filtro as never });
+        return { ...cliente, oportunidadesCount };
+      })
+    );
+
+    return NextResponse.json({ clientes: clientesComOportunidades, total, page: pagina, limit: limite });
+  } catch (erro) {
+    console.error("[CLIENTES GET]", erro);
     return NextResponse.json({ error: "Erro interno", clientes: [], total: 0 }, { status: 500 });
   }
 }
+
+// ─── POST /api/clientes ───────────────────────────────────────────────────────
 
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+  const usuarioId = session.user.id;
+
   try {
-    const body = await request.json();
-    const parsed = clientSchema.safeParse(body);
+    const corpo = await request.json();
+    const parsed = clienteSchema.safeParse(corpo);
     if (!parsed.success) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
     }
 
-    const { documento, dataNascimento, proximoContato, preferencia, ...rest } = parsed.data;
-    const dataToCreate: Record<string, unknown> = {
-      ...rest,
+    const { documento, dataNascimento, proximoContato, preferencia, ...resto } = parsed.data;
+
+    const dadosCriacao: Record<string, unknown> = {
+      ...resto,
       documento: documento || null,
-      // Convert date strings to proper Date objects for Prisma
-      dataNascimento: dataNascimento && !isNaN(new Date(`${dataNascimento}T00:00:00.000Z`).getTime()) 
-        ? new Date(`${dataNascimento}T00:00:00.000Z`) 
-        : null,
-      proximoContato: proximoContato && !isNaN(new Date(proximoContato).getTime()) 
-        ? new Date(proximoContato) 
-        : null,
+      dataNascimento:
+        dataNascimento && !isNaN(new Date(`${dataNascimento}T00:00:00.000Z`).getTime())
+          ? new Date(`${dataNascimento}T00:00:00.000Z`)
+          : null,
+      proximoContato:
+        proximoContato && !isNaN(new Date(proximoContato).getTime())
+          ? new Date(proximoContato)
+          : null,
     };
-    Object.keys(dataToCreate).forEach((key) => {
-      if (dataToCreate[key] === "") {
-        dataToCreate[key] = null;
-      }
-    });
+
+    // Normaliza strings vazias para null
+    for (const chave of Object.keys(dadosCriacao)) {
+      if (dadosCriacao[chave] === "") dadosCriacao[chave] = null;
+    }
 
     const cliente = await prisma.cliente.create({
       data: {
-        ...dataToCreate,
-        usuarioId: session?.user?.id || "",
-        preferencia: preferencia ? {
-          create: preferencia
-        } : undefined
+        ...dadosCriacao,
+        usuarioId,
+        preferencia: preferencia ? { create: preferencia } : undefined,
       } as never,
     });
 
     return NextResponse.json(cliente, { status: 201 });
-  } catch (error) {
-    console.error("[CLIENTS POST]", error);
+  } catch (erro) {
+    console.error("[CLIENTES POST]", erro);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
 }

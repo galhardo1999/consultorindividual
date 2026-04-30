@@ -24,85 +24,97 @@ const updateSchema = z.object({
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-type RouteContext = { params: Promise<{ id: string }> };
+type ContextoRota = { params: Promise<{ id: string }> };
 
-function unauthorized() {
-  return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-}
+const naoAutorizado = () =>
+  NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-function notFound() {
-  return NextResponse.json({ error: "Not found" }, { status: 404 });
-}
+const naoEncontrado = () =>
+  NextResponse.json({ error: "Not found" }, { status: 404 });
 
-async function resolveOwner(id: string, usuarioId: string) {
-  return prisma.proprietario.findFirst({ where: { id, usuarioId } });
-}
+const erroInterno = (label: string, erro: unknown) => {
+  console.error(label, erro);
+  return NextResponse.json({ error: "Erro interno do servidor" }, { status: 500 });
+};
 
-async function getSession() {
+// Retorna sessão com usuário garantidamente autenticado
+const obterSessao = async () => {
   const session = await auth();
-  return session?.user?.id ? session : null;
-}
+  if (!session?.user?.id) return null;
+  return session as typeof session & { user: { id: string } };
+};
+
+// Verifica se o proprietário pertence ao usuário
+const verificarProprietario = (id: string, usuarioId: string) =>
+  prisma.proprietario.findFirst({ where: { id, usuarioId } });
 
 // ─── GET /proprietarios/[id] ──────────────────────────────────────────────────
 
-export async function GET(_req: Request, { params }: RouteContext) {
-  const session = await getSession();
-  if (!session) return unauthorized();
+export async function GET(_req: Request, { params }: ContextoRota) {
+  const session = await obterSessao();
+  if (!session) return naoAutorizado();
 
   const { id } = await params;
 
   const proprietario = await prisma.proprietario.findFirst({
-    where: { id, usuarioId: session?.user?.id || "" },
+    where: { id, usuarioId: session.user.id },
     include: {
       imoveis: { orderBy: { atualizadoEm: "desc" } },
     },
   });
 
-  return proprietario ? NextResponse.json(proprietario) : notFound();
+  return proprietario ? NextResponse.json(proprietario) : naoEncontrado();
 }
 
 // ─── PATCH /proprietarios/[id] ────────────────────────────────────────────────
 
-export async function PATCH(req: Request, { params }: RouteContext) {
-  const session = await getSession();
-  if (!session) return unauthorized();
+export async function PATCH(req: Request, { params }: ContextoRota) {
+  const session = await obterSessao();
+  if (!session) return naoAutorizado();
 
   const { id } = await params;
 
-  const [existing, body] = await Promise.all([
-    resolveOwner(id, session?.user?.id || ""),
+  const [existente, corpo] = await Promise.all([
+    verificarProprietario(id, session.user.id),
     req.json(),
   ]);
 
-  if (!existing) return notFound();
+  if (!existente) return naoEncontrado();
 
-  const parsed = updateSchema.safeParse(body);
+  const parsed = updateSchema.safeParse(corpo);
   if (!parsed.success)
-    return NextResponse.json({ error: "Dados inválidos" }, { status: 400 });
+    return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
 
-  const { email, ...rest } = parsed.data;
+  const { email, ...resto } = parsed.data;
 
-  const proprietario = await prisma.proprietario.update({
-    where: { id },
-    data: { ...rest, email: email || null } as never,
-  });
+  try {
+    const proprietario = await prisma.proprietario.update({
+      where: { id, usuarioId: session.user.id },
+      data: { ...resto, email: email || null },
+    });
 
-  return NextResponse.json(proprietario);
+    return NextResponse.json(proprietario);
+  } catch (erro) {
+    return erroInterno("[PROPRIETARIOS PATCH]", erro);
+  }
 }
 
 // ─── DELETE /proprietarios/[id] ───────────────────────────────────────────────
 
-export async function DELETE(_req: Request, { params }: RouteContext) {
-  const session = await getSession();
-  if (!session) return unauthorized();
+export async function DELETE(_req: Request, { params }: ContextoRota) {
+  const session = await obterSessao();
+  if (!session) return naoAutorizado();
 
   const { id } = await params;
 
-  const existing = await resolveOwner(id, session?.user?.id || "");
-  if (!existing) return notFound();
+  const existente = await verificarProprietario(id, session.user.id);
+  if (!existente) return naoEncontrado();
 
-  // onDelete: SetNull handles clearing proprietarioId on imoveis
-  await prisma.proprietario.delete({ where: { id } });
-
-  return NextResponse.json({ ok: true });
+  try {
+    // onDelete: SetNull trata a desvinculação de imóveis automaticamente
+    await prisma.proprietario.delete({ where: { id } });
+    return NextResponse.json({ ok: true });
+  } catch (erro) {
+    return erroInterno("[PROPRIETARIOS DELETE]", erro);
+  }
 }
