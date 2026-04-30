@@ -11,6 +11,7 @@ const updateSchema = z.object({
   cidade: z.string().min(2).optional(),
   bairro: z.string().optional(),
   cep: z.string().optional(),
+  estado: z.string().optional(),
   endereco: z.string().optional(),
   numero: z.string().optional(),
   codigoInterno: z.string().optional(),
@@ -71,6 +72,7 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
 
   const addressChanged =
     (dataToUpdate.cidade !== undefined && dataToUpdate.cidade !== existing.cidade) ||
+    (dataToUpdate.estado !== undefined && dataToUpdate.estado !== existing.estado) ||
     (dataToUpdate.bairro !== undefined && dataToUpdate.bairro !== existing.bairro) ||
     (dataToUpdate.cep !== undefined && dataToUpdate.cep !== existing.cep) ||
     (dataToUpdate.endereco !== undefined && dataToUpdate.endereco !== existing.endereco) ||

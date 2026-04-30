@@ -14,6 +14,7 @@ export interface MapImovel {
   status: string;
   cidade: string;
   bairro: string | null;
+  estado: string | null;
   endereco: string | null;
   numero: string | null;
   cep: string | null;
@@ -23,6 +24,8 @@ export interface MapImovel {
   areaUtil: number | null;
   lat: number;
   lng: number;
+  // URLs de todas as fotos do imóvel, ordenadas (capa primeiro)
+  fotos: string[];
 }
 
 interface MapaImoveisProps {
@@ -200,7 +203,119 @@ export function MapaImoveis({ imoveis, onSearchCoords }: MapaImoveisProps) {
         imovel.vagasGaragem ? `<span>🚗 ${formatPlural(imovel.vagasGaragem, 'vaga', 'vagas')}</span>` : ''
       ].filter(Boolean).join('<span style="color:#cbd5e1;margin:0 6px">•</span>');
 
-      const photoHtml = `<div style="width:100%;height:130px;background-color:#f1f5f9;border-radius:8px;margin-bottom:12px;background-image:url('https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=400&q=80');background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:24px;border:1px solid #e2e8f0;"></div>`;
+      // ── Carrossel de fotos ──────────────────────────────────────────────────
+      // ID único por imóvel para isolar os event handlers de cada popup
+      const carouselId = `car-${imovel.id.replace(/[^a-z0-9]/gi, "")}`;
+
+      const buildCarouselHtml = (): string => {
+        if (imovel.fotos.length === 0) {
+          // Placeholder quando não há fotos
+          return `
+            <div style="width:100%;height:150px;background:#f1f5f9;border-radius:10px;
+              margin-bottom:12px;display:flex;align-items:center;justify-content:center;
+              border:1px solid #e2e8f0;">
+              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+                <rect width="48" height="48" rx="10" fill="#e2e8f0"/>
+                <path d="M24 10L8 24h5v14h10V28h6v10h10V24h5L24 10z" fill="#94a3b8"/>
+              </svg>
+            </div>`;
+        }
+
+        if (imovel.fotos.length === 1) {
+          // Sem carrossel para 1 foto
+          return `
+            <div style="width:100%;height:150px;border-radius:10px;margin-bottom:12px;
+              overflow:hidden;border:1px solid #e2e8f0;">
+              <img src="${imovel.fotos[0]}" alt="${imovel.titulo}"
+                style="width:100%;height:100%;object-fit:cover;display:block;" />
+            </div>`;
+        }
+
+        // Carrossel com múltiplas fotos
+        const slides = imovel.fotos
+          .map(
+            (url, idx) => `
+            <div style="flex:0 0 100%;height:150px;overflow:hidden;">
+              <img src="${url}" alt="Foto ${idx + 1} de ${imovel.titulo}"
+                loading="${idx === 0 ? "eager" : "lazy"}"
+                style="width:100%;height:100%;object-fit:cover;display:block;" />
+            </div>`
+          )
+          .join("");
+
+        const dots = imovel.fotos
+          .map(
+            (_, idx) => `
+            <span id="${carouselId}-dot-${idx}" style="
+              width:6px;height:6px;border-radius:50%;cursor:pointer;
+              background:${idx === 0 ? "#fff" : "rgba(255,255,255,0.45)"};
+              transition:background 0.2s;display:inline-block;
+            " onclick="(function(){
+              var t=document.getElementById('${carouselId}-track');
+              t.scrollTo({left:${idx}*t.offsetWidth,behavior:'smooth'});
+            })()"></span>`
+          )
+          .join("");
+
+        return `
+          <div id="${carouselId}" style="position:relative;width:100%;height:150px;
+            border-radius:10px;margin-bottom:12px;overflow:hidden;border:1px solid #e2e8f0;">
+
+            <!-- Slides -->
+            <div id="${carouselId}-track" style="
+              display:flex;height:100%;overflow-x:scroll;
+              scroll-snap-type:x mandatory;scrollbar-width:none;"
+              onscroll="(function(el){
+                var idx=Math.round(el.scrollLeft/el.offsetWidth);
+                el.parentElement.querySelectorAll('[id^=\'${carouselId}-dot-\']').forEach(function(d,i){
+                  d.style.background=i===idx?'#fff':'rgba(255,255,255,0.45)';
+                });
+                document.getElementById('${carouselId}-count').textContent=(idx+1)+'/'+${imovel.fotos.length};
+              })(this)">
+              ${slides}
+            </div>
+
+            <!-- Botão Anterior -->
+            <button onclick="(function(){
+              var t=document.getElementById('${carouselId}-track');
+              t.scrollBy({left:-t.offsetWidth,behavior:'smooth'});
+            })()" style="
+              position:absolute;left:6px;top:50%;transform:translateY(-50%);
+              width:26px;height:26px;border-radius:50%;border:none;
+              background:rgba(0,0,0,0.45);color:#fff;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;
+              font-size:14px;line-height:1;z-index:2;">&#8249;</button>
+
+            <!-- Botão Próximo -->
+            <button onclick="(function(){
+              var t=document.getElementById('${carouselId}-track');
+              t.scrollBy({left:t.offsetWidth,behavior:'smooth'});
+            })()" style="
+              position:absolute;right:6px;top:50%;transform:translateY(-50%);
+              width:26px;height:26px;border-radius:50%;border:none;
+              background:rgba(0,0,0,0.45);color:#fff;cursor:pointer;
+              display:flex;align-items:center;justify-content:center;
+              font-size:14px;line-height:1;z-index:2;">&#8250;</button>
+
+            <!-- Contador -->
+            <span id="${carouselId}-count" style="
+              position:absolute;top:7px;right:8px;
+              background:rgba(0,0,0,0.5);color:#fff;
+              font-size:10px;font-weight:600;padding:2px 6px;
+              border-radius:999px;z-index:2;
+            ">1/${imovel.fotos.length}</span>
+
+            <!-- Indicadores (pontos) -->
+            <div style="
+              position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
+              display:flex;gap:4px;z-index:2;">${dots}</div>
+          </div>
+
+          <style>#${carouselId}-track::-webkit-scrollbar{display:none;}
+          #${carouselId}-track>div{scroll-snap-align:start;}</style>`;
+      };
+
+      const photoHtml = buildCarouselHtml();
 
       const popupHtml = `
         <div style="font-family:Inter,sans-serif;width:240px;padding:4px">

@@ -110,7 +110,7 @@ export async function GET(request: Request) {
           const priceFilter: Record<string, number> = {};
           if (preferencia.precoMinimo !== null) priceFilter.gte = preferencia.precoMinimo;
           if (preferencia.precoMaximo !== null) priceFilter.lte = preferencia.precoMaximo;
-          whereClause.preco = priceFilter;
+          whereClause.precoVenda = priceFilter;
         }
         if (preferencia.minQuartos !== null) whereClause.quartos = { gte: preferencia.minQuartos };
         if (preferencia.minBanheiros !== null) whereClause.banheiros = { gte: preferencia.minBanheiros };

@@ -4,14 +4,19 @@ import { prisma } from "@/lib/prisma";
 
 // ─── Geocode helper ───────────────────────────────────────────────────────────
 
-async function geocodeAddress(imovel: {
+interface DadosGeocode {
   id: string;
   endereco?: string | null;
   numero?: string | null;
   bairro?: string | null;
   cidade: string;
+  estado?: string | null;
   cep?: string | null;
-}): Promise<{ lat: number; lng: number } | "NOT_FOUND" | null> {
+}
+
+async function geocodeAddress(
+  imovel: DadosGeocode
+): Promise<{ lat: number; lng: number } | "NOT_FOUND" | null> {
   const headers = {
     "User-Agent": "PrimeRealtyCRM/1.0 (consultorindividual@prime.com)",
     "Accept-Language": "pt-BR,pt;q=0.9",
@@ -22,40 +27,78 @@ async function geocodeAddress(imovel: {
     return "NOT_FOUND";
   }
 
-  const fullParts = [imovel.endereco, imovel.numero, imovel.bairro, imovel.cidade, imovel.cep, "Brasil"]
-    .filter(Boolean)
-    .join(", ");
+  const genericTypes = [
+    "city", "state", "country", "municipality",
+    "administrative", "region", "postcode", "county",
+  ];
+
+  // 1ª tentativa: query estruturada do Nominatim (mais precisa, considera número)
+  try {
+    const params = new URLSearchParams({
+      format: "json",
+      addressdetails: "1",
+      limit: "1",
+      street: [imovel.numero, imovel.endereco].filter(Boolean).join(" "),
+      city: imovel.cidade,
+      country: "Brasil",
+    });
+    if (imovel.bairro) params.set("district", imovel.bairro);
+    if (imovel.estado) params.set("state", imovel.estado);
+    if (imovel.cep) params.set("postalcode", imovel.cep);
+
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
+      { headers, signal: AbortSignal.timeout(6000) }
+    );
+
+    if (res.status === 429) {
+      console.warn(`[Geocode] Rate limit atingido.`);
+      return null;
+    }
+
+    const data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
+
+    if (data?.length > 0 && !genericTypes.includes(data[0].addresstype ?? data[0].type ?? data[0].class ?? "")) {
+      console.info(`[Geocode] Localizado via query estruturada: ${imovel.endereco}, ${imovel.numero}`);
+      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+    }
+  } catch (err) {
+    console.warn(`[Geocode] Falha na query estruturada, tentando fallback: ${imovel.id}`, err);
+  }
+
+  // 2ª tentativa: query livre com endereço completo
+  const fullParts = [
+    imovel.endereco,
+    imovel.numero,
+    imovel.bairro,
+    imovel.cidade,
+    imovel.estado,
+    imovel.cep,
+    "Brasil",
+  ].filter(Boolean).join(", ");
 
   try {
     let res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullParts)}&limit=1`,
       { headers, signal: AbortSignal.timeout(6000) }
     );
-    
-    if (res.status === 429) {
-      console.warn(`[Geocode] Rate limit atingido.`);
-      return null;
-    }
 
-    let data = res.ok ? (await res.json()) as Array<any> : [];
+    if (res.status === 429) return null;
 
-    // Se não achou com detalhes, tenta um fallback menos restritivo (Rua, Número, Cidade)
+    let data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
+
+    // 3ª tentativa: fallback sem bairro/CEP
     if (!data?.length) {
-      const fallbackParts = [imovel.endereco, imovel.numero, imovel.cidade, "Brasil"]
-        .filter(Boolean)
-        .join(", ");
-      
+      const fallbackParts = [imovel.endereco, imovel.numero, imovel.cidade, "Brasil"].filter(Boolean).join(", ");
       res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackParts)}&limit=1`,
         { headers, signal: AbortSignal.timeout(6000) }
       );
-      data = res.ok ? (await res.json()) as Array<any> : [];
+      data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
     }
 
     if (data?.length > 0) {
-      const resultType = data[0].addresstype || data[0].type || data[0].class || "";
-      const genericTypes = ["city", "state", "country", "municipality", "administrative", "region", "postcode", "county"];
-      
+      const resultType = data[0].addresstype ?? data[0].type ?? data[0].class ?? "";
       if (genericTypes.includes(resultType)) {
         console.warn(`[Geocode] Retorno genérico ignorado (${resultType}) para: ${fullParts}`);
         return "NOT_FOUND";
@@ -98,6 +141,7 @@ export async function GET() {
         bairro: true,
         endereco: true,
         numero: true,
+        estado: true,
         cep: true,
         quartos: true,
         banheiros: true,
@@ -105,6 +149,10 @@ export async function GET() {
         areaUtil: true,
         latitude: true,
         longitude: true,
+        fotos: {
+          select: { url: true, isCapa: true, ordem: true },
+          orderBy: [{ isCapa: "desc" }, { ordem: "asc" }],
+        },
       },
     }),
     prisma.imovel.count({
@@ -127,6 +175,7 @@ export async function GET() {
     bairro: i.bairro,
     endereco: i.endereco,
     numero: i.numero,
+    estado: i.estado,
     cep: i.cep,
     quartos: i.quartos,
     banheiros: i.banheiros,
@@ -134,6 +183,8 @@ export async function GET() {
     areaUtil: i.areaUtil,
     lat: i.latitude as number,
     lng: i.longitude as number,
+    // Array de URLs de fotos ordenadas: capa primeiro, depois por ordem
+    fotos: i.fotos.map((f) => f.url),
   }));
 
   return NextResponse.json({ imoveis, pendingGeocode: pendingCount });
@@ -164,11 +215,18 @@ export async function POST() {
       bairro: true,
       endereco: true,
       numero: true,
+      estado: true,
       cep: true,
       quartos: true,
+      banheiros: true,
+      vagasGaragem: true,
       areaUtil: true,
+      fotos: {
+        select: { url: true, isCapa: true, ordem: true },
+        orderBy: [{ isCapa: "desc" }, { ordem: "asc" }],
+      },
     },
-    take: 10, // Respect Nominatim rate-limit & serverless timeout
+    take: 10, // Respeita o rate-limit do Nominatim e timeout serverless
   });
 
   const geocoded = [];
@@ -203,10 +261,17 @@ export async function POST() {
         status: imovel.status,
         cidade: imovel.cidade,
         bairro: imovel.bairro,
+        endereco: imovel.endereco,
+        numero: imovel.numero,
+        estado: imovel.estado,
+        cep: imovel.cep,
         quartos: imovel.quartos,
+        banheiros: imovel.banheiros,
+        vagasGaragem: imovel.vagasGaragem,
         areaUtil: imovel.areaUtil,
         lat: coords.lat,
         lng: coords.lng,
+        fotos: imovel.fotos.map((f) => f.url),
       });
     }
   }
