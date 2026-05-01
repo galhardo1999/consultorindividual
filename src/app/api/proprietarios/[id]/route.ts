@@ -59,7 +59,10 @@ export async function GET(_req: Request, { params }: ContextoRota) {
   const proprietario = await prisma.proprietario.findFirst({
     where: { id, usuarioId: session.user.id },
     include: {
-      imoveis: { orderBy: { atualizadoEm: "desc" } },
+      imoveis: {
+        orderBy: { atualizadoEm: "desc" },
+        include: { fotos: { orderBy: { isCapa: "desc" } } },
+      },
     },
   });
 

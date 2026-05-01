@@ -21,13 +21,29 @@ model Usuario {
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  clientes      Cliente[]
-  imoveis       Imovel[]
-  interacoes    Interacao[]
-  etiquetas     Etiqueta[]
-  proprietarios Proprietario[]
+  clientes               Cliente[]
+  imoveis                Imovel[]
+  interacoes             Interacao[]
+  etiquetas              Etiqueta[]
+  proprietarios          Proprietario[]
+  tokensRecuperacao      TokenRecuperacaoSenha[]
 
   @@map("usuarios")
+}
+
+model TokenRecuperacaoSenha {
+  id        String   @id @default(cuid())
+  usuarioId String
+  token     String   @unique
+  expiraEm  DateTime
+  usado     Boolean  @default(false)
+  criadoEm  DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([usuarioId])
+  @@map("tokens_recuperacao_senha")
 }
 
 model Cliente {

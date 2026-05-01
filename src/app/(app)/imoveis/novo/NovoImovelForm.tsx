@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Save, Loader2, ChevronDown, ChevronUp } from "lucide-react";
-import { maskCurrency, parseCurrency } from "@/lib/utils";
+import { maskCurrency, parseCurrency, reaisParaInput } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
 import { UploadImagens } from "@/components/UploadImagens";
 import { criarImovel, atualizarImovel } from "../actions";
@@ -107,21 +107,21 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
     complemento: imovel?.complemento || "",
 
     // Valores Venda
-    precoVenda: imovel?.precoVenda ? maskCurrency(imovel.precoVenda.toString()) : "",
+    precoVenda: reaisParaInput(imovel?.precoVenda),
     aceitaFinanciamento: imovel?.aceitaFinanciamento || false,
     aceitaPermuta: imovel?.aceitaPermuta || false,
     aceitaProposta: imovel?.aceitaProposta ?? true,
     imovelQuitado: imovel?.imovelQuitado || false,
-    saldoDevedor: imovel?.saldoDevedor ? maskCurrency(imovel.saldoDevedor.toString()) : "",
-    valorMinimoAceito: imovel?.valorMinimoAceito ? maskCurrency(imovel.valorMinimoAceito.toString()) : "",
+    saldoDevedor: reaisParaInput(imovel?.saldoDevedor),
+    valorMinimoAceito: reaisParaInput(imovel?.valorMinimoAceito),
 
     // Valores Locação
-    valorAluguel: imovel?.valorAluguel ? maskCurrency(imovel.valorAluguel.toString()) : "",
-    valorCondominio: imovel?.valorCondominio ? maskCurrency(imovel.valorCondominio.toString()) : "",
-    valorIptu: imovel?.valorIptu ? maskCurrency(imovel.valorIptu.toString()) : "",
-    valorSeguroIncendio: imovel?.valorSeguroIncendio ? maskCurrency(imovel.valorSeguroIncendio.toString()) : "",
-    valorSeguroFianca: imovel?.valorSeguroFianca ? maskCurrency(imovel.valorSeguroFianca.toString()) : "",
-    valorCaucao: imovel?.valorCaucao ? maskCurrency(imovel.valorCaucao.toString()) : "",
+    valorAluguel: reaisParaInput(imovel?.valorAluguel),
+    valorCondominio: reaisParaInput(imovel?.valorCondominio),
+    valorIptu: reaisParaInput(imovel?.valorIptu),
+    valorSeguroIncendio: reaisParaInput(imovel?.valorSeguroIncendio),
+    valorSeguroFianca: reaisParaInput(imovel?.valorSeguroFianca),
+    valorCaucao: reaisParaInput(imovel?.valorCaucao),
     mesesCaucao: imovel?.mesesCaucao?.toString() || "",
     aceitaFiador: imovel?.aceitaFiador || false,
     aceitaSeguroFianca: imovel?.aceitaSeguroFianca || false,
@@ -131,11 +131,11 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
     disponivelApartirDe: imovel?.disponivelApartirDe ? new Date(imovel.disponivelApartirDe).toISOString().split('T')[0] : "",
 
     // Valores Temporada
-    valorTemporadaDiaria: imovel?.valorTemporadaDiaria ? maskCurrency(imovel.valorTemporadaDiaria.toString()) : "",
-    valorTemporadaSemanal: imovel?.valorTemporadaSemanal ? maskCurrency(imovel.valorTemporadaSemanal.toString()) : "",
-    valorTemporadaMensal: imovel?.valorTemporadaMensal ? maskCurrency(imovel.valorTemporadaMensal.toString()) : "",
-    taxaLimpeza: imovel?.taxaLimpeza ? maskCurrency(imovel.taxaLimpeza.toString()) : "",
-    taxaServico: imovel?.taxaServico ? maskCurrency(imovel.taxaServico.toString()) : "",
+    valorTemporadaDiaria: reaisParaInput(imovel?.valorTemporadaDiaria),
+    valorTemporadaSemanal: reaisParaInput(imovel?.valorTemporadaSemanal),
+    valorTemporadaMensal: reaisParaInput(imovel?.valorTemporadaMensal),
+    taxaLimpeza: reaisParaInput(imovel?.taxaLimpeza),
+    taxaServico: reaisParaInput(imovel?.taxaServico),
     quantidadeMaxHospedes: imovel?.quantidadeMaxHospedes?.toString() || "",
     quantidadeMinDiarias: imovel?.quantidadeMinDiarias?.toString() || "",
     horarioCheckin: imovel?.horarioCheckin || "",
@@ -200,7 +200,7 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
     // Comercial e Estratégia
     exclusividade: imovel?.exclusividade || false,
     comissaoPercentual: imovel?.comissaoPercentual?.toString() || "",
-    comissaoValorFixo: imovel?.comissaoValorFixo ? maskCurrency(imovel.comissaoValorFixo.toString()) : "",
+    comissaoValorFixo: reaisParaInput(imovel?.comissaoValorFixo),
     urgenciaProprietario: imovel?.urgenciaProprietario || "",
     motivoVendaLocacao: imovel?.motivoVendaLocacao || "",
     pontosFortes: imovel?.pontosFortes || "",

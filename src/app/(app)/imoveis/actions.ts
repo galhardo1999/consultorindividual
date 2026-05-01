@@ -67,11 +67,14 @@ export const atualizarImovel = async (
     const dataToUpdate: Prisma.ImovelUpdateInput = {
       ...restoDados,
       ...(hasAddressChange ? { latitude: null, longitude: null } : {}),
-      ...(fotos !== undefined
+      ...(fotos !== undefined && fotos.length > 0
         ? {
             fotos: {
-              deleteMany: {},
-              create: fotos.map((url) => ({ url })),
+              create: fotos.map((url, idx) => ({
+                url,
+                isCapa: idx === 0,
+                ordem: idx,
+              })),
             },
           }
         : {}),

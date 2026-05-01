@@ -4,7 +4,7 @@ import React, { useEffect, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Edit2, Archive, Mail, Phone, MapPin, Building2, User, Home, FileText, Plus, BedDouble, Bath, Car, Maximize, ChevronLeft, ChevronRight, Heart } from "lucide-react";
-import { formatDate, maskTelefone, maskCPF, formatCurrency } from "@/lib/utils";
+import { formatDate, maskTelefone, maskCPF, maskCNPJ, formatCurrency } from "@/lib/utils";
 
 interface Imovel {
   id: string;
@@ -24,7 +24,7 @@ interface Imovel {
   status: string;
   criadoEm: string;
   atualizadoEm: string;
-  imagens?: string[];
+  fotos?: { id: string; url: string; isCapa: boolean }[];
 }
 
 interface ProprietarioDetail {
@@ -73,7 +73,8 @@ function ImovelCardHorizontal({ imovel }: { imovel: Imovel }) {
     setIsFavorited(!isFavorited);
   };
 
-  const imagens = imovel.imagens || [];
+  // Derivar array de URLs das fotos (capa primeiro, pois a API ordenou isCapa desc)
+  const imagens = (imovel.fotos ?? []).map((f) => f.url);
 
   const handleNextImage = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -322,7 +323,7 @@ export default function ProprietarioDetailPage() {
                   <div className="text-[11px] font-medium uppercase text-surface-500 mb-1">CPF / CNPJ</div>
                   <div className="flex items-center gap-2 text-sm text-surface-100 font-medium">
                     <FileText size={14} className="text-surface-400" />
-                    {proprietario.tipoPessoa === "PESSOA_FISICA" ? maskCPF(proprietario.documento) : proprietario.documento}
+                    {proprietario.tipoPessoa === "PESSOA_FISICA" ? maskCPF(proprietario.documento) : maskCNPJ(proprietario.documento)}
                   </div>
                 </div>
               )}

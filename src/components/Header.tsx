@@ -11,7 +11,7 @@ interface HeaderProps {
   usuario?: { nome?: string | null; email?: string | null; image?: string | null };
 }
 
-export function Header({ usuario }: HeaderProps) {
+export function Header({ onMenuToggle, usuario }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const router = useRouter();
 

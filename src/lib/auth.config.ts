@@ -18,6 +18,13 @@ export const authConfig = {
       const ehPaginaAuth =
         caminho.startsWith("/login") || caminho.startsWith("/cadastro");
 
+      // Rotas de recuperação de senha — sempre públicas (não redireciona logado)
+      const ehPaginaRecuperacao =
+        caminho.startsWith("/recuperar-senha") ||
+        caminho.startsWith("/redefinir-senha");
+
+      if (ehPaginaRecuperacao) return true;
+
       if (ehPaginaAuth) {
         if (estaLogado) return Response.redirect(new URL("/dashboard", nextUrl));
         return true;

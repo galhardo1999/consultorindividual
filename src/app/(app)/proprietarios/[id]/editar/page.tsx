@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { maskTelefone, maskCPF } from "@/lib/utils";
+import { maskTelefone, maskDocumento } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
 
 export default function EditarProprietarioPage() {
@@ -123,9 +123,18 @@ export default function EditarProprietarioPage() {
           <h2 className="section-titulo mb-4">Informações Básicas</h2>
 
           <div className="form-group">
-            <label className="label" htmlFor="nomeCompleto">Nome Completo *</label>
-            <input id="nomeCompleto" type="text" className="input" placeholder="João da Silva"
-              value={form.nomeCompleto} onChange={(e) => update("nomeCompleto", e.target.value)} required />
+            <label className="label" htmlFor="nomeCompleto">
+              {form.tipoPessoa === "PESSOA_JURIDICA" ? "Razão Social *" : "Nome Completo *"}
+            </label>
+            <input
+              id="nomeCompleto"
+              type="text"
+              className="input"
+              placeholder={form.tipoPessoa === "PESSOA_JURIDICA" ? "Ex: Imobiliária Silva Ltda." : "Ex: João da Silva"}
+              value={form.nomeCompleto}
+              onChange={(e) => update("nomeCompleto", e.target.value)}
+              required
+            />
           </div>
 
           <div className="form-row-3">
@@ -137,9 +146,18 @@ export default function EditarProprietarioPage() {
               </select>
             </div>
             <div className="form-group" style={{ gridColumn: "span 2" }}>
-              <label className="label" htmlFor="documento">CPF / CNPJ</label>
-              <input id="documento" type="text" className="input" placeholder="000.000.000-00"
-                value={form.documento} onChange={(e) => update("documento", maskCPF(e.target.value))} />
+              <label className="label" htmlFor="documento">
+                {form.tipoPessoa === "PESSOA_JURIDICA" ? "CNPJ" : "CPF"}
+              </label>
+              <input
+                id="documento"
+                type="text"
+                className="input"
+                placeholder={form.tipoPessoa === "PESSOA_JURIDICA" ? "00.000.000/0000-00" : "000.000.000-00"}
+                maxLength={form.tipoPessoa === "PESSOA_JURIDICA" ? 18 : 14}
+                value={form.documento}
+                onChange={(e) => update("documento", maskDocumento(e.target.value))}
+              />
             </div>
           </div>
 

@@ -178,7 +178,7 @@ export default function ClienteDetailPage() {
   async function addInterest() {
     if (!selectedPropertyId) return;
     setSaving(true);
-    await fetch(`/api/clientes/${id}/interesses`, {
+    await fetch(`/api/clientes/${id}/interests`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ imovelId: selectedPropertyId, statusInteresse }),

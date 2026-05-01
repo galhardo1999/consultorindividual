@@ -21,6 +21,7 @@ export default async function EditarImovelPage({ params }: { params: Promise<{ i
     }),
     prisma.imovel.findUnique({
       where: { id, usuarioId: session.user.id },
+      include: { fotos: { orderBy: { ordem: "asc" } } },
     })
   ]);
 

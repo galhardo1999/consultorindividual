@@ -162,6 +162,24 @@ export function maskCPF(value: string): string {
   return `${digits.slice(0, 3)}.${digits.slice(3, 6)}.${digits.slice(6, 9)}-${digits.slice(9)}`;
 }
 
+/** XX.XXX.XXX/XXXX-XX */
+export function maskCNPJ(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 14);
+  if (digits.length <= 2) return digits;
+  if (digits.length <= 5) return `${digits.slice(0, 2)}.${digits.slice(2)}`;
+  if (digits.length <= 8) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5)}`;
+  if (digits.length <= 12) return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8)}`;
+  return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
+}
+
+/** Aplica máscara CPF ou CNPJ baseado no comprimento dos dígitos */
+export function maskDocumento(value: string): string {
+  const digits = value.replace(/\D/g, "");
+  if (digits.length <= 11) return maskCPF(value);
+  return maskCNPJ(value);
+}
+
+
 /** XXXXX-XXX */
 export function maskCEP(value: string): string {
   const digits = value.replace(/\D/g, "").slice(0, 8);
@@ -186,5 +204,17 @@ export function parseCurrency(masked: string): number {
   const digits = masked.replace(/\D/g, "");
   if (!digits) return 0;
   return parseInt(digits, 10) / 100;
+}
+
+/**
+ * Converte um valor monetário em Reais vindo do banco (ex: 100000)
+ * para a string mascarada usada nos <input> (ex: "R$ 100.000,00").
+ * maskCurrency() espera centavos como string — por isso multiplicamos por 100.
+ */
+export function reaisParaInput(valor: unknown): string {
+  if (valor === null || valor === undefined || valor === "") return "";
+  const num = Number(valor);
+  if (!num || isNaN(num)) return "";
+  return maskCurrency(String(Math.round(num * 100)));
 }
 
