@@ -137,23 +137,23 @@ export default function ClientesPage() {
 
   return (
     <div className="page relative">
-      <div className="section-header mb-5">
+      <div className="section-header mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>
+          <h1 className="text-2xl font-bold text-[var(--color-surface-50)]">
             Clientes
           </h1>
-          <p style={{ color: "var(--color-surface-400)", fontSize: "0.9rem", marginTop: "4px" }}>
+          <p className="text-[var(--color-surface-400)] text-sm mt-1">
             {total} cliente{total !== 1 ? "s" : ""} encontrado{total !== 1 ? "s" : ""}
           </p>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/interacoes" className="btn btn-secondary">
             <MessageSquare size={16} />
-            Interações
+            <span className="hidden sm:inline">Interações</span>
           </Link>
           <Link href="/clientes/novo" className="btn btn-primary" id="new-cliente-btn">
             <Plus size={16} />
-            Novo Cliente
+            <span>Novo Cliente</span>
           </Link>
         </div>
       </div>
@@ -161,12 +161,11 @@ export default function ClientesPage() {
       {/* Search and filter actions */}
       <div className="card card-sm mb-5">
         <div className="flex gap-3 items-center flex-wrap">
-          <div className="search-bar" style={{ flex: 1, minWidth: "200px" }}>
-            <Search size={16} />
+          <div className="relative flex-1 min-w-[200px]">
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-surface-400)]" />
             <input
               type="text"
-              className="input"
-              style={{ paddingLeft: "2.5rem" }}
+              className="input w-full pl-10"
               placeholder="Buscar por nome, telefone, e-mail..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -180,9 +179,10 @@ export default function ClientesPage() {
             id="filter-toggle"
           >
             <Filter size={14} />
-            Filtros Avançados
+            <span className="hidden sm:inline">Filtros Avançados</span>
+            <span className="sm:hidden">Filtros</span>
             {activeFiltersCount > 0 && (
-              <span className="badge badge-primary" style={{ fontSize: "0.7rem", padding: "0.1rem 0.4rem", backgroundColor: "white", color: "black" }}>
+              <span className="badge bg-white text-black text-[0.7rem] px-1.5 py-0.5 ml-1">
                 {activeFiltersCount}
               </span>
             )}
@@ -199,140 +199,203 @@ export default function ClientesPage() {
 
       {/* Cliente list */}
       {loading ? (
-        <div style={{ display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+        <div className="flex flex-col gap-3">
           {[1, 2, 3, 4].map((i) => (
-            <div key={i} className="card card-sm">
-              <div className="skeleton" style={{ height: "20px", width: "40%", marginBottom: "8px" }} />
-              <div className="skeleton" style={{ height: "14px", width: "60%" }} />
+            <div key={i} className="card card-sm animate-pulse">
+              <div className="h-5 bg-[var(--color-surface-700)] rounded w-2/5 mb-3" />
+              <div className="h-3 bg-[var(--color-surface-800)] rounded w-3/5" />
             </div>
           ))}
         </div>
       ) : clientes.length === 0 ? (
-        <div className="card">
-          <div className="empty-state">
-            <Users size={48} />
-            <h3 className="text-lg font-semibold mb-2" style={{ color: "var(--color-surface-200)" }}>
-              {hasFilters ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
-            </h3>
-            <p style={{ marginBottom: "1.5rem" }}>
-              {hasFilters
-                ? "Tente ajustar os filtros de busca"
-                : "Comece cadastrando seu primeiro cliente"}
-            </p>
-            {!hasFilters && (
-              <Link href="/clientes/novo" className="btn btn-primary">
-                <Plus size={16} />
-                Cadastrar cliente
-              </Link>
-            )}
+        <div className="card p-10 flex flex-col items-center justify-center text-center border border-dashed border-[var(--color-surface-700)] bg-[var(--color-surface-800)]/50">
+          <div className="w-16 h-16 rounded-full bg-[var(--color-surface-800)] flex items-center justify-center mb-4 text-[var(--color-surface-400)]">
+            <Users size={32} />
           </div>
+          <h3 className="text-lg font-semibold text-[var(--color-surface-100)] mb-2">
+            {hasFilters ? "Nenhum cliente encontrado" : "Nenhum cliente ainda"}
+          </h3>
+          <p className="text-[var(--color-surface-400)] mb-6 max-w-md">
+            {hasFilters
+              ? "Sua busca ou filtros não retornaram resultados. Tente remover alguns filtros ou buscar por outros termos."
+              : "Comece cadastrando seu primeiro cliente para gerenciar oportunidades e imóveis de interesse."}
+          </p>
+          {!hasFilters ? (
+            <Link href="/clientes/novo" className="btn btn-primary">
+              <Plus size={16} />
+              Cadastrar primeiro cliente
+            </Link>
+          ) : (
+            <button className="btn btn-secondary" onClick={clearAllFilters}>
+              Limpar filtros
+            </button>
+          )}
         </div>
       ) : (
         <>
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.625rem" }}>
-            {clientes.map((cliente) => (
-              <Link key={cliente.id} href={`/clientes/${cliente.id}`} style={{ textDecoration: "none" }}>
-                <div
-                  className="card card-sm hover:bg-[var(--color-surface-800)] transition-colors"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "1rem",
-                    cursor: "pointer",
-                    padding: "1rem 1.25rem",
-                  }}
-                >
-                  {/* Avatar */}
-                  <div
-                    className="avatar"
-                    style={{ width: "42px", height: "42px", fontSize: "0.9rem", flexShrink: 0 }}
-                  >
-                    {cliente.nomeCompleto.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase()}
-                  </div>
+          <div className="card p-0 overflow-hidden border border-[var(--color-surface-700)]">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse hidden md:table">
+                <thead>
+                  <tr className="border-b border-[var(--color-surface-700)] bg-[var(--color-surface-800)]/80 text-[var(--color-surface-400)] text-sm">
+                    <th className="p-4 font-medium">Nome do Cliente</th>
+                    <th className="p-4 font-medium">Contato</th>
+                    <th className="p-4 font-medium">Endereço</th>
+                    <th className="p-4 font-medium text-center">Oportunidades</th>
+                    <th className="p-4 font-medium text-center">Interesses</th>
+                    <th className="p-4 font-medium text-right">Ações</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[var(--color-surface-700)]">
+                  {clientes.map(cliente => (
+                    <tr key={cliente.id} className="hover:bg-[var(--color-surface-800)] transition-colors group">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--color-surface-700)] text-[var(--color-surface-200)] font-medium rounded-full text-sm">
+                            {cliente.nomeCompleto.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase()}
+                          </div>
+                          <div>
+                            <Link href={`/clientes/${cliente.id}`} className="font-medium text-[var(--color-surface-50)] group-hover:text-[var(--color-brand-400)] transition-colors">
+                              {cliente.nomeCompleto}
+                            </Link>
+                            <div className="flex items-center gap-2 mt-1.5">
+                              <span className={`badge ${journeyStageColor(cliente.estagioJornada)} text-[0.65rem] px-1.5 py-0.5`}>
+                                {journeyStageLabel(cliente.estagioJornada)}
+                              </span>
+                              {cliente.nivelUrgencia === "ALTA" && (
+                                <span className="badge badge-danger text-[0.65rem] px-1.5 py-0.5">Urgente</span>
+                              )}
+                              {cliente.status === "ARQUIVADO" && (
+                                <span className="badge bg-[var(--color-surface-700)] text-[var(--color-surface-300)] text-[0.65rem] px-1.5 py-0.5">
+                                  Arquivado
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-[var(--color-surface-300)]">
+                        <div className="flex flex-col gap-1.5">
+                          <div className="flex items-center gap-2">
+                            <Phone size={14} className="text-[var(--color-surface-500)]" />
+                            {cliente.telefone}
+                          </div>
+                          {cliente.email && (
+                            <div className="flex items-center gap-2">
+                              <Mail size={14} className="text-[var(--color-surface-500)]" />
+                              <span className="truncate max-w-[150px] lg:max-w-[200px]" title={cliente.email}>
+                                {cliente.email}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-[var(--color-surface-300)]">
+                        {cliente.cidadeAtual ? (
+                          <span className="flex items-center gap-1.5">
+                            <span className="text-[var(--color-surface-500)]">📍</span> {cliente.cidadeAtual}
+                          </span>
+                        ) : (
+                          <span className="text-[var(--color-surface-600)]">Não informado</span>
+                        )}
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-surface-800)] text-[var(--color-brand-400)] font-medium text-sm border border-[var(--color-surface-700)]" title="Oportunidades ativas">
+                          {cliente.oportunidadesCount || 0}
+                        </div>
+                      </td>
+                      <td className="p-4 text-center">
+                        <div className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-[var(--color-surface-800)] text-[var(--color-surface-200)] font-medium text-sm border border-[var(--color-surface-700)]" title="Imóveis de interesse">
+                          {cliente._count.interesses}
+                        </div>
+                      </td>
+                      <td className="p-4 text-right">
+                        <Link href={`/clientes/${cliente.id}`} className="btn btn-secondary btn-sm inline-flex opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100">
+                          Ver detalhes
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-                  {/* Main info */}
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-semibold text-sm" style={{ color: "var(--color-surface-50)" }}>
-                        {cliente.nomeCompleto}
-                      </span>
-                      <span className={`badge ${journeyStageColor(cliente.estagioJornada)}`} style={{ fontSize: "0.7rem" }}>
-                        {journeyStageLabel(cliente.estagioJornada)}
-                      </span>
-                      {cliente.nivelUrgencia === "ALTA" && (
-                        <span className="badge badge-danger" style={{ fontSize: "0.7rem" }}>Urgente</span>
-                      )}
-                      {cliente.status === "ARQUIVADO" && (
-                        <span className="badge" style={{ fontSize: "0.7rem", backgroundColor: "var(--color-surface-700)", color: "var(--color-surface-300)" }}>Arquivado</span>
-                      )}
+              {/* Mobile Cards */}
+              <div className="md:hidden flex flex-col divide-y divide-[var(--color-surface-700)]">
+                {clientes.map(cliente => (
+                  <Link key={cliente.id} href={`/clientes/${cliente.id}`} className="p-4 hover:bg-[var(--color-surface-800)] transition-colors block group">
+                    <div className="flex items-start gap-3 mb-4">
+                      <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-[var(--color-surface-700)] text-[var(--color-surface-200)] font-medium rounded-full text-sm">
+                        {cliente.nomeCompleto.split(" ").slice(0, 2).map(n => n[0]).join("").toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-medium text-[var(--color-surface-50)] truncate group-hover:text-[var(--color-brand-400)] transition-colors">
+                          {cliente.nomeCompleto}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <span className={`badge ${journeyStageColor(cliente.estagioJornada)} text-[0.65rem] px-1.5 py-0.5`}>
+                            {journeyStageLabel(cliente.estagioJornada)}
+                          </span>
+                          {cliente.nivelUrgencia === "ALTA" && (
+                            <span className="badge badge-danger text-[0.65rem] px-1.5 py-0.5">Urgente</span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap" style={{ color: "var(--color-surface-400)", fontSize: "0.8rem" }}>
-                      <span className="flex items-center gap-1">
-                        <Phone size={12} />
+                    
+                    <div className="space-y-2 text-sm text-[var(--color-surface-300)] mb-5">
+                      <div className="flex items-center gap-2">
+                        <Phone size={14} className="text-[var(--color-surface-500)]" />
                         {cliente.telefone}
-                      </span>
-                      {cliente.email && (
-                        <span className="flex items-center gap-1">
-                          <Mail size={12} />
-                          {cliente.email}
-                        </span>
-                      )}
+                      </div>
                       {cliente.cidadeAtual && (
-                        <span>📍 {cliente.cidadeAtual}</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-[var(--color-surface-500)]">📍</span>
+                          {cliente.cidadeAtual}
+                        </div>
                       )}
                     </div>
-                  </div>
-
-                  {/* Right info */}
-                  <div className="flex items-center gap-4" style={{ flexShrink: 0 }}>
-                    <div className="text-right hidden sm:block">
-                      <div style={{ fontSize: "0.75rem", color: "var(--color-surface-400)" }}>Interações</div>
-                      <div className="font-semibold text-sm" style={{ color: "var(--color-surface-200)" }}>
-                        {cliente._count.interacoes}
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="bg-[var(--color-surface-900)] p-3 rounded-md border border-[var(--color-surface-700)] flex flex-col items-center justify-center text-center">
+                        <div className="text-[0.65rem] text-[var(--color-surface-400)] uppercase tracking-wider mb-1 font-medium">Oportunidades</div>
+                        <div className="font-semibold text-lg text-[var(--color-brand-400)]">{cliente.oportunidadesCount || 0}</div>
+                      </div>
+                      <div className="bg-[var(--color-surface-900)] p-3 rounded-md border border-[var(--color-surface-700)] flex flex-col items-center justify-center text-center">
+                        <div className="text-[0.65rem] text-[var(--color-surface-400)] uppercase tracking-wider mb-1 font-medium">Interesses</div>
+                        <div className="font-semibold text-lg text-[var(--color-surface-200)]">{cliente._count.interesses}</div>
                       </div>
                     </div>
-                    <div className="text-right hidden sm:block">
-                      <div style={{ fontSize: "0.75rem", color: "var(--color-surface-400)" }}>Oportunidades</div>
-                      <div className="font-semibold text-sm" style={{ color: "var(--color-brand-400)" }}>
-                        {cliente.oportunidadesCount || 0}
-                      </div>
-                    </div>
-                    <div className="text-right hidden sm:block">
-                      <div style={{ fontSize: "0.75rem", color: "var(--color-surface-400)" }}>Imóveis</div>
-                      <div className="font-semibold text-sm" style={{ color: "var(--color-surface-200)" }}>
-                        {cliente._count.interesses}
-                      </div>
-                    </div>
-                    <div style={{ color: "var(--color-surface-400)", fontSize: "0.75rem" }} className="hidden md:block">
-                      {formatDate(cliente.atualizadoEm)}
-                    </div>
-                    <ChevronRight size={16} style={{ color: "var(--color-surface-500)" }} />
-                  </div>
-                </div>
-              </Link>
-            ))}
+                  </Link>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Pagination */}
           {total > 20 && (
-            <div className="flex items-center justify-center gap-2 mt-5">
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={page === 1}
-                onClick={() => setPage(p => p - 1)}
-              >
-                Anterior
-              </button>
-              <span style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
-                Página {page} de {Math.ceil(total / 20)}
+            <div className="flex items-center justify-between mt-5 bg-[var(--color-surface-800)] border border-[var(--color-surface-700)] rounded-lg p-3">
+              <span className="text-[var(--color-surface-400)] text-sm hidden sm:block">
+                Mostrando página {page} de {Math.ceil(total / 20)}
               </span>
-              <button
-                className="btn btn-secondary btn-sm"
-                disabled={page >= Math.ceil(total / 20)}
-                onClick={() => setPage(p => p + 1)}
-              >
-                Próxima
-              </button>
+              <div className="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end">
+                <button
+                  className="btn btn-secondary btn-sm"
+                  disabled={page === 1}
+                  onClick={() => setPage(p => p - 1)}
+                >
+                  Anterior
+                </button>
+                <span className="text-[var(--color-surface-400)] text-sm sm:hidden">
+                  {page} / {Math.ceil(total / 20)}
+                </span>
+                <button
+                  className="btn btn-secondary btn-sm"
+                  disabled={page >= Math.ceil(total / 20)}
+                  onClick={() => setPage(p => p + 1)}
+                >
+                  Próxima
+                </button>
+              </div>
             </div>
           )}
         </>

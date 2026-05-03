@@ -55,6 +55,13 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const busca = searchParams.get("search") ?? undefined;
     const status = searchParams.get("status") ?? undefined;
+    const tipoPessoa = searchParams.get("tipoPessoa") ?? undefined;
+    const cidade = searchParams.get("cidade") ?? undefined;
+    const estado = searchParams.get("estado") ?? undefined;
+    const comImoveis = searchParams.get("comImoveis") === "true" ? true : undefined;
+    const criadoEmInicio = searchParams.get("criadoEmInicio") ?? undefined;
+    const criadoEmFim = searchParams.get("criadoEmFim") ?? undefined;
+
     const { page, limit, skip } = parsePagination(searchParams);
 
     const where = {
@@ -68,6 +75,16 @@ export async function GET(request: Request) {
         ],
       }),
       ...(status && { status: status as never }),
+      ...(tipoPessoa && { tipoPessoa: tipoPessoa as never }),
+      ...(cidade && { cidade: { contains: cidade, mode: "insensitive" as const } }),
+      ...(estado && { estado: { equals: estado, mode: "insensitive" as const } }),
+      ...(comImoveis && { imoveis: { some: {} } }),
+      ...((criadoEmInicio || criadoEmFim) && {
+        criadoEm: {
+          ...(criadoEmInicio && { gte: new Date(criadoEmInicio) }),
+          ...(criadoEmFim && { lte: new Date(`${criadoEmFim}T23:59:59`) }),
+        },
+      }),
     };
 
     const [proprietarios, total] = await Promise.all([

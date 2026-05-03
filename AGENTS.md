@@ -29,6 +29,7 @@
 - Padrão de design: **"Clean & Premium"**. Use variáveis de cores do `globals.css` (CSS variables).
 - Ícones: exclusivamente `lucide-react`.
 - Design responsivo (mobile-first) é obrigatório em todo componente novo.
+- **Alinhamento de Layout:** **NÃO centralize o layout principal das páginas.** Evite usar `items-center` ou `justify-center` nos containers raízes das páginas. O conteúdo deve seguir o fluxo normal padrão (alinhado ao topo/esquerda). Centralização vertical/horizontal deve ser restrita apenas a elementos específicos onde isso faça sentido estruturalmente (ex: empty states, telas de login, modais).
 
 ---
 
@@ -147,7 +148,8 @@ const [clientes, total] = await prisma.$transaction([
 
 - **Arquivos de manutenção temporária** (scripts de refactor, logs de erro, `.md` de backlog pessoal) **não pertencem ao repositório**. Use `.gitignore` ou uma pasta `.dev/` local não rastreada.
 - Interfaces TypeScript de domínio não devem ser redefinidas inline em cada página — centralize em `src/types/`.
-- Constantes de enum não devem ser duplicadas — use `src/constants/enums.ts`.
+- Constantes estruturais (enums puros do Prisma) ficam em `src/constants/enums.ts`.
+- **Opções de formulários e selects (arrays com label/value) NÃO devem ser redefinidas ou duplicadas inline em páginas de cadastro/edição.** Importe sempre as constantes centralizadas de `src/constants/options.ts` (ex: `PROPERTY_TYPES`, `PURPOSES`, `STATUSES`).
 - Ao deletar uma rota de API, **sempre limpe o cache `.next/`** para evitar erros de type-validator que referenciam arquivos deletados.
 
 ---
@@ -181,6 +183,7 @@ const [clientes, total] = await prisma.$transaction([
 - Implemente estados de `loading` com **Skeleton screens** (não spinners isolados em listagens).
 - Feedback de ações com **Toasts** de sucesso e erro.
 - Imagens preferencialmente SVG inline ou componentes React que renderizam SVG.
+- **Formulários Longos / Multi-step (Wizard):** O comportamento entre fluxos de criação e edição da mesma entidade DEVE ser mantido idêntico. Validações, navegação entre abas, botões (Voltar, Continuar) e a restrição de salvar apenas na última etapa devem refletir o mesmo fluxo.
 
 ---
 

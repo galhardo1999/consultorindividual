@@ -19,52 +19,7 @@ interface NovoImovelFormProps {
   imovel?: any;
 }
 
-const PROPERTY_TYPES = [
-  { value: "APARTAMENTO", label: "Apartamento" },
-  { value: "CASA", label: "Casa" },
-  { value: "CASA_CONDOMINIO", label: "Casa em Condomínio" },
-  { value: "TERRENO", label: "Terreno" },
-  { value: "SALA_COMERCIAL", label: "Sala Comercial" },
-  { value: "LOJA", label: "Loja" },
-  { value: "GALPAO", label: "Galpão" },
-  { value: "CHACARA", label: "Chácara" },
-  { value: "FAZENDA", label: "Fazenda" },
-  { value: "COBERTURA", label: "Cobertura" },
-  { value: "KITNET", label: "Kitnet" },
-  { value: "STUDIO", label: "Studio" },
-  { value: "PREDIO_COMERCIAL", label: "Prédio Comercial" },
-  { value: "AREA_RURAL", label: "Área Rural" },
-  { value: "OUTRO", label: "Outro" },
-];
-
-const PURPOSES = [
-  { value: "VENDA", label: "Venda" },
-  { value: "LOCACAO", label: "Locação" },
-  { value: "VENDA_LOCACAO", label: "Venda e Locação" },
-  { value: "TEMPORADA", label: "Temporada" },
-];
-
-const STATUSES = [
-  { value: "DISPONIVEL", label: "Disponível" },
-  { value: "RESERVADO", label: "Reservado" },
-  { value: "VENDIDO", label: "Vendido" },
-  { value: "LOCADO", label: "Locado" },
-  { value: "INDISPONIVEL", label: "Indisponível" },
-];
-
-const TOPOGRAPHY = [
-  { value: "PLANO", label: "Plano" },
-  { value: "ACLIVE", label: "Aclive" },
-  { value: "DECLIVE", label: "Declive" },
-  { value: "IRREGULAR", label: "Irregular" },
-];
-
-const URGENCY = [
-  { value: "BAIXA", label: "Baixa" },
-  { value: "MEDIA", label: "Média" },
-  { value: "ALTA", label: "Alta" },
-  { value: "URGENTE", label: "Urgente" },
-];
+import { PROPERTY_TYPES, PURPOSES, STATUSES, TOPOGRAPHY, URGENCY } from "@/constants/options";
 
 const Section = ({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
   const [open, setOpen] = useState(defaultOpen);
