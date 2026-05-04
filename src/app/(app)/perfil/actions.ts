@@ -60,6 +60,10 @@ export async function alterarSenha(data: { senhaAtual: string; novaSenha: string
       return { error: "Usuário não encontrado" };
     }
 
+    if (!usuario.senhaHash) {
+      return { error: "Esta conta usa login pelo Google. Defina uma senha nas configurações de segurança da conta Google." };
+    }
+
     const senhaCorreta = await bcrypt.compare(parsed.data.senhaAtual, usuario.senhaHash);
     if (!senhaCorreta) {
       return { error: "Senha atual incorreta" };

@@ -60,13 +60,21 @@ export async function GET() {
     }),
   ]);
 
-  return NextResponse.json({
-    totalActiveClients,
-    totalActiveProperties,
-    clientsByStage,
-    recentProperties,
-    pendingFollowUps,
-    clientsWithoutRecentContact,
-    urgentClients,
-  });
+  return NextResponse.json(
+    {
+      totalActiveClients,
+      totalActiveProperties,
+      clientsByStage,
+      recentProperties,
+      pendingFollowUps,
+      clientsWithoutRecentContact,
+      urgentClients,
+    },
+    {
+      headers: {
+        // Cache privado por 60s, aceita dados desatualizados por mais 120s enquanto revalida
+        "Cache-Control": "private, max-age=60, stale-while-revalidate=120",
+      },
+    }
+  );
 }

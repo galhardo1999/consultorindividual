@@ -12,7 +12,7 @@ export const enviarEmailRecuperacaoSenha = async (
   const linkRecuperacao = `${urlBase}/redefinir-senha/${token}`;
 
   await resend.emails.send({
-    from: "Prime Realty CRM <onboarding@resend.dev>",
+    from: process.env.EMAIL_FROM ?? "Prime Realty CRM <onboarding@resend.dev>",
     to: emailDestino,
     subject: "Recuperação de senha — Prime Realty CRM",
     html: `

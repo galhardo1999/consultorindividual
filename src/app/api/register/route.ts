@@ -10,16 +10,24 @@ const tentativas = new Map<string, { contagem: number; resetEm: number }>();
 const LIMITE_TENTATIVAS = 5;
 const JANELA_MS = 15 * 60 * 1000; // 15 minutos
 
+function limparEntradasExpiradas() {
+  const agora = Date.now();
+  for (const [ip, entrada] of tentativas.entries()) {
+    if (agora > entrada.resetEm) tentativas.delete(ip);
+  }
+}
+
 const verificarRateLimit = (ip: string): boolean => {
+  limparEntradasExpiradas();
   const agora = Date.now();
   const entrada = tentativas.get(ip);
 
   if (!entrada || agora > entrada.resetEm) {
     tentativas.set(ip, { contagem: 1, resetEm: agora + JANELA_MS });
-    return true; // permitido
+    return true;
   }
 
-  if (entrada.contagem >= LIMITE_TENTATIVAS) return false; // bloqueado
+  if (entrada.contagem >= LIMITE_TENTATIVAS) return false;
 
   entrada.contagem += 1;
   return true;

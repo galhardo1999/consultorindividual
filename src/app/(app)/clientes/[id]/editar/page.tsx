@@ -152,14 +152,7 @@ export default function EditarClientePage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
-    if (activeTab !== "profile") {
-      nextStep();
-      return;
-    }
-
+  async function salvarCliente() {
     setError("");
     setSaving(true);
 
@@ -284,7 +277,7 @@ export default function EditarClientePage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {/* ─── ABA: DADOS BÁSICOS ─── */}
         {activeTab === "basic" && (
           <div className="card">
@@ -608,7 +601,7 @@ export default function EditarClientePage() {
                 Continuar →
               </button>
             ) : (
-              <button type="submit" className="btn btn-primary" disabled={saving}>
+              <button type="button" onClick={salvarCliente} className="btn btn-primary" disabled={saving}>
                 {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {saving ? "Salvando..." : "Salvar Alterações"}
               </button>

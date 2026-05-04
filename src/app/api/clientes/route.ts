@@ -82,6 +82,7 @@ export async function GET(request: Request) {
   const prazoCompra = searchParams.get("prazoCompra") || undefined;
 
   // ── Gestão comercial ────────────────────────────────────────────────────────
+  const comOportunidades = searchParams.get("comOportunidades") === "true";
   const origemLead = searchParams.get("origemLead") || undefined;
   const proximoContatoAtrasado = searchParams.get("proximoContatoAtrasado") === "true";
   const criadoEmInicio = searchParams.get("criadoEmInicio") || undefined;
@@ -169,7 +170,12 @@ export async function GET(request: Request) {
       prisma.cliente.count({ where }),
     ]);
 
-    // ─── Contagem de oportunidades sem N+1 ────────────────────────────────────
+    if (!comOportunidades) {
+      return NextResponse.json({ clientes, total, page: pagina, limit: limite });
+    }
+
+    // ─── Contagem de oportunidades (opt-in via ?comOportunidades=true) ─────────
+    // Executa N queries em paralelo — usar somente na view de kanban/pipeline
     const idsClientesComPreferencia = clientes
       .filter((c) => c.preferencia)
       .map((c) => c.id);

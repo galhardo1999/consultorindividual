@@ -48,6 +48,24 @@ const tipoLabel: Record<string, string> = {
   OUTRO: "Outro",
 };
 
+const tipoIcone: Record<string, string> = {
+  CASA: "🏠",
+  APARTAMENTO: "🏢",
+  CASA_CONDOMINIO: "🏘️",
+  TERRENO: "🏞️",
+  SALA_COMERCIAL: "💼",
+  LOJA: "🏪",
+  GALPAO: "🏭",
+  CHACARA: "🌳",
+  FAZENDA: "🚜",
+  AREA_RURAL: "🌾",
+  COBERTURA: "🌇",
+  KITNET: "🛋️",
+  STUDIO: "🛋️",
+  PREDIO_COMERCIAL: "🏙️",
+  OUTRO: "📍",
+};
+
 const statusColor: Record<string, string> = {
   DISPONIVEL: "#22c55e",
   RESERVADO: "#f59e0b",
@@ -171,7 +189,7 @@ export function MapaImoveis({ imoveis, onSearchCoords }: MapaImoveisProps) {
             box-shadow:0 3px 10px rgba(0,0,0,0.35);
             display:flex;align-items:center;justify-content:center;
           ">
-            <span style="transform:rotate(45deg);font-size:14px">🏠</span>
+            <span style="transform:rotate(45deg);font-size:14px">${tipoIcone[imovel.tipoImovel] ?? "📍"}</span>
           </div>
         `,
         iconSize: [36, 36],

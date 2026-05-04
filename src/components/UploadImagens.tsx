@@ -14,10 +14,29 @@ export function UploadImagens({ onUpload, maxFiles = 10, pasta }: UploadImagensP
   const [uploading, setUploading] = useState(false);
   const [fotos, setFotos] = useState<{ file: File; preview: string }[]>([]);
 
+  const TIPOS_PERMITIDOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+  const TAMANHO_MAX_MB = 5;
+  const TAMANHO_MAX_BYTES = TAMANHO_MAX_MB * 1024 * 1024;
+
   async function handleSelectFiles(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return;
 
-    const selectedFiles = Array.from(e.target.files).slice(0, maxFiles - fotos.length);
+    const arquivosBrutos = Array.from(e.target.files).slice(0, maxFiles - fotos.length);
+    if (arquivosBrutos.length === 0) return;
+
+    const arquivosValidos = arquivosBrutos.filter((file) => {
+      if (!TIPOS_PERMITIDOS.includes(file.type)) {
+        alert(`Formato inválido: ${file.name}. Use JPG, PNG, WEBP ou GIF.`);
+        return false;
+      }
+      if (file.size > TAMANHO_MAX_BYTES) {
+        alert(`Arquivo muito grande: ${file.name}. O limite é ${TAMANHO_MAX_MB}MB.`);
+        return false;
+      }
+      return true;
+    });
+
+    const selectedFiles = arquivosValidos;
     if (selectedFiles.length === 0) return;
 
     const newFotos = selectedFiles.map(file => ({
@@ -26,13 +45,12 @@ export function UploadImagens({ onUpload, maxFiles = 10, pasta }: UploadImagensP
     }));
 
     setFotos(prev => [...prev, ...newFotos]);
-    
-    // Auto upload when selected
+
     setUploading(true);
     try {
       const urls: string[] = [];
       for (const { file } of newFotos) {
-        const fileExt = file.name.split('.').pop();
+        const fileExt = file.name.split('.').pop()?.toLowerCase() ?? "jpg";
         const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
         const filePath = pasta ? `${pasta}/${fileName}` : `${fileName}`;
 

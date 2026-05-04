@@ -96,14 +96,7 @@ export default function NovoClientePage() {
     }
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    
-    if (activeTab !== "profile") {
-      nextStep();
-      return;
-    }
-
+  async function salvarCliente() {
     setError("");
     setLoading(true);
 
@@ -225,7 +218,7 @@ export default function NovoClientePage() {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={(e) => e.preventDefault()}>
         {/* ─── ABA: DADOS BÁSICOS ─── */}
         {activeTab === "basic" && (
           <div className="card">
@@ -549,7 +542,7 @@ export default function NovoClientePage() {
                 Continuar →
               </button>
             ) : (
-              <button type="submit" className="btn btn-primary" disabled={loading} id="save-cliente-btn">
+              <button type="button" onClick={salvarCliente} className="btn btn-primary" disabled={loading} id="save-cliente-btn">
                 {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                 {loading ? "Salvando..." : "Salvar Cliente"}
               </button>

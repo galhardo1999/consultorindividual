@@ -9,13 +9,21 @@ const esquema = z.object({
 });
 
 // Rate limiting simples em memória — 3 tentativas por IP a cada 15 min
+// Para produção com múltiplas instâncias, substituir por Upstash Redis
 const mapaRateLimit = new Map<string, { tentativas: number; resetEm: number }>();
 const LIMITE_TENTATIVAS = 3;
 const JANELA_MS = 15 * 60 * 1000;
 
+function limparEntradasExpiradas() {
+  const agora = Date.now();
+  for (const [ip, entrada] of mapaRateLimit.entries()) {
+    if (agora > entrada.resetEm) mapaRateLimit.delete(ip);
+  }
+}
+
 export const POST = async (req: NextRequest): Promise<NextResponse> => {
-  // Rate limiting por IP
-  const ip = req.headers.get("x-forwarded-for") ?? "desconhecido";
+  limparEntradasExpiradas();
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "desconhecido";
   const agora = Date.now();
   const entrada = mapaRateLimit.get(ip);
 

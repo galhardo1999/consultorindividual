@@ -32,86 +32,77 @@ async function geocodeAddress(
     "administrative", "region", "postcode", "county",
   ];
 
-  // 1ª tentativa: query estruturada do Nominatim (mais precisa, considera número)
-  try {
-    const params = new URLSearchParams({
-      format: "json",
-      addressdetails: "1",
-      limit: "1",
-      street: [imovel.numero, imovel.endereco].filter(Boolean).join(" "),
-      city: imovel.cidade,
-      country: "Brasil",
-    });
-    if (imovel.bairro) params.set("district", imovel.bairro);
-    if (imovel.estado) params.set("state", imovel.estado);
-    if (imovel.cep) params.set("postalcode", imovel.cep);
+  const fullAddress = [imovel.endereco, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
 
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?${params.toString()}`,
-      { headers, signal: AbortSignal.timeout(6000) }
-    );
-
-    if (res.status === 429) {
-      console.warn(`[Geocode] Rate limit atingido.`);
-      return null;
+  // 0ª tentativa: Google Maps Geocoding API (se configurado)
+  const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+  if (googleApiKey) {
+    try {
+      const res = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleApiKey}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (data.status === "OK" && data.results.length > 0) {
+          const location = data.results[0].geometry.location;
+          console.info(`[Geocode Google] Localizado com sucesso: ${fullAddress}`);
+          return { lat: location.lat, lng: location.lng };
+        } else if (data.status === "ZERO_RESULTS") {
+          console.warn(`[Geocode Google] Não encontrado: ${fullAddress}`);
+        } else {
+          console.warn(`[Geocode Google] Erro API: ${data.status}`);
+        }
+      }
+    } catch (err) {
+      console.warn(`[Geocode Google] Falha na rede: ${fullAddress}`, err);
     }
-
-    const data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
-
-    if (data?.length > 0 && !genericTypes.includes(data[0].addresstype ?? data[0].type ?? data[0].class ?? "")) {
-      console.info(`[Geocode] Localizado via query estruturada: ${imovel.endereco}, ${imovel.numero}`);
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
-  } catch (err) {
-    console.warn(`[Geocode] Falha na query estruturada, tentando fallback: ${imovel.id}`, err);
   }
 
-  // 2ª tentativa: query livre com endereço completo
-  const fullParts = [
-    imovel.endereco,
-    imovel.numero,
-    imovel.bairro,
-    imovel.cidade,
-    imovel.estado,
-    imovel.cep,
-    "Brasil",
-  ].filter(Boolean).join(", ");
+  // 1ª tentativa: Busca livre completa (Rua, Número, Bairro, Cidade, Estado)
+  const query1 = fullAddress;
+  
+  // 2ª tentativa: Sem número (ajuda no Nominatim Brasil pois OSM tem poucos números mapeados)
+  const query2 = [imovel.endereco, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
+  
+  // 3ª tentativa: Apenas Rua, Cidade, Estado
+  const query3 = [imovel.endereco, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
 
-  try {
-    let res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullParts)}&limit=1`,
-      { headers, signal: AbortSignal.timeout(6000) }
-    );
+  // Arrays de queries únicas para evitar chamadas duplicadas
+  const attempts = Array.from(new Set([query1, query2, query3]));
 
-    if (res.status === 429) return null;
-
-    let data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
-
-    // 3ª tentativa: fallback sem bairro/CEP
-    if (!data?.length) {
-      const fallbackParts = [imovel.endereco, imovel.numero, imovel.cidade, "Brasil"].filter(Boolean).join(", ");
-      res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fallbackParts)}&limit=1`,
+  for (const q of attempts) {
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
         { headers, signal: AbortSignal.timeout(6000) }
       );
-      data = res.ok ? (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }> : [];
-    }
 
-    if (data?.length > 0) {
-      const resultType = data[0].addresstype ?? data[0].type ?? data[0].class ?? "";
-      if (genericTypes.includes(resultType)) {
-        console.warn(`[Geocode] Retorno genérico ignorado (${resultType}) para: ${fullParts}`);
-        return "NOT_FOUND";
+      if (res.status === 429) {
+        console.warn(`[Geocode] Rate limit atingido.`);
+        return null; // Força re-tentativa na próxima rodada do cron
       }
-      return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-    }
 
-    console.warn(`[Geocode] Endereço não localizado: ${fullParts}`);
-    return "NOT_FOUND";
-  } catch (error) {
-    console.error(`[Geocode] Falha de rede/timeout para: ${fullParts}`, error);
-    return null;
+      if (res.ok) {
+        const data = (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }>;
+        
+        if (data?.length > 0) {
+          const resultType = data[0].addresstype ?? data[0].type ?? data[0].class ?? "";
+          // Ignora retornos ultra-genéricos (só achou a cidade) a menos que seja a última tentativa
+          if (genericTypes.includes(resultType) && q !== query3) {
+            console.warn(`[Geocode] Retorno genérico (${resultType}) ignorado para: ${q}`);
+            continue;
+          }
+          console.info(`[Geocode] Localizado com sucesso (${q})`);
+          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
+        }
+      }
+    } catch (err) {
+      console.warn(`[Geocode] Falha/Timeout na query: ${q}`, err);
+    }
   }
+
+  console.warn(`[Geocode] Endereço não localizado após todas as tentativas: ${query1}`);
+  return "NOT_FOUND";
 }
 
 // ─── GET — fast path: only already-geocoded properties ───────────────────────

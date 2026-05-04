@@ -208,54 +208,6 @@ export default function MapaPage() {
         )}
       </div>
 
-      {/* ── Stats badge ─────────────────────────────────── */}
-      {!loadingInitial && (
-        <div
-          style={{
-            position: "absolute",
-            bottom: "32px",
-            left: "16px",
-            zIndex: 1000,
-            background: "var(--color-surface-900)",
-            border: "1px solid var(--color-surface-700)",
-            borderRadius: "10px",
-            padding: "10px 14px",
-            boxShadow: "0 4px 16px rgba(0,0,0,0.3)",
-            display: "flex",
-            alignItems: "center",
-            gap: "10px",
-            fontSize: "13px",
-          }}
-        >
-          <div
-            style={{
-              width: "32px",
-              height: "32px",
-              background: "rgba(100,112,243,0.15)",
-              borderRadius: "8px",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Building2 size={16} style={{ color: "#6470f3" }} />
-          </div>
-          <div>
-            <div style={{ fontWeight: 600, color: "var(--color-surface-50)" }}>
-              {imoveis.length} imóvel{imoveis.length !== 1 ? "is" : ""} no mapa
-            </div>
-            {isBackgroundGeocoding ? (
-               <div style={{ fontSize: "11px", color: "var(--color-surface-400)", display: "flex", alignItems: "center", gap: "4px" }}>
-                 <Loader2 size={10} className="animate-spin" /> Processando mais {pendingGeocodeCount}...
-               </div>
-            ) : (
-              <div style={{ fontSize: "11px", color: "var(--color-surface-400)" }}>
-                Clique em um marcador para ver detalhes
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* ── Loading overlay ──────────────────────────────── */}
       {loadingInitial && (

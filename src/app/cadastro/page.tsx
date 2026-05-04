@@ -10,6 +10,7 @@ import { AuthCard } from "@/components/auth/AuthCard";
 import { Input } from "@/components/ui/Input";
 import { PasswordInput } from "@/components/ui/PasswordInput";
 import { Button } from "@/components/ui/Button";
+import { BotaoGoogleLogin } from "@/components/auth/BotaoGoogleLogin";
 
 export default function CadastroPage() {
   const router = useRouter();
@@ -216,6 +217,16 @@ export default function CadastroPage() {
             {loading ? "Criando conta..." : "Criar conta"}
           </Button>
         </form>
+
+        <div className="flex items-center gap-3 my-6">
+          <div className="flex-1 h-px bg-[var(--color-surface-800)]" />
+          <span className="text-xs text-[var(--color-surface-500)] font-medium uppercase tracking-wider">
+            ou
+          </span>
+          <div className="flex-1 h-px bg-[var(--color-surface-800)]" />
+        </div>
+
+        <BotaoGoogleLogin />
       </AuthCard>
     </AuthLayout>
   );

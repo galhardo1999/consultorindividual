@@ -14,9 +14,9 @@ export const authConfig = {
       const estaLogado = !!auth?.user;
       const caminho = nextUrl.pathname;
 
-      // Rotas de auth (públicas): redireciona para dashboard se já logado
-      const ehPaginaAuth =
-        caminho.startsWith("/login") || caminho.startsWith("/cadastro");
+      // Rotas de auth e landing page (públicas): redireciona para dashboard se já logado
+      const ehPaginaAuthOuLanding =
+        caminho === "/" || caminho.startsWith("/login") || caminho.startsWith("/cadastro");
 
       // Rotas de recuperação de senha — sempre públicas (não redireciona logado)
       const ehPaginaRecuperacao =
@@ -25,7 +25,7 @@ export const authConfig = {
 
       if (ehPaginaRecuperacao) return true;
 
-      if (ehPaginaAuth) {
+      if (ehPaginaAuthOuLanding) {
         if (estaLogado) return Response.redirect(new URL("/dashboard", nextUrl));
         return true;
       }

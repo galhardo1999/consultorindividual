@@ -6,15 +6,16 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_DATABASE_URL")
 }
 
 model Usuario {
   id           String   @id @default(cuid())
   nome         String
   email        String   @unique
-  senhaHash    String
+  senhaHash    String?  // Null para usuários que só usam OAuth (Google, etc.)
   telefone     String?
   avatarUrl    String?
   ativo        Boolean  @default(true)
@@ -27,8 +28,23 @@ model Usuario {
   etiquetas              Etiqueta[]
   proprietarios          Proprietario[]
   tokensRecuperacao      TokenRecuperacaoSenha[]
+  contasOAuth            ContaOAuth[]
 
   @@map("usuarios")
+}
+
+model ContaOAuth {
+  id          String   @id @default(cuid())
+  usuarioId   String
+  provedor    String   // "google", "github", etc.
+  provedorId  String   // ID do usuário no sistema do provedor
+  criadoEm    DateTime @default(now())
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@unique([provedor, provedorId])
+  @@index([usuarioId])
+  @@map("contas_oauth")
 }
 
 model TokenRecuperacaoSenha {
@@ -81,6 +97,9 @@ model Cliente {
   interacoes       Interacao[]
   etiquetasCliente EtiquetaCliente[]
 
+  @@index([usuarioId, estagioJornada])
+  @@index([usuarioId, nivelUrgencia, arquivadoEm])
+  @@index([usuarioId, status, arquivadoEm])
   @@map("clientes")
 }
 
@@ -333,6 +352,10 @@ model Imovel {
   @@index([status])
   @@index([cidade])
   @@index([bairro])
+  // Índices compostos para as queries de listing (filtros combinados mais frequentes)
+  @@index([usuarioId, tipoImovel, finalidade, status])
+  @@index([usuarioId, cidade, bairro])
+  @@index([usuarioId, arquivadoEm, status])
   @@map("imoveis")
 }
 
