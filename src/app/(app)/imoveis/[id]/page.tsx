@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit2, Archive, Bed, Bath, Car, Maximize, Users, MapPin, Check, Building, Tag, Home } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Bed, Bath, Car, Maximize, Users, MapPin, Check, Building, Tag, Home, X, Share2, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   formatCurrency, formatDate, propertyTypeLabel, propertyStatusLabel
 } from "@/lib/utils";
@@ -70,6 +70,8 @@ export default function ImovelDetailPage() {
   const router = useRouter();
   const [imovel, setProperty] = useState<PropertyDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+  const [linkCopiado, setLinkCopiado] = useState(false);
 
   useEffect(() => {
     fetch(`/api/imoveis/${id}`)
@@ -81,8 +83,69 @@ export default function ImovelDetailPage() {
       .catch(() => setLoading(false));
   }, [id]);
 
-  async function archiveProperty() {
-    if (!confirm("Deseja arquivar este imóvel?")) return;
+  useEffect(() => {
+    if (viewerIndex !== null) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "unset";
+    }
+    return () => { document.body.style.overflow = "unset"; };
+  }, [viewerIndex]);
+
+  useEffect(() => {
+    if (viewerIndex === null) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setViewerIndex(null);
+      } else if (e.key === "ArrowLeft") {
+        setViewerIndex((prev) => {
+          if (!imovel?.fotos || prev === null) return prev;
+          return prev === 0 ? imovel.fotos.length - 1 : prev - 1;
+        });
+      } else if (e.key === "ArrowRight") {
+        setViewerIndex((prev) => {
+          if (!imovel?.fotos || prev === null) return prev;
+          return prev === imovel.fotos.length - 1 ? 0 : prev + 1;
+        });
+      }
+    };
+    
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [viewerIndex, imovel]);
+
+  const handlePrevImage = () => {
+    if (!imovel?.fotos) return;
+    setViewerIndex((prev) => (prev === null || prev === 0 ? imovel.fotos!.length - 1 : prev - 1));
+  };
+
+  const handleNextImage = () => {
+    if (!imovel?.fotos) return;
+    setViewerIndex((prev) => (prev === null || prev === imovel.fotos!.length - 1 ? 0 : prev + 1));
+  };
+
+  const handleShare = async () => {
+    if (!imovel) return;
+    const publicUrl = `${window.location.origin}/imovel/publico/${imovel.id}`;
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: imovel.titulo,
+          url: publicUrl,
+        });
+      } else {
+        await navigator.clipboard.writeText(publicUrl);
+        setLinkCopiado(true);
+        setTimeout(() => setLinkCopiado(false), 2000);
+      }
+    } catch (err) {
+      console.error("Erro ao compartilhar", err);
+    }
+  };
+
+  async function deleteProperty() {
+    if (!confirm("Deseja excluir este imóvel?")) return;
     await fetch(`/api/imoveis/${id}`, { method: "DELETE" });
     router.push("/imoveis");
   }
@@ -137,9 +200,18 @@ export default function ImovelDetailPage() {
           Voltar para Imóveis
         </Link>
         <div className="flex items-center gap-3">
-          <button onClick={archiveProperty} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
-            <Archive size={16} />
-            Arquivar
+          <button onClick={() => {
+            const url = `${window.location.origin}/imovel/publico/${id}`;
+            navigator.clipboard.writeText(url);
+            setLinkCopiado(true);
+            setTimeout(() => setLinkCopiado(false), 2000);
+          }} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-800 text-surface-200 hover:text-white hover:bg-surface-700 transition-colors border border-surface-700">
+            {linkCopiado ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
+            {linkCopiado ? <span className="text-green-400">Link Copiado</span> : "Compartilhar"}
+          </button>
+          <button onClick={deleteProperty} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
+            <Trash2 size={16} />
+            Excluir
           </button>
           <Link href={`/imoveis/${id}/editar`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
             <Edit2 size={16} />
@@ -162,7 +234,7 @@ export default function ImovelDetailPage() {
         {hasPhotos ? (
           <div className={`grid gap-2 ${imovel.fotos!.length > 1 ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-4' : 'grid-cols-1'} h-[300px] sm:h-[400px] lg:h-[500px]`}>
             {/* Main Photo */}
-            <div className={`relative w-full h-full ${imovel.fotos!.length > 1 ? 'md:col-span-2 lg:col-span-2' : ''} group cursor-pointer`}>
+            <div onClick={() => setViewerIndex(0)} className={`relative w-full h-full ${imovel.fotos!.length > 1 ? 'md:col-span-2 lg:col-span-2' : ''} group cursor-pointer`}>
               <img src={imovel.fotos![0].url} alt={imovel.titulo} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent pointer-events-none" />
             </div>
@@ -171,7 +243,7 @@ export default function ImovelDetailPage() {
             {imovel.fotos!.length > 1 && (
               <div className="hidden md:grid grid-rows-2 gap-2 col-span-1 lg:col-span-1">
                 {imovel.fotos!.slice(1, 3).map((foto, idx) => (
-                  <div key={foto.id} className="relative w-full h-full group cursor-pointer overflow-hidden">
+                  <div onClick={() => setViewerIndex(idx + 1)} key={foto.id} className="relative w-full h-full group cursor-pointer overflow-hidden">
                     <img src={foto.url} alt="Foto" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                   </div>
                 ))}
@@ -181,11 +253,11 @@ export default function ImovelDetailPage() {
             {/* Rightmost column for 4+ photos */}
             {imovel.fotos!.length > 3 && (
               <div className="hidden lg:grid grid-rows-2 gap-2 col-span-1">
-                <div className="relative w-full h-full group cursor-pointer overflow-hidden">
+                <div onClick={() => setViewerIndex(3)} className="relative w-full h-full group cursor-pointer overflow-hidden">
                   <img src={imovel.fotos![3].url} alt="Foto" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                 </div>
                 {imovel.fotos!.length > 4 ? (
-                  <div className="relative w-full h-full group cursor-pointer overflow-hidden">
+                  <div onClick={() => setViewerIndex(4)} className="relative w-full h-full group cursor-pointer overflow-hidden">
                     <img src={imovel.fotos![4].url} alt="Foto" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center transition-colors group-hover:bg-black/50">
                       <span className="text-white font-medium text-lg">+{imovel.fotos!.length - 5} fotos</span>
@@ -418,6 +490,71 @@ export default function ImovelDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Viewer Modal */}
+      {viewerIndex !== null && imovel.fotos && (
+        <div className="fixed inset-0 z-[100] flex flex-col bg-black/90 backdrop-blur-sm">
+          {/* Top Bar */}
+          <div className="flex items-center justify-between p-4 bg-transparent absolute top-0 w-full z-[60] pointer-events-auto">
+            <div className="text-white/70 text-sm font-medium px-4">
+              {viewerIndex + 1} / {imovel.fotos.length}
+            </div>
+            <div className="flex items-center gap-4">
+              <button onClick={handleShare} className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10" title="Compartilhar">
+                {linkCopiado ? <Check size={24} className="text-green-400" /> : <Share2 size={24} />}
+              </button>
+              <button onClick={() => setViewerIndex(null)} className="text-white/70 hover:text-white transition-colors p-2 rounded-full hover:bg-white/10" title="Fechar">
+                <X size={24} />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Viewer */}
+          <div className="flex-1 flex items-center justify-center relative overflow-hidden">
+            <button onClick={handlePrevImage} className="absolute left-4 z-20 p-3 rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/80 transition-all">
+              <ChevronLeft size={36} />
+            </button>
+            
+            <div className="w-full h-full p-4 md:p-12 pb-24 md:pb-32 flex items-center justify-center z-10">
+              <img 
+                src={imovel.fotos[viewerIndex].url} 
+                alt="Visualização do imóvel" 
+                className="max-w-full max-h-full object-contain"
+              />
+            </div>
+
+            <button onClick={handleNextImage} className="absolute right-4 z-20 p-3 rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/80 transition-all">
+              <ChevronRight size={36} />
+            </button>
+
+            {/* Info Overlay */}
+            <div className="absolute bottom-0 left-0 w-full text-center drop-shadow-md bg-gradient-to-t from-black/80 to-transparent pt-24 pb-6 pointer-events-none z-20">
+              <h3 className="text-white font-semibold text-lg md:text-xl px-4">{imovel.titulo}</h3>
+              <p className="text-white/80 text-sm md:text-base mt-1">
+                {imovel.finalidade === 'LOCACAO' ? 'Aluguel ' : imovel.finalidade === 'VENDA' ? 'Venda ' : 'Venda ou Locação '} 
+                <span className="font-bold text-white ml-1">
+                  {imovel.finalidade === 'VENDA' ? (imovel.precoVenda > 0 ? formatCurrency(imovel.precoVenda) : 'Sob consulta') : (imovel.valorAluguel ? formatCurrency(imovel.valorAluguel) : 'Sob consulta')}
+                </span>
+              </p>
+            </div>
+          </div>
+
+          {/* Thumbnails */}
+          {imovel.fotos.length > 1 && (
+            <div className="h-24 w-full bg-black flex items-center gap-2 px-4 overflow-x-auto shrink-0 pb-2 z-30">
+              {imovel.fotos.map((foto, idx) => (
+                <button 
+                  key={foto.id}
+                  onClick={() => setViewerIndex(idx)}
+                  className={`h-16 w-24 shrink-0 overflow-hidden transition-all rounded ${viewerIndex === idx ? 'ring-2 ring-brand-500 opacity-100' : 'opacity-50 hover:opacity-100'}`}
+                >
+                  <img src={foto.url} className="w-full h-full object-cover" alt="Miniatura" />
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

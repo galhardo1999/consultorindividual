@@ -1,6 +1,7 @@
 import type { NextAuthConfig } from "next-auth";
 
 export const authConfig = {
+  trustHost: true,
   pages: {
     signIn: "/login",
     error: "/login",
@@ -18,10 +19,11 @@ export const authConfig = {
       const ehPaginaAuthOuLanding =
         caminho === "/" || caminho.startsWith("/login") || caminho.startsWith("/cadastro");
 
-      // Rotas de recuperação de senha — sempre públicas (não redireciona logado)
+      // Rotas de recuperação de senha e públicas — sempre públicas (não redireciona logado)
       const ehPaginaRecuperacao =
         caminho.startsWith("/recuperar-senha") ||
-        caminho.startsWith("/redefinir-senha");
+        caminho.startsWith("/redefinir-senha") ||
+        caminho.startsWith("/imovel/publico");
 
       if (ehPaginaRecuperacao) return true;
 

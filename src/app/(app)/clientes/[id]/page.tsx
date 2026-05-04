@@ -7,7 +7,7 @@ import {
   ArrowLeft, Edit2, Phone, Mail, MapPin, Calendar, Star, MessageSquare,
   Home, Plus, Trash2, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed,
   Activity, Target, AlertCircle, Bath, Car, Maximize, MessageCircle,
-  CreditCard, DollarSign, Users, Wallet, Search, ChevronRight
+  CreditCard, DollarSign, Users, Wallet, Search
 } from "lucide-react";
 import {
   journeyStageLabel, journeyStageColor, formatDate,
@@ -323,7 +323,7 @@ export default function ClienteDetailPage() {
             </div>
           </div>
 
-          {/* ─ Card: Perfil de Busca (Unificado) ─ */}
+          {/* ─ Card: Perfil de Busca ─ */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider flex items-center gap-2">
@@ -335,128 +335,117 @@ export default function ClienteDetailPage() {
               </Link>
             </div>
 
-            <div className="flex flex-col gap-3">
-              {/* Campos de Qualificação Integrados */}
-              <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-2">
-                {cliente.objetivoCompra && (
-                  <QualRow label="Objetivo" valor={labelDe(PURCHASE_GOALS, cliente.objetivoCompra) ?? ""} />
-                )}
-                {cliente.budgetMaximo && (
-                  <QualRow
-                    label={isLocacao ? "Aluguel máx." : "Budget máx."}
-                    valor={formatCurrency(cliente.budgetMaximo)}
-                    destaque
-                  />
-                )}
-                {cliente.formaPagamento && (
-                  <QualRow label="Pagamento" valor={labelDe(PAYMENT_METHODS, cliente.formaPagamento) ?? ""} />
-                )}
-                {cliente.nivelUrgencia && (
-                  <QualRow
-                    label="Urgência"
-                    valor={labelDe(URGENCY_LEVELS, cliente.nivelUrgencia) ?? ""}
-                    badge={cliente.nivelUrgencia === "ALTA" ? "danger" : cliente.nivelUrgencia === "MEDIA" ? "warning" : undefined}
-                  />
-                )}
-                {cliente.prazoCompra && (
-                  <QualRow label="Prazo" valor={labelDe(PRAZO_COMPRA, cliente.prazoCompra) ?? ""} />
-                )}
-                {cliente.preAprovacaoCredito && (
-                  <QualRow
-                    label="Pré-aprovação"
-                    valor={labelDe(PRE_APROVACAO, cliente.preAprovacaoCredito) ?? ""}
-                    badge={cliente.preAprovacaoCredito === "SIM" ? "success" : undefined}
-                  />
+            <div className="flex flex-col gap-5">
+              {/* Seção: Qualificação */}
+              <div>
+                <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Wallet size={10} /> Qualificação
+                </p>
+                <div className="rounded-lg border border-surface-700/60 bg-surface-900/50 overflow-hidden">
+                  {cliente.objetivoCompra && (
+                    <QualRowBordered label="Objetivo" valor={labelDe(PURCHASE_GOALS, cliente.objetivoCompra) ?? ""} />
+                  )}
+                  {cliente.budgetMaximo && (
+                    <QualRowBordered
+                      label={isLocacao ? "Aluguel máx." : "Budget máx."}
+                      valor={formatCurrency(cliente.budgetMaximo)}
+                      destaque
+                    />
+                  )}
+                  {cliente.formaPagamento && (
+                    <QualRowBordered label="Pagamento" valor={labelDe(PAYMENT_METHODS, cliente.formaPagamento) ?? ""} />
+                  )}
+                  {cliente.prazoCompra && (
+                    <QualRowBordered label="Prazo" valor={labelDe(PRAZO_COMPRA, cliente.prazoCompra) ?? ""} />
+                  )}
+                  {cliente.preAprovacaoCredito && (
+                    <QualRowBordered
+                      label="Pré-aprovação"
+                      valor={labelDe(PRE_APROVACAO, cliente.preAprovacaoCredito) ?? ""}
+                      badge={cliente.preAprovacaoCredito === "SIM" ? "success" : undefined}
+                    />
+                  )}
+                  {cliente.nivelUrgencia && (
+                    <QualRowBordered
+                      label="Urgência"
+                      valor={labelDe(URGENCY_LEVELS, cliente.nivelUrgencia) ?? ""}
+                      badge={cliente.nivelUrgencia === "ALTA" ? "danger" : cliente.nivelUrgencia === "MEDIA" ? "warning" : undefined}
+                      last
+                    />
+                  )}
+                </div>
+              </div>
+
+              {/* Seção: Preferências do Imóvel */}
+              <div>
+                <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                  <Home size={10} /> Preferências do Imóvel
+                </p>
+                {!cliente.preferencia ? (
+                  <p className="text-xs text-surface-500 text-center py-4 rounded-lg border border-surface-700/60 bg-surface-900/50">
+                    Detalhes do perfil não preenchidos
+                  </p>
+                ) : (
+                  <div className="rounded-lg border border-surface-700/60 bg-surface-900/50 overflow-hidden">
+                    {cliente.preferencia.tipoImovel && (
+                      <PrefRowBordered icon={<Home size={12} />} label="Tipo" valor={propertyTypeLabel(cliente.preferencia.tipoImovel)} />
+                    )}
+                    {(cliente.preferencia.precoMinimo || cliente.preferencia.precoMaximo) && (
+                      <PrefRowBordered
+                        icon={<DollarSign size={12} />}
+                        label={isLocacao ? "Aluguel" : "Preço"}
+                        valor={[
+                          cliente.preferencia.precoMinimo ? formatCurrency(cliente.preferencia.precoMinimo) : "0",
+                          cliente.preferencia.precoMaximo ? formatCurrency(cliente.preferencia.precoMaximo) : "Ilimitado",
+                        ].join(" → ")}
+                      />
+                    )}
+                    {cliente.preferencia.cidadeInteresse && (
+                      <PrefRowBordered icon={<MapPin size={12} />} label="Cidade" valor={cliente.preferencia.cidadeInteresse} />
+                    )}
+                    {cliente.preferencia.bairrosInteresse && (
+                      <PrefRowBordered icon={<MapPin size={12} />} label="Bairros" valor={cliente.preferencia.bairrosInteresse} />
+                    )}
+                    {(cliente.preferencia.minQuartos || cliente.preferencia.minBanheiros || cliente.preferencia.minVagas) && (
+                      <PrefRowBordered
+                        icon={<Bed size={12} />}
+                        label="Cômodos"
+                        valor={[
+                          cliente.preferencia.minQuartos ? `${cliente.preferencia.minQuartos}+ qts` : null,
+                          cliente.preferencia.minBanheiros ? `${cliente.preferencia.minBanheiros}+ ban` : null,
+                          cliente.preferencia.minVagas ? `${cliente.preferencia.minVagas}+ vag` : null,
+                        ].filter(Boolean).join(" · ")}
+                      />
+                    )}
+                    {(cliente.preferencia.areaMinima || cliente.preferencia.areaMaxima) && (
+                      <PrefRowBordered
+                        icon={<Maximize size={12} />}
+                        label="Área"
+                        valor={[
+                          cliente.preferencia.areaMinima ? `${cliente.preferencia.areaMinima}m²` : null,
+                          cliente.preferencia.areaMaxima ? `${cliente.preferencia.areaMaxima}m²` : null,
+                        ].filter(Boolean).join(" → ")}
+                      />
+                    )}
+                    {(cliente.preferencia.aceitaFinanciamento || cliente.preferencia.aceitaPermuta) && (
+                      <div className="flex gap-2 px-3 py-2.5 flex-wrap">
+                        {cliente.preferencia.aceitaFinanciamento && (
+                          <span className="badge badge-success text-[10px]">Aceita Financiamento</span>
+                        )}
+                        {cliente.preferencia.aceitaPermuta && (
+                          <span className="badge badge-warning text-[10px]">Aceita Permuta</span>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
 
-              {cliente.preferencia && <div className="h-px bg-surface-700/50 my-1" />}
-
-              {/* Perfil de Busca Detalhado */}
-              {!cliente.preferencia ? (
-                <div className="flex flex-col items-center py-2 text-center gap-2">
-                  <p className="text-xs text-surface-500">Detalhes do perfil não preenchidos</p>
-                </div>
-              ) : (
-                <div className="flex flex-col gap-2.5">
-                  {cliente.preferencia.tipoImovel && (
-                    <PrefRow
-                      icon={<Home size={12} />}
-                      label="Tipo"
-                      valor={propertyTypeLabel(cliente.preferencia.tipoImovel)}
-                    />
-                  )}
-
-                  {(cliente.preferencia.precoMinimo || cliente.preferencia.precoMaximo) && (
-                    <PrefRow
-                      icon={<DollarSign size={12} />}
-                      label={isLocacao ? "Aluguel" : "Preço"}
-                      valor={[
-                        cliente.preferencia.precoMinimo ? formatCurrency(cliente.preferencia.precoMinimo) : "0",
-                        cliente.preferencia.precoMaximo ? formatCurrency(cliente.preferencia.precoMaximo) : "Ilimitado",
-                      ].join(" → ")}
-                    />
-                  )}
-
-                  {cliente.preferencia.cidadeInteresse && (
-                    <PrefRow
-                      icon={<MapPin size={12} />}
-                      label="Cidade"
-                      valor={cliente.preferencia.cidadeInteresse}
-                    />
-                  )}
-
-                  {cliente.preferencia.bairrosInteresse && (
-                    <PrefRow
-                      icon={<ChevronRight size={12} />}
-                      label="Bairros"
-                      valor={cliente.preferencia.bairrosInteresse}
-                    />
-                  )}
-
-                  {(cliente.preferencia.minQuartos || cliente.preferencia.minBanheiros || cliente.preferencia.minVagas) && (
-                    <div className="flex items-center gap-3 text-xs text-surface-300 pt-1">
-                      {cliente.preferencia.minQuartos && (
-                        <span className="flex items-center gap-1"><Bed size={12} className="text-surface-500" /> {cliente.preferencia.minQuartos}+ qts</span>
-                      )}
-                      {cliente.preferencia.minBanheiros && (
-                        <span className="flex items-center gap-1"><Bath size={12} className="text-surface-500" /> {cliente.preferencia.minBanheiros}+ ban</span>
-                      )}
-                      {cliente.preferencia.minVagas && (
-                        <span className="flex items-center gap-1"><Car size={12} className="text-surface-500" /> {cliente.preferencia.minVagas}+ vag</span>
-                      )}
-                    </div>
-                  )}
-
-                  {(cliente.preferencia.areaMinima || cliente.preferencia.areaMaxima) && (
-                    <PrefRow
-                      icon={<Maximize size={12} />}
-                      label="Área"
-                      valor={[
-                        cliente.preferencia.areaMinima ? `${cliente.preferencia.areaMinima}m²` : null,
-                        cliente.preferencia.areaMaxima ? `${cliente.preferencia.areaMaxima}m²` : null,
-                      ].filter(Boolean).join(" → ")}
-                    />
-                  )}
-
-                  {(cliente.preferencia.aceitaFinanciamento || cliente.preferencia.aceitaPermuta) && (
-                    <div className="flex gap-2 pt-1 flex-wrap">
-                      {cliente.preferencia.aceitaFinanciamento && (
-                        <span className="badge badge-success text-[10px]">Financiamento</span>
-                      )}
-                      {cliente.preferencia.aceitaPermuta && (
-                        <span className="badge badge-warning text-[10px]">Permuta</span>
-                      )}
-                    </div>
-                  )}
-
-                  {cliente.preferencia.notasPessoais && (
-                    <div className="mt-2 bg-surface-900/60 rounded-lg p-3 border border-surface-700/50">
-                      <p className="text-xs text-surface-300 leading-relaxed italic">
-                        "{cliente.preferencia.notasPessoais}"
-                      </p>
-                    </div>
-                  )}
+              {/* Notas pessoais */}
+              {cliente.preferencia?.notasPessoais && (
+                <div className="bg-surface-900/60 rounded-lg p-3 border border-surface-700/50">
+                  <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Notas</p>
+                  <p className="text-xs text-surface-300 leading-relaxed italic">"{cliente.preferencia.notasPessoais}"</p>
                 </div>
               )}
             </div>
@@ -973,36 +962,35 @@ function InfoRow({ icon, cor, label, valor }: {
   );
 }
 
-function QualRow({ label, valor, destaque, badge }: {
+function QualRowBordered({ label, valor, destaque, badge, last }: {
   label: string;
   valor: string;
   destaque?: boolean;
   badge?: "success" | "warning" | "danger";
+  last?: boolean;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2">
-      <span className="text-xs text-surface-500">{label}</span>
+    <div className={`flex items-center justify-between gap-3 px-3 py-2.5 ${!last ? "border-b border-surface-700/40" : ""}`}>
+      <span className="text-xs text-surface-500 shrink-0">{label}</span>
       {badge ? (
         <span className={`badge badge-${badge} text-[10px]`}>{valor}</span>
       ) : (
-        <span className={`text-xs font-medium ${destaque ? "text-green-400" : "text-surface-200"}`}>{valor}</span>
+        <span className={`text-xs font-medium text-right ${destaque ? "text-green-400" : "text-surface-200"}`}>{valor}</span>
       )}
     </div>
   );
 }
 
-function PrefRow({ icon, label, valor }: {
+function PrefRowBordered({ icon, label, valor }: {
   icon: React.ReactNode;
   label: string;
   valor: string;
 }) {
   return (
-    <div className="flex items-start gap-2">
-      <span className="text-surface-600 mt-0.5 shrink-0">{icon}</span>
-      <div className="min-w-0">
-        <span className="text-[10px] text-surface-500 uppercase tracking-wider">{label} · </span>
-        <span className="text-xs text-surface-200">{valor}</span>
-      </div>
+    <div className="flex items-center gap-3 px-3 py-2.5 border-b border-surface-700/40 last:border-0">
+      <span className="text-surface-500 shrink-0">{icon}</span>
+      <span className="text-[10px] text-surface-500 uppercase tracking-wider shrink-0">{label}</span>
+      <span className="text-xs text-surface-200 text-right flex-1 truncate">{valor}</span>
     </div>
   );
 }
