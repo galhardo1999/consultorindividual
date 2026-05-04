@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { TipoImovel } from "@prisma/client";
 import { z } from "zod";
 
 const campoOpcional = z.string().optional().nullable();
@@ -148,8 +149,8 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
         ...(preferencia ? {
           preferencia: {
             upsert: {
-              create: preferencia,
-              update: preferencia,
+              create: { ...preferencia, tipoImovel: preferencia.tipoImovel as TipoImovel | null | undefined },
+              update: { ...preferencia, tipoImovel: preferencia.tipoImovel as TipoImovel | null | undefined },
             },
           },
         } : {}),

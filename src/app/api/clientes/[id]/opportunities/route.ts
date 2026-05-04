@@ -12,7 +12,7 @@ export async function GET(
   }
 
   const { id } = await params;
-  const usuarioId = session?.user?.id || "";
+  const usuarioId = session.user.id;
 
   try {
     const cliente = await prisma.cliente.findFirst({
@@ -55,10 +55,21 @@ export async function GET(
     }
 
     if (preferencia.precoMinimo !== null || preferencia.precoMaximo !== null) {
-      const priceFilter: Record<string, number> = {};
-      if (preferencia.precoMinimo !== null) priceFilter.gte = preferencia.precoMinimo;
-      if (preferencia.precoMaximo !== null) priceFilter.lte = preferencia.precoMaximo;
-      whereClause.precoVenda = priceFilter;
+      const filtroPreco: Record<string, number> = {};
+      if (preferencia.precoMinimo !== null) filtroPreco.gte = preferencia.precoMinimo;
+      if (preferencia.precoMaximo !== null) filtroPreco.lte = preferencia.precoMaximo;
+      if (cliente.objetivoCompra === "LOCACAO") {
+        whereClause.valorAluguel = filtroPreco;
+      } else {
+        whereClause.precoVenda = filtroPreco;
+      }
+    }
+
+    if (preferencia.bairrosInteresse) {
+      const bairros = preferencia.bairrosInteresse.split(",").map((b) => b.trim()).filter(Boolean);
+      if (bairros.length > 0) {
+        whereClause.OR = bairros.map((b) => ({ bairro: { contains: b, mode: "insensitive" } }));
+      }
     }
 
     if (preferencia.minQuartos !== null) {

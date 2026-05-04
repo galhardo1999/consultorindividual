@@ -10,7 +10,8 @@
       "Bash(Select-Object -ExpandProperty Line)",
       "Bash(bun add *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Alexandre\\\\Desktop\\\\PROJETOS\\\\consultorindividual\\\\src\\\\app\" -Recurse -Filter \"*cliente*\" -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(node_modules/.bin/tsc --noEmit)"
     ]
   }
 }

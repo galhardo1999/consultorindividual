@@ -35,28 +35,27 @@ export default function EditarClientePage() {
     dataNascimento: "",
     estadoCivil: "",
     temFilhos: "",
-    profissao: "",
-    rendaMensal: "",
     cidadeAtual: "",
     origemLead: "INDICACAO",
     // Jornada / Status
     estagioJornada: "NOVO_LEAD",
-    objetivoCompra: "",
     formaPagamento: "",
     nivelUrgencia: "MEDIA",
     prazoCompra: "",
-    budgetMaximo: "",
     preAprovacaoCredito: "NAO",
-    proximoContato: "",
-    observacoes: "",
     // Perfil de Busca
+    objetivoCompra: "",
     tipoImovel: "",
+    budgetMaximo: "",
     precoMinimo: "",
     precoMaximo: "",
     cidadeInteresse: "",
     bairrosInteresse: "",
     minQuartos: "",
+    minBanheiros: "",
+    minVagas: "",
     areaMinima: "",
+    areaMaxima: "",
     aceitaFinanciamento: false,
     aceitaPermuta: false,
     notasPessoais: "",
@@ -78,27 +77,28 @@ export default function EditarClientePage() {
           dataNascimento: data.dataNascimento ? new Date(data.dataNascimento).toISOString().split("T")[0] : "",
           estadoCivil: data.estadoCivil || "",
           temFilhos: data.temFilhos === true ? "true" : data.temFilhos === false ? "false" : "",
-          profissao: data.profissao || "",
-          rendaMensal: data.rendaMensal ? maskCurrencyValue(data.rendaMensal) : "",
           cidadeAtual: data.cidadeAtual || "",
           origemLead: data.origemLead || "INDICACAO",
           estagioJornada: data.estagioJornada || "NOVO_LEAD",
-          objetivoCompra: data.objetivoCompra || "",
           formaPagamento: data.formaPagamento || "",
           nivelUrgencia: data.nivelUrgencia || "MEDIA",
           prazoCompra: data.prazoCompra || "",
-          budgetMaximo: data.budgetMaximo ? maskCurrencyValue(data.budgetMaximo) : "",
           preAprovacaoCredito: data.preAprovacaoCredito || "NAO",
-          proximoContato: data.proximoContato ? new Date(data.proximoContato).toISOString().slice(0, 16) : "",
-          observacoes: data.observacoes || "",
+          objetivoCompra: data.objetivoCompra || "",
+          budgetMaximo: data.budgetMaximo ? maskCurrencyValue(data.budgetMaximo) : "",
           // Perfil
           tipoImovel: data.preferencia?.tipoImovel || "",
           precoMinimo: data.preferencia?.precoMinimo ? maskCurrencyValue(data.preferencia.precoMinimo) : "",
-          precoMaximo: data.preferencia?.precoMaximo ? maskCurrencyValue(data.preferencia.precoMaximo) : "",
+          precoMaximo: data.preferencia?.precoMaximo
+            ? maskCurrencyValue(data.preferencia.precoMaximo)
+            : (data.budgetMaximo ? maskCurrencyValue(data.budgetMaximo) : ""),
           cidadeInteresse: data.preferencia?.cidadeInteresse || "",
           bairrosInteresse: data.preferencia?.bairrosInteresse || "",
           minQuartos: data.preferencia?.minQuartos?.toString() || "",
+          minBanheiros: data.preferencia?.minBanheiros?.toString() || "",
+          minVagas: data.preferencia?.minVagas?.toString() || "",
           areaMinima: data.preferencia?.areaMinima?.toString() || "",
+          areaMaxima: data.preferencia?.areaMaxima?.toString() || "",
           aceitaFinanciamento: data.preferencia?.aceitaFinanciamento || false,
           aceitaPermuta: data.preferencia?.aceitaPermuta || false,
           notasPessoais: data.preferencia?.notasPessoais || "",
@@ -112,8 +112,8 @@ export default function EditarClientePage() {
     loadData();
   }, [id]);
 
-  function update(field: string, value: any) {
-    setForm((f) => ({ ...f, [field]: value }));
+  function update(campo: string, valor: string | boolean) {
+    setForm((f) => ({ ...f, [campo]: valor }));
   }
 
   function maskCurrencyValue(value: number) {
@@ -165,19 +165,15 @@ export default function EditarClientePage() {
       dataNascimento: form.dataNascimento || null,
       estadoCivil: form.estadoCivil || null,
       temFilhos: form.temFilhos === "true" ? true : form.temFilhos === "false" ? false : null,
-      profissao: form.profissao || null,
-      rendaMensal: form.rendaMensal ? parseFloat(form.rendaMensal.replace(/\D/g, "")) / 100 : null,
       cidadeAtual: form.cidadeAtual || null,
       origemLead: form.origemLead || null,
       estagioJornada: form.estagioJornada || null,
-      objetivoCompra: form.objetivoCompra || null,
       formaPagamento: form.formaPagamento || null,
       nivelUrgencia: form.nivelUrgencia || null,
       prazoCompra: form.prazoCompra || null,
-      budgetMaximo: form.budgetMaximo ? parseFloat(form.budgetMaximo.replace(/\D/g, "")) / 100 : null,
       preAprovacaoCredito: form.preAprovacaoCredito || null,
-      proximoContato: form.proximoContato || null,
-      observacoes: form.observacoes || null,
+      objetivoCompra: form.objetivoCompra || null,
+      budgetMaximo: form.budgetMaximo ? parseFloat(form.budgetMaximo.replace(/\D/g, "")) / 100 : null,
       preferencia: {
         tipoImovel: form.tipoImovel || null,
         precoMinimo: form.precoMinimo ? parseFloat(form.precoMinimo.replace(/\D/g, "")) / 100 : null,
@@ -185,7 +181,10 @@ export default function EditarClientePage() {
         cidadeInteresse: form.cidadeInteresse || null,
         bairrosInteresse: form.bairrosInteresse || null,
         minQuartos: form.minQuartos ? parseInt(form.minQuartos) : null,
+        minBanheiros: form.minBanheiros ? parseInt(form.minBanheiros) : null,
+        minVagas: form.minVagas ? parseInt(form.minVagas) : null,
         areaMinima: form.areaMinima ? parseFloat(form.areaMinima) : null,
+        areaMaxima: form.areaMaxima ? parseFloat(form.areaMaxima) : null,
         aceitaFinanciamento: form.aceitaFinanciamento,
         aceitaPermuta: form.aceitaPermuta,
         notasPessoais: form.notasPessoais || null,
@@ -377,30 +376,7 @@ export default function EditarClientePage() {
               </div>
             </div>
 
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label" htmlFor="profissao">Profissão</label>
-                <input
-                  id="profissao"
-                  type="text"
-                  className="input"
-                  placeholder="Ex: Engenheiro, Médico..."
-                  value={form.profissao}
-                  onChange={(e) => update("profissao", e.target.value)}
-                />
-              </div>
-              <div className="form-group">
-                <label className="label" htmlFor="rendaMensal">Renda Mensal</label>
-                <input
-                  id="rendaMensal"
-                  type="text"
-                  className="input"
-                  placeholder="R$ 0,00"
-                  value={form.rendaMensal}
-                  onChange={(e) => update("rendaMensal", maskCurrency(e.target.value))}
-                />
-              </div>
-            </div>
+
 
             <div className="form-row">
               <div className="form-group">
@@ -436,30 +412,20 @@ export default function EditarClientePage() {
                   {JOURNEY_STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
                 <label className="label" htmlFor="nivelUrgencia">Urgência</label>
                 <select id="nivelUrgencia" className="select" value={form.nivelUrgencia} onChange={(e) => update("nivelUrgencia", e.target.value)}>
                   {URGENCY_LEVELS.map((u) => <option key={u.value} value={u.value}>{u.label}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className="form-row">
               <div className="form-group">
                 <label className="label" htmlFor="prazoCompra">Prazo para Compra</label>
                 <select id="prazoCompra" className="select" value={form.prazoCompra} onChange={(e) => update("prazoCompra", e.target.value)}>
                   <option value="">Selecionar...</option>
                   {PRAZO_COMPRA.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
-                </select>
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label" htmlFor="objetivoCompra">Objetivo da Compra</label>
-                <select id="objetivoCompra" className="select" value={form.objetivoCompra} onChange={(e) => update("objetivoCompra", e.target.value)}>
-                  <option value="">Selecionar...</option>
-                  {PURCHASE_GOALS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
                 </select>
               </div>
               <div className="form-group">
@@ -473,46 +439,11 @@ export default function EditarClientePage() {
 
             <div className="form-row">
               <div className="form-group">
-                <label className="label" htmlFor="budgetMaximo">Budget / Valor Máximo</label>
-                <input
-                  id="budgetMaximo"
-                  type="text"
-                  className="input"
-                  placeholder="R$ 0,00"
-                  value={form.budgetMaximo}
-                  onChange={(e) => update("budgetMaximo", maskCurrency(e.target.value))}
-                />
-              </div>
-              <div className="form-group">
                 <label className="label" htmlFor="preAprovacaoCredito">Pré-aprovação de Crédito</label>
                 <select id="preAprovacaoCredito" className="select" value={form.preAprovacaoCredito} onChange={(e) => update("preAprovacaoCredito", e.target.value)}>
                   {PRE_APROVACAO.map((p) => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
               </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label" htmlFor="proximoContato">Próximo Contato Agendado</label>
-                <input
-                  id="proximoContato"
-                  type="datetime-local"
-                  className="input"
-                  value={form.proximoContato}
-                  onChange={(e) => update("proximoContato", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="form-group">
-              <label className="label" htmlFor="observacoes">Observações</label>
-              <textarea
-                id="observacoes"
-                className="textarea"
-                placeholder="Contexto inicial do atendimento, observações importantes..."
-                value={form.observacoes}
-                onChange={(e) => update("observacoes", e.target.value)}
-              />
             </div>
           </div>
         )}
@@ -524,37 +455,93 @@ export default function EditarClientePage() {
             
             <div className="form-row">
               <div className="form-group">
+                <label className="label">Objetivo da Compra</label>
+                <select className="select" value={form.objetivoCompra} onChange={(e) => update("objetivoCompra", e.target.value)}>
+                  <option value="">Selecionar...</option>
+                  {PURCHASE_GOALS.map((g) => <option key={g.value} value={g.value}>{g.label}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
                 <label className="label">Tipo de Imóvel</label>
                 <select className="select" value={form.tipoImovel} onChange={(e) => update("tipoImovel", e.target.value)}>
                   <option value="">Indiferente</option>
                   {PROPERTY_TYPES.map((t) => <option key={t.value} value={t.value}>{t.label}</option>)}
                 </select>
               </div>
+            </div>
+
+            {(form.objetivoCompra === "INVESTIMENTO" || form.objetivoCompra === "MORADIA_PROPRIA") && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="label">Preço Mínimo</label>
+                  <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMinimo} onChange={(e) => update("precoMinimo", maskCurrency(e.target.value))} />
+                </div>
+                <div className="form-group">
+                  <label className="label">Budget / Valor Máximo</label>
+                  <input type="text" className="input" placeholder="R$ 0,00" value={form.budgetMaximo} onChange={(e) => { const v = maskCurrency(e.target.value); setForm((f) => ({ ...f, budgetMaximo: v, precoMaximo: v })); }} />
+                </div>
+              </div>
+            )}
+
+            {form.objetivoCompra === "LOCACAO" && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="label">Aluguel Mínimo</label>
+                  <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMinimo} onChange={(e) => update("precoMinimo", maskCurrency(e.target.value))} />
+                </div>
+                <div className="form-group">
+                  <label className="label">Aluguel Máximo</label>
+                  <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMaximo} onChange={(e) => update("precoMaximo", maskCurrency(e.target.value))} />
+                </div>
+              </div>
+            )}
+
+            {["CASA", "APARTAMENTO", "CASA_CONDOMINIO", "COBERTURA", "KITNET", "STUDIO", "PREDIO_COMERCIAL"].includes(form.tipoImovel) && (
+              <>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="label">Área mín. (m²)</label>
+                    <input type="number" className="input" value={form.areaMinima} onChange={(e) => update("areaMinima", e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="label">Quartos (mín.)</label>
+                    <input type="number" className="input" value={form.minQuartos} onChange={(e) => update("minQuartos", e.target.value)} />
+                  </div>
+                </div>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label className="label">Banheiros (mín.)</label>
+                    <input type="number" className="input" value={form.minBanheiros} onChange={(e) => update("minBanheiros", e.target.value)} />
+                  </div>
+                  <div className="form-group">
+                    <label className="label">Vagas de garagem (mín.)</label>
+                    <input type="number" className="input" value={form.minVagas} onChange={(e) => update("minVagas", e.target.value)} />
+                  </div>
+                </div>
+              </>
+            )}
+
+            {["TERRENO", "AREA_RURAL", "CHACARA", "FAZENDA"].includes(form.tipoImovel) && (
+              <div className="form-row">
+                <div className="form-group">
+                  <label className="label">Área mín. (m²)</label>
+                  <input type="number" className="input" value={form.areaMinima} onChange={(e) => update("areaMinima", e.target.value)} />
+                </div>
+                <div className="form-group">
+                  <label className="label">Área máx. (m²)</label>
+                  <input type="number" className="input" value={form.areaMaxima} onChange={(e) => update("areaMaxima", e.target.value)} />
+                </div>
+              </div>
+            )}
+
+            <div className="form-row">
               <div className="form-group">
                 <label className="label">Cidade de Interesse</label>
                 <input type="text" className="input" placeholder="Ex: São Paulo" value={form.cidadeInteresse} onChange={(e) => update("cidadeInteresse", e.target.value)} />
               </div>
-            </div>
-
-            <div className="form-row">
               <div className="form-group">
-                <label className="label">Preço Mínimo</label>
-                <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMinimo} onChange={(e) => update("precoMinimo", maskCurrency(e.target.value))} />
-              </div>
-              <div className="form-group">
-                <label className="label">Preço Máximo</label>
-                <input type="text" className="input" placeholder="R$ 0,00" value={form.precoMaximo} onChange={(e) => update("precoMaximo", maskCurrency(e.target.value))} />
-              </div>
-            </div>
-
-            <div className="form-row">
-              <div className="form-group">
-                <label className="label">Quartos (mín.)</label>
-                <input type="number" className="input" value={form.minQuartos} onChange={(e) => update("minQuartos", e.target.value)} />
-              </div>
-              <div className="form-group">
-                <label className="label">Área mín. (m²)</label>
-                <input type="number" className="input" value={form.areaMinima} onChange={(e) => update("areaMinima", e.target.value)} />
+                <label className="label">Bairros de Interesse</label>
+                <input type="text" className="input" placeholder="Ex: Moema, Pinheiros" value={form.bairrosInteresse} onChange={(e) => update("bairrosInteresse", e.target.value)} />
               </div>
             </div>
 

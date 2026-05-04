@@ -5,21 +5,29 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Edit2, Phone, Mail, MapPin, Calendar, Star, MessageSquare,
-  Home, Plus, Trash2, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed, Ruler,
-  User, ChevronRight, Activity, Target, Wallet, AlertCircle, Bath, Car, Maximize, MessageCircle
+  Home, Plus, Trash2, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed,
+  Activity, Target, AlertCircle, Bath, Car, Maximize, MessageCircle,
+  CreditCard, DollarSign, Users, Wallet, Search, ChevronRight
 } from "lucide-react";
 import {
-  journeyStageLabel, journeyStageColor, urgencyLabel, formatDate,
+  journeyStageLabel, journeyStageColor, formatDate,
   formatDateTime, leadSourceLabel, formatCurrency, propertyTypeLabel,
   interactionTypeLabel
 } from "@/lib/utils";
+import {
+  PURCHASE_GOALS, PAYMENT_METHODS, CIVIL_STATUS, PRAZO_COMPRA, PRE_APROVACAO, URGENCY_LEVELS
+} from "@/constants/options";
 
 interface ClientDetail {
   id: string;
   nomeCompleto: string;
   telefone: string;
+  whatsapp: string | null;
   email: string | null;
-  document: string | null;
+  documento: string | null;
+  dataNascimento: string | null;
+  estadoCivil: string | null;
+  temFilhos: boolean | null;
   cidadeAtual: string | null;
   origemLead: string;
   status: string;
@@ -27,6 +35,9 @@ interface ClientDetail {
   objetivoCompra: string | null;
   formaPagamento: string | null;
   nivelUrgencia: string;
+  prazoCompra: string | null;
+  budgetMaximo: number | null;
+  preAprovacaoCredito: string | null;
   observacoes: string | null;
   criadoEm: string;
   atualizadoEm: string;
@@ -84,12 +95,17 @@ const interactionIcons: Record<string, React.ElementType> = {
   DEFAULT: MessageSquare,
 };
 
+function labelDe(lista: { value: string; label: string }[], valor: string | null | undefined) {
+  if (!valor) return null;
+  return lista.find((i) => i.value === valor)?.label ?? valor;
+}
+
 export default function ClienteDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
   const [cliente, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<"timeline" | "imoveis" | "oportunidades" | "perfil">("timeline");
+  const [activeTab, setActiveTab] = useState<"timeline" | "imoveis" | "oportunidades">("timeline");
   const [opportunities, setOpportunities] = useState<{
     id: string;
     titulo: string;
@@ -114,9 +130,9 @@ export default function ClienteDetailPage() {
     dataInteracao: new Date().toISOString().slice(0, 16),
     proximoFollowUp: "",
   });
-  
+
   const [showInterestModal, setShowInterestModal] = useState(false);
-  const [imoveis, setProperties] = useState<{id: string, titulo: string, codigoInterno: string | null}[]>([]);
+  const [imoveis, setProperties] = useState<{ id: string, titulo: string, codigoInterno: string | null }[]>([]);
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [statusInteresse, setInterestStatus] = useState("INTERESSADO");
 
@@ -213,10 +229,10 @@ export default function ClienteDetailPage() {
     { id: "timeline", label: `Timeline (${cliente.interacoes.length})` },
     { id: "imoveis", label: `Imóveis (${cliente.interesses.length})` },
     { id: "oportunidades", label: `Oportunidades` },
-    { id: "perfil", label: "Perfil de Busca" },
   ] as const;
 
   const initials = cliente.nomeCompleto.split(" ").map(n => n[0]).slice(0, 2).join("").toUpperCase();
+  const isLocacao = cliente.objetivoCompra === "LOCACAO";
 
   return (
     <div className="page">
@@ -241,67 +257,212 @@ export default function ClienteDetailPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Left Column - Profile Summary */}
-        <div className="lg:col-span-4 flex flex-col gap-6">
-          
-          {/* Main Profile Card */}
+        {/* ── Left Column ── */}
+        <div className="lg:col-span-5 flex flex-col gap-5">
+
+          {/* ─ Card: Perfil Principal ─ */}
           <div className="card flex flex-col items-center text-center p-6 border-t-4" style={{ borderTopColor: "var(--color-brand-500)" }}>
-            <div className="w-24 h-24 rounded-full flex items-center justify-center text-3xl font-bold mb-4 bg-gradient-to-br from-brand-600 to-brand-400 text-white shadow-lg">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center text-2xl font-bold mb-3 bg-gradient-to-br from-brand-600 to-brand-400 text-white shadow-lg">
               {initials}
             </div>
             <h2 className="text-xl font-bold text-surface-50 mb-2">{cliente.nomeCompleto}</h2>
-            
-            <div className="flex flex-wrap justify-center gap-2 mb-4">
+
+            <div className="flex flex-wrap justify-center gap-2 mb-3">
               <span className={`badge ${journeyStageColor(cliente.estagioJornada)}`}>
                 {journeyStageLabel(cliente.estagioJornada)}
               </span>
               {cliente.nivelUrgencia === "ALTA" && (
                 <span className="badge badge-danger">Urgente</span>
               )}
+              {cliente.objetivoCompra && (
+                <span className="badge badge-secondary text-[10px]">
+                  {labelDe(PURCHASE_GOALS, cliente.objetivoCompra)}
+                </span>
+              )}
             </div>
-            
-            <p className="text-xs text-surface-400 mb-6 bg-surface-900 px-3 py-1.5 rounded-full border border-surface-700">
+
+            <p className="text-xs text-surface-400 mb-5 bg-surface-900 px-3 py-1.5 rounded-full border border-surface-700">
               Cadastrado em {formatDate(cliente.criadoEm)} · {leadSourceLabel(cliente.origemLead)}
             </p>
 
-            <div className="w-full flex flex-col gap-3 text-left border-t border-surface-700 pt-5">
-              <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-700/50 transition-colors">
-                <div className="w-8 h-8 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center text-brand-400 shrink-0">
-                  <Phone size={14} />
-                </div>
-                <div className="min-w-0">
-                  <div className="text-xs text-surface-400 font-medium">Telefone</div>
-                  <div className="text-sm text-surface-100 font-medium truncate">{cliente.telefone}</div>
-                </div>
-              </div>
-              
-              {cliente.email && (
-                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-700/50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center text-green-400 shrink-0">
-                    <Mail size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs text-surface-400 font-medium">E-mail</div>
-                    <div className="text-sm text-surface-100 font-medium truncate" title={cliente.email}>{cliente.email}</div>
-                  </div>
-                </div>
+            {/* Contatos e dados pessoais */}
+            <div className="w-full flex flex-col gap-2 text-left border-t border-surface-700 pt-4">
+              <InfoRow icon={<Phone size={13} />} cor="text-brand-400" label="Telefone" valor={cliente.telefone} />
+
+              {cliente.whatsapp && cliente.whatsapp !== cliente.telefone && (
+                <InfoRow icon={<MessageCircle size={13} />} cor="text-green-400" label="WhatsApp" valor={cliente.whatsapp} />
               )}
-              
+
+              {cliente.email && (
+                <InfoRow icon={<Mail size={13} />} cor="text-sky-400" label="E-mail" valor={cliente.email} />
+              )}
+
+              {cliente.documento && (
+                <InfoRow icon={<CreditCard size={13} />} cor="text-violet-400" label="CPF" valor={cliente.documento} />
+              )}
+
               {cliente.cidadeAtual && (
-                <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-700/50 transition-colors">
-                  <div className="w-8 h-8 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center text-amber-400 shrink-0">
-                    <MapPin size={14} />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="text-xs text-surface-400 font-medium">Cidade Atual</div>
-                    <div className="text-sm text-surface-100 font-medium truncate">{cliente.cidadeAtual}</div>
-                  </div>
+                <InfoRow icon={<MapPin size={13} />} cor="text-amber-400" label="Cidade Atual" valor={cliente.cidadeAtual} />
+              )}
+
+              {cliente.dataNascimento && (
+                <InfoRow icon={<Calendar size={13} />} cor="text-rose-400" label="Nascimento" valor={formatDate(cliente.dataNascimento)} />
+              )}
+
+              {cliente.estadoCivil && (
+                <InfoRow
+                  icon={<Users size={13} />}
+                  cor="text-teal-400"
+                  label="Estado Civil"
+                  valor={[
+                    labelDe(CIVIL_STATUS, cliente.estadoCivil),
+                    cliente.temFilhos === true ? "com filhos" : cliente.temFilhos === false ? "sem filhos" : null,
+                  ].filter(Boolean).join(" · ")}
+                />
+              )}
+            </div>
+          </div>
+
+          {/* ─ Card: Perfil de Busca (Unificado) ─ */}
+          <div className="card">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-xs font-semibold text-surface-400 uppercase tracking-wider flex items-center gap-2">
+                <Search size={14} className="text-brand-400" />
+                Perfil de Busca
+              </h3>
+              <Link href={`/clientes/${id}/editar`} className="btn btn-ghost btn-icon w-8 h-8 rounded-full">
+                <Edit2 size={13} />
+              </Link>
+            </div>
+
+            <div className="flex flex-col gap-3">
+              {/* Campos de Qualificação Integrados */}
+              <div className="grid grid-cols-2 gap-y-2 gap-x-4 mb-2">
+                {cliente.objetivoCompra && (
+                  <QualRow label="Objetivo" valor={labelDe(PURCHASE_GOALS, cliente.objetivoCompra) ?? ""} />
+                )}
+                {cliente.budgetMaximo && (
+                  <QualRow
+                    label={isLocacao ? "Aluguel máx." : "Budget máx."}
+                    valor={formatCurrency(cliente.budgetMaximo)}
+                    destaque
+                  />
+                )}
+                {cliente.formaPagamento && (
+                  <QualRow label="Pagamento" valor={labelDe(PAYMENT_METHODS, cliente.formaPagamento) ?? ""} />
+                )}
+                {cliente.nivelUrgencia && (
+                  <QualRow
+                    label="Urgência"
+                    valor={labelDe(URGENCY_LEVELS, cliente.nivelUrgencia) ?? ""}
+                    badge={cliente.nivelUrgencia === "ALTA" ? "danger" : cliente.nivelUrgencia === "MEDIA" ? "warning" : undefined}
+                  />
+                )}
+                {cliente.prazoCompra && (
+                  <QualRow label="Prazo" valor={labelDe(PRAZO_COMPRA, cliente.prazoCompra) ?? ""} />
+                )}
+                {cliente.preAprovacaoCredito && (
+                  <QualRow
+                    label="Pré-aprovação"
+                    valor={labelDe(PRE_APROVACAO, cliente.preAprovacaoCredito) ?? ""}
+                    badge={cliente.preAprovacaoCredito === "SIM" ? "success" : undefined}
+                  />
+                )}
+              </div>
+
+              {cliente.preferencia && <div className="h-px bg-surface-700/50 my-1" />}
+
+              {/* Perfil de Busca Detalhado */}
+              {!cliente.preferencia ? (
+                <div className="flex flex-col items-center py-2 text-center gap-2">
+                  <p className="text-xs text-surface-500">Detalhes do perfil não preenchidos</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-2.5">
+                  {cliente.preferencia.tipoImovel && (
+                    <PrefRow
+                      icon={<Home size={12} />}
+                      label="Tipo"
+                      valor={propertyTypeLabel(cliente.preferencia.tipoImovel)}
+                    />
+                  )}
+
+                  {(cliente.preferencia.precoMinimo || cliente.preferencia.precoMaximo) && (
+                    <PrefRow
+                      icon={<DollarSign size={12} />}
+                      label={isLocacao ? "Aluguel" : "Preço"}
+                      valor={[
+                        cliente.preferencia.precoMinimo ? formatCurrency(cliente.preferencia.precoMinimo) : "0",
+                        cliente.preferencia.precoMaximo ? formatCurrency(cliente.preferencia.precoMaximo) : "Ilimitado",
+                      ].join(" → ")}
+                    />
+                  )}
+
+                  {cliente.preferencia.cidadeInteresse && (
+                    <PrefRow
+                      icon={<MapPin size={12} />}
+                      label="Cidade"
+                      valor={cliente.preferencia.cidadeInteresse}
+                    />
+                  )}
+
+                  {cliente.preferencia.bairrosInteresse && (
+                    <PrefRow
+                      icon={<ChevronRight size={12} />}
+                      label="Bairros"
+                      valor={cliente.preferencia.bairrosInteresse}
+                    />
+                  )}
+
+                  {(cliente.preferencia.minQuartos || cliente.preferencia.minBanheiros || cliente.preferencia.minVagas) && (
+                    <div className="flex items-center gap-3 text-xs text-surface-300 pt-1">
+                      {cliente.preferencia.minQuartos && (
+                        <span className="flex items-center gap-1"><Bed size={12} className="text-surface-500" /> {cliente.preferencia.minQuartos}+ qts</span>
+                      )}
+                      {cliente.preferencia.minBanheiros && (
+                        <span className="flex items-center gap-1"><Bath size={12} className="text-surface-500" /> {cliente.preferencia.minBanheiros}+ ban</span>
+                      )}
+                      {cliente.preferencia.minVagas && (
+                        <span className="flex items-center gap-1"><Car size={12} className="text-surface-500" /> {cliente.preferencia.minVagas}+ vag</span>
+                      )}
+                    </div>
+                  )}
+
+                  {(cliente.preferencia.areaMinima || cliente.preferencia.areaMaxima) && (
+                    <PrefRow
+                      icon={<Maximize size={12} />}
+                      label="Área"
+                      valor={[
+                        cliente.preferencia.areaMinima ? `${cliente.preferencia.areaMinima}m²` : null,
+                        cliente.preferencia.areaMaxima ? `${cliente.preferencia.areaMaxima}m²` : null,
+                      ].filter(Boolean).join(" → ")}
+                    />
+                  )}
+
+                  {(cliente.preferencia.aceitaFinanciamento || cliente.preferencia.aceitaPermuta) && (
+                    <div className="flex gap-2 pt-1 flex-wrap">
+                      {cliente.preferencia.aceitaFinanciamento && (
+                        <span className="badge badge-success text-[10px]">Financiamento</span>
+                      )}
+                      {cliente.preferencia.aceitaPermuta && (
+                        <span className="badge badge-warning text-[10px]">Permuta</span>
+                      )}
+                    </div>
+                  )}
+
+                  {cliente.preferencia.notasPessoais && (
+                    <div className="mt-2 bg-surface-900/60 rounded-lg p-3 border border-surface-700/50">
+                      <p className="text-xs text-surface-300 leading-relaxed italic">
+                        "{cliente.preferencia.notasPessoais}"
+                      </p>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           </div>
 
-          {/* Journey Tracker */}
+          {/* ─ Card: Estágio da Jornada ─ */}
           <div className="card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-semibold text-surface-200 flex items-center gap-2">
@@ -312,17 +473,16 @@ export default function ClienteDetailPage() {
                 {editingStage ? <X size={14} /> : <Edit2 size={14} />}
               </button>
             </div>
-            
+
             {editingStage ? (
               <div className="flex flex-col gap-2">
                 {JOURNEY_STAGES.map((s) => (
                   <button
                     key={s}
-                    className={`text-left px-3 py-2 rounded-lg text-sm font-medium border transition-all ${
-                      cliente.estagioJornada === s 
-                      ? "bg-brand-500/10 border-brand-500 text-brand-300" 
-                      : "bg-surface-900 border-surface-700 text-surface-300 hover:border-surface-500"
-                    }`}
+                    className={`text-left px-3 py-2 rounded-lg text-sm font-medium border transition-all ${cliente.estagioJornada === s
+                        ? "bg-brand-500/10 border-brand-500 text-brand-300"
+                        : "bg-surface-900 border-surface-700 text-surface-300 hover:border-surface-500"
+                      }`}
                     onClick={() => updateStage(s)}
                     disabled={saving}
                   >
@@ -336,16 +496,15 @@ export default function ClienteDetailPage() {
                   const currentIndex = JOURNEY_STAGES.indexOf(cliente.estagioJornada);
                   const isPast = i < currentIndex;
                   const isCurrent = i === currentIndex;
-                  
-                  if (!isPast && !isCurrent && i !== currentIndex + 1) return null; // Show only past, current and next
+
+                  if (!isPast && !isCurrent && i !== currentIndex + 1) return null;
 
                   return (
                     <div key={s} className="relative mb-4 last:mb-0">
-                      <div className={`absolute -left-[21px] w-3 h-3 rounded-full border-2 ${
-                        isCurrent ? "bg-brand-500 border-brand-500 shadow-[0_0_10px_rgba(100,112,243,0.5)]" :
-                        isPast ? "bg-brand-400 border-brand-400" :
-                        "bg-surface-900 border-surface-600"
-                      }`} />
+                      <div className={`absolute -left-[21px] w-3 h-3 rounded-full border-2 ${isCurrent ? "bg-brand-500 border-brand-500 shadow-[0_0_10px_rgba(100,112,243,0.5)]" :
+                          isPast ? "bg-brand-400 border-brand-400" :
+                            "bg-surface-900 border-surface-600"
+                        }`} />
                       <div className={`text-sm ${isCurrent ? "text-brand-300 font-semibold" : isPast ? "text-surface-300" : "text-surface-500"}`}>
                         {journeyStageLabel(s)}
                         {isCurrent && <span className="ml-2 text-xs font-normal text-surface-400">(Atual)</span>}
@@ -357,7 +516,7 @@ export default function ClienteDetailPage() {
             )}
           </div>
 
-          {/* Notes Card */}
+          {/* ─ Card: Observações ─ */}
           {cliente.observacoes && (
             <div className="card bg-surface-800/50 border-l-4 border-l-amber-500">
               <h3 className="text-xs font-semibold text-surface-400 mb-2 uppercase tracking-wider">Observações</h3>
@@ -366,11 +525,11 @@ export default function ClienteDetailPage() {
           )}
         </div>
 
-        {/* Right Column - Tabs & Content */}
-        <div className="lg:col-span-8 flex flex-col gap-6">
-          
+        {/* ── Right Column — Tabs ── */}
+        <div className="lg:col-span-7 flex flex-col gap-6">
+
           {/* Tabs Nav */}
-          <div className="bg-surface-800 border border-surface-700 rounded-xl p-1.5 flex flex-wrap gap-1 overflow-x-auto no-scrollbar">
+          <div className="bg-surface-800 border border-surface-700 rounded-xl p-1.5 flex flex-wrap gap-1">
             {tabs.map((tab) => (
               <button
                 key={tab.id}
@@ -380,13 +539,12 @@ export default function ClienteDetailPage() {
                     loadOpportunities();
                   }
                 }}
-                className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${
-                  activeTab === tab.id
+                className={`flex-1 min-w-[120px] flex items-center justify-center gap-2 py-2.5 px-4 rounded-lg text-sm font-medium transition-all ${activeTab === tab.id
                     ? tab.id === "oportunidades"
                       ? "bg-purple-500/15 text-purple-400 shadow-sm"
                       : "bg-surface-700 text-surface-50 shadow-sm"
                     : "text-surface-400 hover:text-surface-200 hover:bg-surface-700/50"
-                }`}
+                  }`}
               >
                 {tab.id === "oportunidades" && <Sparkles size={14} className={activeTab === tab.id ? "text-purple-400" : "text-surface-500"} />}
                 {tab.label}
@@ -394,9 +552,9 @@ export default function ClienteDetailPage() {
             ))}
           </div>
 
-          {/* Tab Content Area */}
+          {/* Tab Content */}
           <div className="flex-1">
-            
+
             {/* Timeline */}
             {activeTab === "timeline" && (
               <div className="animate-fadeIn">
@@ -422,15 +580,13 @@ export default function ClienteDetailPage() {
                   </div>
                 ) : (
                   <div className="relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-surface-700 before:to-transparent">
-                    {cliente.interacoes.map((interacao, i) => {
+                    {cliente.interacoes.map((interacao) => {
                       const Icon = interactionIcons[interacao.tipoInteracao] || interactionIcons.DEFAULT;
                       return (
                         <div key={interacao.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active mb-8">
-                          
                           <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-surface-950 bg-surface-800 text-brand-400 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
                             <Icon size={16} />
                           </div>
-                          
                           <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] card p-4 hover:border-brand-500/50 transition-colors">
                             <div className="flex items-start justify-between gap-2 mb-2">
                               <div>
@@ -441,13 +597,11 @@ export default function ClienteDetailPage() {
                               </div>
                               <time className="text-xs text-surface-400 whitespace-nowrap">{formatDateTime(interacao.dataInteracao)}</time>
                             </div>
-                            
                             {interacao.descricao && (
                               <p className="text-sm text-surface-300 mt-2 bg-surface-900/50 p-3 rounded-lg border border-surface-700/50">
                                 {interacao.descricao}
                               </p>
                             )}
-                            
                             {(interacao.proximoFollowUp || interacao.imovel) && (
                               <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-surface-700/50">
                                 {interacao.proximoFollowUp && (
@@ -496,7 +650,7 @@ export default function ClienteDetailPage() {
                 ) : (
                   <div className="grid grid-cols-1 gap-4">
                     {cliente.interesses.map((interesse) => (
-                      <div key={interesse.id} className="card p-4 flex flex-col sm:flex-row gap-4 sm:items-center hover:border-surface-500 transition-all group">
+                      <div key={interesse.id} className="card p-4 flex flex-col sm:flex-row gap-4 sm:items-center hover:border-surface-500 transition-all">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1">
                             <Link href={`/imoveis/${interesse.imovel.id}`} className="font-semibold text-surface-50 hover:text-brand-400 transition-colors">
@@ -505,9 +659,9 @@ export default function ClienteDetailPage() {
                             {interesse.ehFavorito && <Star size={14} className="text-amber-400 fill-amber-400" />}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-surface-400">
-                            <span className="flex items-center gap-1"><Home size={12}/> {propertyTypeLabel(interesse.imovel.tipoImovel)}</span>
+                            <span className="flex items-center gap-1"><Home size={12} /> {propertyTypeLabel(interesse.imovel.tipoImovel)}</span>
                             <span>•</span>
-                            <span className="flex items-center gap-1"><MapPin size={12}/> {interesse.imovel.cidade}{interesse.imovel.bairro && `, ${interesse.imovel.bairro}`}</span>
+                            <span className="flex items-center gap-1"><MapPin size={12} /> {interesse.imovel.cidade}{interesse.imovel.bairro && `, ${interesse.imovel.bairro}`}</span>
                           </div>
                           {interesse.feedback && (
                             <p className="text-sm text-surface-300 mt-3 bg-surface-900 p-2.5 rounded-lg border border-surface-700/50 italic flex gap-2">
@@ -560,7 +714,7 @@ export default function ClienteDetailPage() {
                   </div>
                 ) : loadingOpportunities ? (
                   <div className="flex flex-col gap-4">
-                    {[1,2,3].map(i => (
+                    {[1, 2, 3].map(i => (
                       <div key={i} className="skeleton rounded-2xl" style={{ height: "160px" }} />
                     ))}
                   </div>
@@ -585,9 +739,8 @@ export default function ClienteDetailPage() {
                           alignItems: "flex-start",
                         }}
                         onMouseEnter={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-800)")}
-                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-900)")}  
+                        onMouseLeave={e => (e.currentTarget.style.backgroundColor = "var(--color-surface-900)")}
                       >
-                        {/* Image placeholder */}
                         <Link href={`/imoveis/${prop.id}`} style={{ flexShrink: 0, textDecoration: "none" }}>
                           <div style={{
                             width: "140px",
@@ -604,9 +757,7 @@ export default function ClienteDetailPage() {
                           </div>
                         </Link>
 
-                        {/* Content */}
                         <div style={{ flex: 1, minWidth: 0 }}>
-                          {/* Title */}
                           <Link href={`/imoveis/${prop.id}`} style={{ textDecoration: "none" }}>
                             <h3 style={{
                               fontWeight: 700,
@@ -623,7 +774,6 @@ export default function ClienteDetailPage() {
                             </h3>
                           </Link>
 
-                          {/* Specs row */}
                           <div style={{ display: "flex", flexWrap: "wrap", gap: "0.75rem", marginBottom: "0.65rem", color: "var(--color-surface-400)", fontSize: "0.8rem" }}>
                             {prop.quartos != null && (
                               <span style={{ display: "flex", alignItems: "center", gap: "0.3rem" }}>
@@ -647,12 +797,10 @@ export default function ClienteDetailPage() {
                             )}
                           </div>
 
-                          {/* Price */}
                           <div style={{ fontWeight: 700, fontSize: "1.3rem", color: "var(--color-surface-50)", letterSpacing: "-0.5px", marginBottom: "0.5rem" }}>
                             {formatCurrency(prop.precoVenda)}
                           </div>
 
-                          {/* Location + Chat button row */}
                           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "0.5rem", flexWrap: "wrap" }}>
                             <span style={{ fontSize: "0.8rem", color: "var(--color-surface-400)", display: "flex", alignItems: "center", gap: "0.35rem" }}>
                               <MapPin size={12} />
@@ -699,96 +847,11 @@ export default function ClienteDetailPage() {
                 )}
               </div>
             )}
-
-            {/* Perfil de Busca */}
-            {activeTab === "perfil" && (
-              <div className="animate-fadeIn">
-                <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-lg font-bold text-surface-50 flex items-center gap-2">
-                    <Target size={18} className="text-brand-400" /> Perfil de Busca
-                  </h2>
-                  <Link href={`/clientes/${id}/editar`} className="btn btn-secondary btn-sm">
-                    <Edit2 size={14} /> Editar
-                  </Link>
-                </div>
-
-                {!cliente.preferencia ? (
-                  <div className="card flex flex-col items-center justify-center py-12 text-center border-dashed border-2 border-surface-700 bg-surface-900/50">
-                    <div className="w-16 h-16 rounded-full bg-surface-800 flex items-center justify-center mb-4">
-                      <Target size={24} className="text-surface-400" />
-                    </div>
-                    <p className="text-surface-100 font-medium mb-1">Perfil de busca não preenchido</p>
-                    <p className="text-sm text-surface-400 max-w-sm mb-6">Defina o que o cliente está procurando para receber recomendações automáticas.</p>
-                    <Link href={`/clientes/${id}/editar`} className="btn btn-primary">
-                      <Edit2 size={16} /> Preencher agora
-                    </Link>
-                  </div>
-                ) : (
-                  <div className="card">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-y-6 gap-x-4">
-                      {cliente.preferencia.tipoImovel && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Tipo de Imóvel</div>
-                          <div className="text-sm font-medium text-surface-100">{propertyTypeLabel(cliente.preferencia.tipoImovel)}</div>
-                        </div>
-                      )}
-                      {(cliente.preferencia.precoMinimo || cliente.preferencia.precoMaximo) && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Faixa de Preço</div>
-                          <div className="text-sm font-medium text-surface-100">
-                            {cliente.preferencia.precoMinimo ? formatCurrency(cliente.preferencia.precoMinimo) : "0"}
-                            <span className="mx-1 text-surface-500">até</span>
-                            {cliente.preferencia.precoMaximo ? formatCurrency(cliente.preferencia.precoMaximo) : "Ilimitado"}
-                          </div>
-                        </div>
-                      )}
-                      {cliente.preferencia.cidadeInteresse && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Localização Desejada</div>
-                          <div className="text-sm font-medium text-surface-100">{cliente.preferencia.cidadeInteresse}</div>
-                        </div>
-                      )}
-                      {cliente.preferencia.minQuartos && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Quartos Mínimos</div>
-                          <div className="text-sm font-medium text-surface-100 flex items-center gap-1.5">
-                            <Bed size={14} className="text-surface-400" /> {cliente.preferencia.minQuartos}
-                          </div>
-                        </div>
-                      )}
-                      {cliente.preferencia.areaMinima && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Área Mínima</div>
-                          <div className="text-sm font-medium text-surface-100 flex items-center gap-1.5">
-                            <Ruler size={14} className="text-surface-400" /> {cliente.preferencia.areaMinima}m²
-                          </div>
-                        </div>
-                      )}
-                      {cliente.preferencia.aceitaFinanciamento !== null && (
-                        <div className="bg-surface-900/30 p-3 rounded-lg border border-surface-700/50">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-1">Pagamento</div>
-                          <div className="text-sm font-medium text-surface-100 flex flex-wrap gap-2">
-                            {cliente.preferencia.aceitaFinanciamento && <span className="badge badge-success text-[10px]">Financiamento</span>}
-                            {cliente.preferencia.aceitaPermuta && <span className="badge badge-warning text-[10px]">Permuta</span>}
-                          </div>
-                        </div>
-                      )}
-                      {cliente.preferencia.notasPessoais && (
-                        <div className="col-span-full mt-2 bg-surface-900/50 p-4 rounded-xl border border-surface-700">
-                          <div className="text-[10px] uppercase font-bold tracking-wider text-surface-400 mb-2">Notas do Perfil</div>
-                          <div className="text-sm text-surface-200 leading-relaxed whitespace-pre-wrap">{cliente.preferencia.notasPessoais}</div>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
           </div>
         </div>
       </div>
 
-      {/* Modals */}
+      {/* ── Modais ── */}
       {showInteractionModal && (
         <div className="modal-overlay" onClick={() => setShowInteractionModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -885,6 +948,61 @@ export default function ClienteDetailPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/* ── Sub-componentes internos ── */
+
+function InfoRow({ icon, cor, label, valor }: {
+  icon: React.ReactNode;
+  cor: string;
+  label: string;
+  valor: string;
+}) {
+  return (
+    <div className="flex items-center gap-3 p-2 rounded-lg hover:bg-surface-700/50 transition-colors">
+      <div className={`w-7 h-7 rounded-lg bg-surface-900 border border-surface-700 flex items-center justify-center shrink-0 ${cor}`}>
+        {icon}
+      </div>
+      <div className="min-w-0">
+        <div className="text-[10px] text-surface-500 font-medium uppercase tracking-wider">{label}</div>
+        <div className="text-sm text-surface-100 font-medium truncate">{valor}</div>
+      </div>
+    </div>
+  );
+}
+
+function QualRow({ label, valor, destaque, badge }: {
+  label: string;
+  valor: string;
+  destaque?: boolean;
+  badge?: "success" | "warning" | "danger";
+}) {
+  return (
+    <div className="flex items-center justify-between gap-2">
+      <span className="text-xs text-surface-500">{label}</span>
+      {badge ? (
+        <span className={`badge badge-${badge} text-[10px]`}>{valor}</span>
+      ) : (
+        <span className={`text-xs font-medium ${destaque ? "text-green-400" : "text-surface-200"}`}>{valor}</span>
+      )}
+    </div>
+  );
+}
+
+function PrefRow({ icon, label, valor }: {
+  icon: React.ReactNode;
+  label: string;
+  valor: string;
+}) {
+  return (
+    <div className="flex items-start gap-2">
+      <span className="text-surface-600 mt-0.5 shrink-0">{icon}</span>
+      <div className="min-w-0">
+        <span className="text-[10px] text-surface-500 uppercase tracking-wider">{label} · </span>
+        <span className="text-xs text-surface-200">{valor}</span>
+      </div>
     </div>
   );
 }
