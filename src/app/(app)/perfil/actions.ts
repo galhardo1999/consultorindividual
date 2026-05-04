@@ -99,14 +99,36 @@ export async function getPerfil() {
         telefone: true,
         avatarUrl: true,
         criadoEm: true,
+        senhaHash: true,
       }
     });
 
     if (!usuario) return { error: "Usuário não encontrado" };
 
-    return { success: true, usuario };
+    const isOAuthOnly = !usuario.senhaHash;
+    const { senhaHash, ...usuarioData } = usuario;
+
+    return { success: true, usuario: usuarioData, isOAuthOnly };
   } catch (error) {
     console.error("Erro ao buscar perfil:", error);
     return { error: "Erro interno" };
+  }
+}
+
+export async function atualizarAvatarUrl(url: string) {
+  try {
+    const session = await auth();
+    if (!session?.user?.id) return { error: "Não autorizado" };
+
+    await prisma.usuario.update({
+      where: { id: session.user.id },
+      data: { avatarUrl: url },
+    });
+
+    revalidatePath("/perfil");
+    return { success: true };
+  } catch (error) {
+    console.error("Erro ao atualizar avatar:", error);
+    return { error: "Erro interno ao atualizar avatar" };
   }
 }

@@ -132,7 +132,7 @@ export default function ProprietariosPage() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-surface-400)]" />
             <input
               type="text"
-              className="input w-full pl-10"
+              className="input w-full !pl-10"
               placeholder="Buscar por nome, e-mail, cidade ou documento..."
               value={busca}
               onChange={(e) => { setBusca(e.target.value); setPagina(1); }}

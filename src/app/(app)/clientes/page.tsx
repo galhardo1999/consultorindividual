@@ -165,7 +165,7 @@ export default function ClientesPage() {
             <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--color-surface-400)]" />
             <input
               type="text"
-              className="input w-full pl-10"
+              className="input w-full !pl-10"
               placeholder="Buscar por nome, telefone, e-mail..."
               value={search}
               onChange={(e) => { setSearch(e.target.value); setPage(1); }}
@@ -264,11 +264,6 @@ export default function ClientesPage() {
                               </span>
                               {cliente.nivelUrgencia === "ALTA" && (
                                 <span className="badge badge-danger text-[0.65rem] px-1.5 py-0.5">Urgente</span>
-                              )}
-                              {cliente.status === "ARQUIVADO" && (
-                                <span className="badge bg-[var(--color-surface-700)] text-[var(--color-surface-300)] text-[0.65rem] px-1.5 py-0.5">
-                                  Arquivado
-                                </span>
                               )}
                             </div>
                           </div>
@@ -440,13 +435,6 @@ export default function ClientesPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="label">Status</label>
-                  <select className="select w-full" value={tempFilters.status} onChange={(e) => updateTempFilter("status", e.target.value)}>
-                    <option value="">Ativos (padrão)</option>
-                    <option value="ARQUIVADO">Arquivados</option>
-                  </select>
-                </div>
               </div>
 
               {/* Perfil do Cliente */}

@@ -93,7 +93,6 @@ export async function GET(request: Request) {
   // ── Montagem do where ───────────────────────────────────────────────────────
   const where = {
     usuarioId,
-    arquivadoEm: status === "ARQUIVADO" ? { not: null } : null,
 
     ...(busca && {
       OR: [

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Mail, User, Phone, Check } from "lucide-react";
+import { maskTelefone } from "@/lib/utils";
 
 import { AuthLayout } from "@/components/auth/AuthLayout";
 import { AuthCard } from "@/components/auth/AuthCard";
@@ -131,7 +132,7 @@ export default function CadastroPage() {
             placeholder="(11) 99999-9999"
             icon={<Phone size={18} />}
             value={form.telefone}
-            onChange={(e) => update("telefone", e.target.value)}
+            onChange={(e) => update("telefone", maskTelefone(e.target.value))}
           />
 
           <div>

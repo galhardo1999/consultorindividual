@@ -5,7 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft, Edit2, Phone, Mail, MapPin, Calendar, Star, MessageSquare,
-  Home, Plus, Archive, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed, Ruler,
+  Home, Plus, Trash2, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed, Ruler,
   User, ChevronRight, Activity, Target, Wallet, AlertCircle, Bath, Car, Maximize, MessageCircle
 } from "lucide-react";
 import {
@@ -161,8 +161,8 @@ export default function ClienteDetailPage() {
     await loadClient();
   }
 
-  async function archiveClient() {
-    if (!confirm("Deseja arquivar este cliente?")) return;
+  async function deleteClient() {
+    if (!confirm("Tem certeza que deseja excluir este cliente permanentemente? Esta ação não pode ser desfeita.")) return;
     await fetch(`/api/clientes/${id}`, { method: "DELETE" });
     router.push("/clientes");
   }
@@ -233,9 +233,9 @@ export default function ClienteDetailPage() {
             <Edit2 size={16} />
             <span className="hidden sm:inline">Editar Cliente</span>
           </Link>
-          <button className="btn btn-danger" onClick={archiveClient}>
-            <Archive size={16} />
-            <span className="hidden sm:inline">Arquivar</span>
+          <button className="btn btn-danger" onClick={deleteClient}>
+            <Trash2 size={16} />
+            <span className="hidden sm:inline">Excluir</span>
           </button>
         </div>
       </div>

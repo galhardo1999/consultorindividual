@@ -171,12 +171,11 @@ export async function DELETE(_req: Request, { params }: { params: Promise<{ id: 
     const existing = await getClient(id, session.user.id);
     if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-    const cliente = await prisma.cliente.update({
+    const cliente = await prisma.cliente.delete({
       where: { id, usuarioId: session.user.id },
-      data: { arquivadoEm: new Date(), status: "ARQUIVADO" },
     });
 
-    return NextResponse.json(cliente);
+    return NextResponse.json({ success: true, id: cliente.id });
   } catch {
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
