@@ -7,19 +7,43 @@ import { maskCurrency, parseCurrency, reaisParaInput } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
 import { UploadImagens } from "@/components/UploadImagens";
 import { criarImovel, atualizarImovel } from "../actions";
-import { FinalidadeImovel, TipoImovel, StatusImovel, TopografiaTerreno, UrgenciaNegociacao } from "@prisma/client";
+import { FinalidadeImovel, Prisma, StatusImovel, TipoImovel, TopografiaTerreno, UrgenciaNegociacao } from "@prisma/client";
+import { PROPERTY_TYPES, PURPOSES, STATUSES, TOPOGRAPHY, URGENCY, TIPOS_NEGOCIO_INDICACAO_OPCOES } from "@/constants/options";
 
 interface Proprietario {
   id: string;
   nomeCompleto: string;
 }
 
-interface NovoImovelFormProps {
-  proprietarios: Proprietario[];
-  imovel?: any;
+interface Parceiro {
+  id: string;
+  nome: string;
+  tipo: string;
+  comissaoPadraoPercentual: number | null;
+  comissaoPadraoValorFixo: number | null;
 }
 
-import { PROPERTY_TYPES, PURPOSES, STATUSES, TOPOGRAPHY, URGENCY } from "@/constants/options";
+interface IndicacaoParceiroForm {
+  id: string;
+  parceiroId: string;
+  tipoNegocio: "VENDA" | "LOCACAO" | "TEMPORADA";
+  comissaoPercentual: number | null;
+  comissaoValorFixo: number | null;
+  observacoes: string | null;
+}
+
+type ImovelFormulario = Prisma.ImovelGetPayload<{
+  include: {
+    fotos: true;
+    indicacaoParceiro: true;
+  };
+}>;
+
+interface NovoImovelFormProps {
+  proprietarios: Proprietario[];
+  parceiros: Parceiro[];
+  imovel?: ImovelFormulario;
+}
 
 const Section = ({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
   const [open, setOpen] = useState(defaultOpen);
@@ -38,12 +62,19 @@ const Section = ({ title, children, defaultOpen = true }: { title: string, child
   );
 };
 
-export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) => {
+const obterTipoNegocioInicial = (finalidade: string): "VENDA" | "LOCACAO" | "TEMPORADA" => {
+  if (finalidade === "LOCACAO") return "LOCACAO";
+  if (finalidade === "TEMPORADA") return "TEMPORADA";
+  return "VENDA";
+};
+
+export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelFormProps) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [fotos, setFotos] = useState<string[]>([]);
   const [imovelId] = useState(() => imovel?.id || crypto.randomUUID());
+  const indicacaoInicial = imovel?.indicacaoParceiro as IndicacaoParceiroForm | null | undefined;
 
   const [form, setForm] = useState({
     titulo: imovel?.titulo || "",
@@ -172,10 +203,33 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
     chaveDisponivel: imovel?.chaveDisponivel || false,
     localChave: imovel?.localChave || "",
     instrucoesVisita: imovel?.instrucoesVisita || "",
+
+    // Indicação
+    indicacaoParceiroId: indicacaoInicial?.parceiroId || "",
+    tipoNegocioIndicacao: indicacaoInicial?.tipoNegocio || obterTipoNegocioInicial(imovel?.finalidade || "VENDA"),
+    comissaoIndicacaoPercentual: indicacaoInicial?.comissaoPercentual?.toString() || "",
+    comissaoIndicacaoValorFixo: reaisParaInput(indicacaoInicial?.comissaoValorFixo),
+    observacoesIndicacao: indicacaoInicial?.observacoes || "",
   });
 
-  const update = (field: string, value: any) => {
-    setForm((f) => ({ ...f, [field]: value }));
+  const update = (campo: keyof typeof form, valor: string | boolean) => {
+    setForm((dadosAtuais) => ({ ...dadosAtuais, [campo]: valor }));
+  };
+
+  const atualizarParceiroIndicador = (parceiroId: string) => {
+    const parceiro = parceiros.find((item) => item.id === parceiroId);
+    setForm((dadosAtuais) => ({
+      ...dadosAtuais,
+      indicacaoParceiroId: parceiroId,
+      comissaoIndicacaoPercentual:
+        parceiro && !dadosAtuais.comissaoIndicacaoPercentual && parceiro.comissaoPadraoPercentual !== null
+          ? String(parceiro.comissaoPadraoPercentual)
+          : dadosAtuais.comissaoIndicacaoPercentual,
+      comissaoIndicacaoValorFixo:
+        parceiro && !dadosAtuais.comissaoIndicacaoValorFixo && parceiro.comissaoPadraoValorFixo !== null
+          ? reaisParaInput(parceiro.comissaoPadraoValorFixo)
+          : dadosAtuais.comissaoIndicacaoValorFixo,
+    }));
   };
 
   const handleCepChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -203,7 +257,7 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
     setError("");
     setLoading(true);
 
-    const dataToSend: any = {
+    const dadosEnvio: Parameters<typeof criarImovel>[0] = {
       titulo: form.titulo,
       tipoImovel: form.tipoImovel,
       finalidade: form.finalidade,
@@ -234,7 +288,7 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
       exclusividade: form.exclusividade,
       comissaoPercentual: form.comissaoPercentual ? parseFloat(form.comissaoPercentual) : null,
       comissaoValorFixo: form.comissaoValorFixo ? parseCurrency(form.comissaoValorFixo) : null,
-      urgenciaProprietario: form.urgenciaProprietario || null,
+      urgenciaProprietario: form.urgenciaProprietario ? form.urgenciaProprietario as UrgenciaNegociacao : null,
       motivoVendaLocacao: form.motivoVendaLocacao,
       pontosFortes: form.pontosFortes,
       pontosAtencao: form.pontosAtencao,
@@ -250,92 +304,102 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
       instrucoesVisita: form.instrucoesVisita,
     };
 
+    dadosEnvio.indicacaoParceiro = form.indicacaoParceiroId
+      ? {
+          parceiroId: form.indicacaoParceiroId,
+          tipoNegocio: form.tipoNegocioIndicacao,
+          comissaoPercentual: form.comissaoIndicacaoPercentual ? parseFloat(form.comissaoIndicacaoPercentual) : null,
+          comissaoValorFixo: form.comissaoIndicacaoValorFixo ? parseCurrency(form.comissaoIndicacaoValorFixo) : null,
+          observacoes: form.observacoesIndicacao || null,
+        }
+      : null;
+
     if (form.finalidade === "VENDA" || form.finalidade === "VENDA_LOCACAO") {
-      dataToSend.precoVenda = form.precoVenda ? parseCurrency(form.precoVenda) : null;
-      dataToSend.aceitaFinanciamento = form.aceitaFinanciamento;
-      dataToSend.aceitaPermuta = form.aceitaPermuta;
-      dataToSend.aceitaProposta = form.aceitaProposta;
-      dataToSend.imovelQuitado = form.imovelQuitado;
-      dataToSend.saldoDevedor = form.saldoDevedor ? parseCurrency(form.saldoDevedor) : null;
-      dataToSend.valorMinimoAceito = form.valorMinimoAceito ? parseCurrency(form.valorMinimoAceito) : null;
+      dadosEnvio.precoVenda = form.precoVenda ? parseCurrency(form.precoVenda) : null;
+      dadosEnvio.aceitaFinanciamento = form.aceitaFinanciamento;
+      dadosEnvio.aceitaPermuta = form.aceitaPermuta;
+      dadosEnvio.aceitaProposta = form.aceitaProposta;
+      dadosEnvio.imovelQuitado = form.imovelQuitado;
+      dadosEnvio.saldoDevedor = form.saldoDevedor ? parseCurrency(form.saldoDevedor) : null;
+      dadosEnvio.valorMinimoAceito = form.valorMinimoAceito ? parseCurrency(form.valorMinimoAceito) : null;
     }
 
     if (form.finalidade === "LOCACAO" || form.finalidade === "VENDA_LOCACAO") {
-      dataToSend.valorAluguel = form.valorAluguel ? parseCurrency(form.valorAluguel) : null;
-      dataToSend.valorCondominio = form.valorCondominio ? parseCurrency(form.valorCondominio) : null;
-      dataToSend.valorIptu = form.valorIptu ? parseCurrency(form.valorIptu) : null;
-      dataToSend.valorSeguroIncendio = form.valorSeguroIncendio ? parseCurrency(form.valorSeguroIncendio) : null;
-      dataToSend.valorSeguroFianca = form.valorSeguroFianca ? parseCurrency(form.valorSeguroFianca) : null;
-      dataToSend.valorCaucao = form.valorCaucao ? parseCurrency(form.valorCaucao) : null;
-      dataToSend.mesesCaucao = form.mesesCaucao ? parseInt(form.mesesCaucao) : null;
-      dataToSend.aceitaFiador = form.aceitaFiador;
-      dataToSend.aceitaSeguroFianca = form.aceitaSeguroFianca;
-      dataToSend.aceitaTituloCapitalizacao = form.aceitaTituloCapitalizacao;
-      dataToSend.aceitaCaucao = form.aceitaCaucao;
-      dataToSend.contratoMinimoMeses = form.contratoMinimoMeses ? parseInt(form.contratoMinimoMeses) : null;
-      dataToSend.disponivelApartirDe = form.disponivelApartirDe ? new Date(form.disponivelApartirDe) : null;
+      dadosEnvio.valorAluguel = form.valorAluguel ? parseCurrency(form.valorAluguel) : null;
+      dadosEnvio.valorCondominio = form.valorCondominio ? parseCurrency(form.valorCondominio) : null;
+      dadosEnvio.valorIptu = form.valorIptu ? parseCurrency(form.valorIptu) : null;
+      dadosEnvio.valorSeguroIncendio = form.valorSeguroIncendio ? parseCurrency(form.valorSeguroIncendio) : null;
+      dadosEnvio.valorSeguroFianca = form.valorSeguroFianca ? parseCurrency(form.valorSeguroFianca) : null;
+      dadosEnvio.valorCaucao = form.valorCaucao ? parseCurrency(form.valorCaucao) : null;
+      dadosEnvio.mesesCaucao = form.mesesCaucao ? parseInt(form.mesesCaucao) : null;
+      dadosEnvio.aceitaFiador = form.aceitaFiador;
+      dadosEnvio.aceitaSeguroFianca = form.aceitaSeguroFianca;
+      dadosEnvio.aceitaTituloCapitalizacao = form.aceitaTituloCapitalizacao;
+      dadosEnvio.aceitaCaucao = form.aceitaCaucao;
+      dadosEnvio.contratoMinimoMeses = form.contratoMinimoMeses ? parseInt(form.contratoMinimoMeses) : null;
+      dadosEnvio.disponivelApartirDe = form.disponivelApartirDe ? new Date(form.disponivelApartirDe) : null;
     }
 
     if (form.finalidade === "TEMPORADA") {
-      dataToSend.valorTemporadaDiaria = form.valorTemporadaDiaria ? parseCurrency(form.valorTemporadaDiaria) : null;
-      dataToSend.valorTemporadaSemanal = form.valorTemporadaSemanal ? parseCurrency(form.valorTemporadaSemanal) : null;
-      dataToSend.valorTemporadaMensal = form.valorTemporadaMensal ? parseCurrency(form.valorTemporadaMensal) : null;
-      dataToSend.taxaLimpeza = form.taxaLimpeza ? parseCurrency(form.taxaLimpeza) : null;
-      dataToSend.taxaServico = form.taxaServico ? parseCurrency(form.taxaServico) : null;
-      dataToSend.quantidadeMaxHospedes = form.quantidadeMaxHospedes ? parseInt(form.quantidadeMaxHospedes) : null;
-      dataToSend.quantidadeMinDiarias = form.quantidadeMinDiarias ? parseInt(form.quantidadeMinDiarias) : null;
-      dataToSend.horarioCheckin = form.horarioCheckin;
-      dataToSend.horarioCheckout = form.horarioCheckout;
+      dadosEnvio.valorTemporadaDiaria = form.valorTemporadaDiaria ? parseCurrency(form.valorTemporadaDiaria) : null;
+      dadosEnvio.valorTemporadaSemanal = form.valorTemporadaSemanal ? parseCurrency(form.valorTemporadaSemanal) : null;
+      dadosEnvio.valorTemporadaMensal = form.valorTemporadaMensal ? parseCurrency(form.valorTemporadaMensal) : null;
+      dadosEnvio.taxaLimpeza = form.taxaLimpeza ? parseCurrency(form.taxaLimpeza) : null;
+      dadosEnvio.taxaServico = form.taxaServico ? parseCurrency(form.taxaServico) : null;
+      dadosEnvio.quantidadeMaxHospedes = form.quantidadeMaxHospedes ? parseInt(form.quantidadeMaxHospedes) : null;
+      dadosEnvio.quantidadeMinDiarias = form.quantidadeMinDiarias ? parseInt(form.quantidadeMinDiarias) : null;
+      dadosEnvio.horarioCheckin = form.horarioCheckin;
+      dadosEnvio.horarioCheckout = form.horarioCheckout;
     }
 
     if (["APARTAMENTO", "COBERTURA", "KITNET", "STUDIO"].includes(form.tipoImovel)) {
-      dataToSend.andar = form.andar ? parseInt(form.andar) : null;
-      dataToSend.numeroApartamento = form.numeroApartamento;
-      dataToSend.bloco = form.bloco;
-      dataToSend.elevador = form.elevador;
-      dataToSend.varandaGourmet = form.varandaGourmet;
+      dadosEnvio.andar = form.andar ? parseInt(form.andar) : null;
+      dadosEnvio.numeroApartamento = form.numeroApartamento;
+      dadosEnvio.bloco = form.bloco;
+      dadosEnvio.elevador = form.elevador;
+      dadosEnvio.varandaGourmet = form.varandaGourmet;
     } else if (["CASA", "CASA_CONDOMINIO"].includes(form.tipoImovel)) {
-      dataToSend.quintal = form.quintal;
-      dataToSend.piscina = form.piscina;
-      dataToSend.churrasqueira = form.churrasqueira;
-      dataToSend.areaGourmet = form.areaGourmet;
-      dataToSend.nomeCondominio = form.nomeCondominio;
+      dadosEnvio.quintal = form.quintal;
+      dadosEnvio.piscina = form.piscina;
+      dadosEnvio.churrasqueira = form.churrasqueira;
+      dadosEnvio.areaGourmet = form.areaGourmet;
+      dadosEnvio.nomeCondominio = form.nomeCondominio;
     } else if (["TERRENO", "AREA_RURAL"].includes(form.tipoImovel)) {
-      dataToSend.frenteTerreno = form.frenteTerreno ? parseFloat(form.frenteTerreno) : null;
-      dataToSend.fundoTerreno = form.fundoTerreno ? parseFloat(form.fundoTerreno) : null;
-      dataToSend.ladoDireitoTerreno = form.ladoDireitoTerreno ? parseFloat(form.ladoDireitoTerreno) : null;
-      dataToSend.ladoEsquerdoTerreno = form.ladoEsquerdoTerreno ? parseFloat(form.ladoEsquerdoTerreno) : null;
-      dataToSend.topografia = form.topografia || null;
-      dataToSend.tipoSolo = form.tipoSolo;
-      dataToSend.murado = form.murado;
-      dataToSend.cercado = form.cercado;
-      dataToSend.zoneamento = form.zoneamento;
+      dadosEnvio.frenteTerreno = form.frenteTerreno ? parseFloat(form.frenteTerreno) : null;
+      dadosEnvio.fundoTerreno = form.fundoTerreno ? parseFloat(form.fundoTerreno) : null;
+      dadosEnvio.ladoDireitoTerreno = form.ladoDireitoTerreno ? parseFloat(form.ladoDireitoTerreno) : null;
+      dadosEnvio.ladoEsquerdoTerreno = form.ladoEsquerdoTerreno ? parseFloat(form.ladoEsquerdoTerreno) : null;
+      dadosEnvio.topografia = form.topografia ? form.topografia as TopografiaTerreno : null;
+      dadosEnvio.tipoSolo = form.tipoSolo;
+      dadosEnvio.murado = form.murado;
+      dadosEnvio.cercado = form.cercado;
+      dadosEnvio.zoneamento = form.zoneamento;
     } else if (["SALA_COMERCIAL", "LOJA", "GALPAO", "PREDIO_COMERCIAL"].includes(form.tipoImovel)) {
-      dataToSend.peDireito = form.peDireito ? parseFloat(form.peDireito) : null;
-      dataToSend.quantidadeSalas = form.quantidadeSalas ? parseInt(form.quantidadeSalas) : null;
-      dataToSend.recepcao = form.recepcao;
-      dataToSend.energiaTrifasica = form.energiaTrifasica;
-      dataToSend.doca = form.doca;
-      dataToSend.vitrine = form.vitrine;
+      dadosEnvio.peDireito = form.peDireito ? parseFloat(form.peDireito) : null;
+      dadosEnvio.quantidadeSalas = form.quantidadeSalas ? parseInt(form.quantidadeSalas) : null;
+      dadosEnvio.recepcao = form.recepcao;
+      dadosEnvio.energiaTrifasica = form.energiaTrifasica;
+      dadosEnvio.doca = form.doca;
+      dadosEnvio.vitrine = form.vitrine;
     }
     
     if (["CHACARA", "FAZENDA", "AREA_RURAL"].includes(form.tipoImovel)) {
-        dataToSend.areaHectares = form.areaHectares ? parseFloat(form.areaHectares) : null;
-        dataToSend.areaAlqueires = form.areaAlqueires ? parseFloat(form.areaAlqueires) : null;
-        dataToSend.casaSede = form.casaSede;
-        dataToSend.curral = form.curral;
-        dataToSend.pocoArtesiano = form.pocoArtesiano;
+        dadosEnvio.areaHectares = form.areaHectares ? parseFloat(form.areaHectares) : null;
+        dadosEnvio.areaAlqueires = form.areaAlqueires ? parseFloat(form.areaAlqueires) : null;
+        dadosEnvio.casaSede = form.casaSede;
+        dadosEnvio.curral = form.curral;
+        dadosEnvio.pocoArtesiano = form.pocoArtesiano;
     }
 
     if (fotos.length > 0) {
-      dataToSend.fotos = fotos;
+      dadosEnvio.fotos = fotos;
     }
 
     let res;
     if (imovel) {
-      res = await atualizarImovel(imovel.id, dataToSend);
+      res = await atualizarImovel(imovel.id, dadosEnvio);
     } else {
-      res = await criarImovel(dataToSend);
+      res = await criarImovel(dadosEnvio);
     }
 
     setLoading(false);
@@ -357,6 +421,7 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
   const isTerreno = ["TERRENO", "AREA_RURAL"].includes(form.tipoImovel);
   const isComercial = ["SALA_COMERCIAL", "LOJA", "GALPAO", "PREDIO_COMERCIAL"].includes(form.tipoImovel);
   const isRural = ["CHACARA", "FAZENDA", "AREA_RURAL"].includes(form.tipoImovel);
+  const fotosSalvas = imovel?.fotos ?? [];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -690,13 +755,13 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
       {/* Fotos */}
       <Section title="Fotos do Imóvel">
         <div className="mt-4">
-          {imovel?.fotos?.length > 0 && (
+          {fotosSalvas.length > 0 && (
             <div className="mb-6">
               <h3 className="text-sm font-medium mb-3" style={{ color: "var(--color-surface-400)" }}>
-                Fotos Salvas ({imovel.fotos.length})
+                Fotos Salvas ({fotosSalvas.length})
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {imovel.fotos.map((foto: any) => (
+                {fotosSalvas.map((foto) => (
                   <div key={foto.id} className="relative group rounded-md overflow-hidden aspect-square bg-gray-100 border border-gray-200" style={{ borderColor: "var(--color-surface-700)" }}>
                     <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
                     {foto.isCapa && (
@@ -749,6 +814,74 @@ export const NovoImovelForm = ({ proprietarios, imovel }: NovoImovelFormProps) =
                <label className="flex items-center gap-2"><input type="checkbox" checked={form.exclusividade} onChange={(e) => update("exclusividade", e.target.checked)} /> Contrato de Exclusividade</label>
             </div>
          </div>
+      </Section>
+
+      {/* Indicação */}
+      <Section title="Parceiro Indicador" defaultOpen={Boolean(form.indicacaoParceiroId)}>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="form-group">
+            <label className="label">Parceiro</label>
+            <select
+              className="select"
+              value={form.indicacaoParceiroId}
+              onChange={(e) => atualizarParceiroIndicador(e.target.value)}
+            >
+              <option value="">Sem indicação</option>
+              {parceiros.map((parceiro) => (
+                <option key={parceiro.id} value={parceiro.id}>
+                  {parceiro.nome}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="label">Negócio da indicação</label>
+            <select
+              className="select"
+              value={form.tipoNegocioIndicacao}
+              onChange={(e) => update("tipoNegocioIndicacao", e.target.value)}
+              disabled={!form.indicacaoParceiroId}
+            >
+              {TIPOS_NEGOCIO_INDICACAO_OPCOES.map((opcao) => (
+                <option key={opcao.value} value={opcao.value}>{opcao.label}</option>
+              ))}
+            </select>
+          </div>
+          <div className="form-group">
+            <label className="label">Comissão (%)</label>
+            <input
+              type="number"
+              step="0.1"
+              min={0}
+              max={100}
+              className="input"
+              value={form.comissaoIndicacaoPercentual}
+              onChange={(e) => update("comissaoIndicacaoPercentual", e.target.value)}
+              disabled={!form.indicacaoParceiroId}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Comissão fixa</label>
+            <input
+              type="text"
+              className="input"
+              placeholder="R$ 0,00"
+              value={form.comissaoIndicacaoValorFixo}
+              onChange={(e) => update("comissaoIndicacaoValorFixo", maskCurrency(e.target.value))}
+              disabled={!form.indicacaoParceiroId}
+            />
+          </div>
+          <div className="form-group md:col-span-2">
+            <label className="label">Observações da indicação</label>
+            <input
+              type="text"
+              className="input"
+              value={form.observacoesIndicacao}
+              onChange={(e) => update("observacoesIndicacao", e.target.value)}
+              disabled={!form.indicacaoParceiroId}
+            />
+          </div>
+        </div>
       </Section>
 
       {/* Documentação */}

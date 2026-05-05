@@ -113,3 +113,30 @@ export const PRE_APROVACAO = [
   { value: "NAO", label: "Não" },
   { value: "EM_ANALISE", label: "Em Análise" },
 ];
+
+export const TIPOS_PARCEIRO_OPCOES = [
+  { value: "INDICADOR", label: "Indicador" },
+  { value: "CORRETOR_PARCEIRO", label: "Corretor Parceiro" },
+  { value: "IMOBILIARIA", label: "Imobiliária" },
+  { value: "CAPTADOR", label: "Captador" },
+  { value: "OUTRO", label: "Outro" },
+];
+
+export const STATUS_PARCEIRO_OPCOES = [
+  { value: "ATIVO", label: "Ativo" },
+  { value: "INATIVO", label: "Inativo" },
+  { value: "ARQUIVADO", label: "Arquivado" },
+];
+
+export const TIPOS_NEGOCIO_INDICACAO_OPCOES = [
+  { value: "VENDA", label: "Venda" },
+  { value: "LOCACAO", label: "Locação" },
+  { value: "TEMPORADA", label: "Temporada" },
+];
+
+export const STATUS_INDICACAO_PARCEIRO_OPCOES = [
+  { value: "EM_ANDAMENTO", label: "Em andamento" },
+  { value: "CONCLUIDA", label: "Concluída" },
+  { value: "PAGA", label: "Paga" },
+  { value: "CANCELADA", label: "Cancelada" },
+];

@@ -13,15 +13,29 @@ export default async function EditarImovelPage({ params }: { params: Promise<{ i
 
   const { id } = await params;
 
-  const [proprietarios, imovel] = await Promise.all([
+  const [proprietarios, parceiros, imovel] = await Promise.all([
     prisma.proprietario.findMany({
       where: { usuarioId: session.user.id },
       select: { id: true, nomeCompleto: true },
       orderBy: { nomeCompleto: "asc" },
     }),
+    prisma.parceiro.findMany({
+      where: { usuarioId: session.user.id, status: "ATIVO" },
+      select: {
+        id: true,
+        nome: true,
+        tipo: true,
+        comissaoPadraoPercentual: true,
+        comissaoPadraoValorFixo: true,
+      },
+      orderBy: { nome: "asc" },
+    }),
     prisma.imovel.findUnique({
       where: { id, usuarioId: session.user.id },
-      include: { fotos: { orderBy: { ordem: "asc" } } },
+      include: {
+        fotos: { orderBy: { ordem: "asc" } },
+        indicacaoParceiro: true,
+      },
     })
   ]);
 
@@ -43,7 +57,7 @@ export default async function EditarImovelPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <NovoImovelForm proprietarios={proprietarios} imovel={imovel} />
+      <NovoImovelForm proprietarios={proprietarios} parceiros={parceiros} imovel={imovel} />
     </div>
   );
 }

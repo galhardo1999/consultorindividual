@@ -9,11 +9,11 @@ import {
   Users,
   Home,
   Map,
-  MessageSquare,
   LogOut,
   Menu,
   Settings,
   Contact,
+  Handshake,
 } from "lucide-react";
 
 const navItems = [
@@ -21,6 +21,7 @@ const navItems = [
   { href: "/clientes", icon: Users, label: "Clientes" },
   { href: "/proprietarios", icon: Contact, label: "Proprietários" },
   { href: "/imoveis", icon: Home, label: "Imóveis" },
+  { href: "/parceiros", icon: Handshake, label: "Parceiros" },
   { href: "/mapa", icon: Map, label: "Mapa" },
   { href: "/perfil", icon: Settings, label: "Perfil" },
 ];

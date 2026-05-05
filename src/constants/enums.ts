@@ -63,6 +63,18 @@ export const ORIGENS_CADASTRO_IMOVEL = [
   "REDES_SOCIAIS", "WHATSAPP", "OUTRO",
 ] as const;
 
+export const TIPOS_PARCEIRO = [
+  "INDICADOR", "CORRETOR_PARCEIRO", "IMOBILIARIA", "CAPTADOR", "OUTRO",
+] as const;
+
+export const STATUS_PARCEIRO = ["ATIVO", "INATIVO", "ARQUIVADO"] as const;
+
+export const TIPOS_NEGOCIO_INDICACAO = ["VENDA", "LOCACAO", "TEMPORADA"] as const;
+
+export const STATUS_INDICACAO_PARCEIRO = [
+  "EM_ANDAMENTO", "CONCLUIDA", "PAGA", "CANCELADA",
+] as const;
+
 // ─── Cores de status ──────────────────────────────────────────────────────────
 
 export const CORES_STATUS_IMOVEL: Record<string, string> = {
@@ -84,4 +96,11 @@ export const CORES_ESTAGIO_JORNADA: Record<string, string> = {
   FECHADO: "badge-success",
   PERDIDO: "badge-danger",
   PAUSADO: "badge-secondary",
+};
+
+export const CORES_STATUS_INDICACAO: Record<string, string> = {
+  EM_ANDAMENTO: "badge-warning",
+  CONCLUIDA: "badge-info",
+  PAGA: "badge-success",
+  CANCELADA: "badge-secondary",
 };

@@ -1,13 +1,31 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/lib/auth";
 import { NovoImovelForm } from "./NovoImovelForm";
 
 export default async function NovoImovelPage() {
-  const proprietarios = await prisma.proprietario.findMany({
-    select: { id: true, nomeCompleto: true },
-    orderBy: { nomeCompleto: "asc" },
-  });
+  const sessao = await auth();
+  if (!sessao?.user?.id) return null;
+
+  const [proprietarios, parceiros] = await Promise.all([
+    prisma.proprietario.findMany({
+      where: { usuarioId: sessao.user.id },
+      select: { id: true, nomeCompleto: true },
+      orderBy: { nomeCompleto: "asc" },
+    }),
+    prisma.parceiro.findMany({
+      where: { usuarioId: sessao.user.id, status: "ATIVO" },
+      select: {
+        id: true,
+        nome: true,
+        tipo: true,
+        comissaoPadraoPercentual: true,
+        comissaoPadraoValorFixo: true,
+      },
+      orderBy: { nome: "asc" },
+    }),
+  ]);
 
   return (
     <div className="page">
@@ -23,7 +41,7 @@ export default async function NovoImovelPage() {
         </div>
       </div>
 
-      <NovoImovelForm proprietarios={proprietarios} />
+      <NovoImovelForm proprietarios={proprietarios} parceiros={parceiros} />
     </div>
   );
 }

@@ -27,6 +27,8 @@ model Usuario {
   interacoes             Interacao[]
   etiquetas              Etiqueta[]
   proprietarios          Proprietario[]
+  parceiros              Parceiro[]
+  indicacoesParceiro     IndicacaoParceiro[]
   tokensRecuperacao      TokenRecuperacaoSenha[]
   contasOAuth            ContaOAuth[]
 
@@ -344,6 +346,7 @@ model Imovel {
   interesses      InteresseClienteImovel[]
   interacoes      Interacao[]
   fotos           FotoImovel[]
+  indicacaoParceiro IndicacaoParceiro?
 
   @@index([usuarioId])
   @@index([proprietarioId])
@@ -357,6 +360,59 @@ model Imovel {
   @@index([usuarioId, cidade, bairro])
   @@index([usuarioId, arquivadoEm, status])
   @@map("imoveis")
+}
+
+model Parceiro {
+  id                         String          @id @default(cuid())
+  usuarioId                  String
+  nome                       String
+  telefone                   String?
+  whatsapp                   String?
+  email                      String?
+  documento                  String?
+  tipo                       TipoParceiro    @default(INDICADOR)
+  status                     StatusParceiro  @default(ATIVO)
+  comissaoPadraoPercentual   Float?
+  comissaoPadraoValorFixo    Float?
+  observacoes                String?
+  criadoEm                   DateTime        @default(now())
+  atualizadoEm               DateTime        @updatedAt
+
+  usuario     Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  indicacoes  IndicacaoParceiro[]
+
+  @@index([usuarioId])
+  @@index([usuarioId, status])
+  @@index([usuarioId, tipo])
+  @@map("parceiros")
+}
+
+model IndicacaoParceiro {
+  id                         String                  @id @default(cuid())
+  usuarioId                  String
+  parceiroId                 String
+  imovelId                   String                  @unique
+  tipoNegocio                TipoNegocioIndicacao
+  status                     StatusIndicacaoParceiro @default(EM_ANDAMENTO)
+  comissaoPercentual         Float?
+  comissaoValorFixo          Float?
+  valorNegocioFinal          Float?
+  valorComissaoFinal         Float?
+  observacoes                String?
+  concluidaEm                DateTime?
+  pagaEm                     DateTime?
+  criadoEm                   DateTime                @default(now())
+  atualizadoEm               DateTime                @updatedAt
+
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  parceiro  Parceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+  imovel    Imovel   @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([usuarioId, parceiroId])
+  @@index([usuarioId, status])
+  @@index([usuarioId, tipoNegocio])
+  @@map("indicacoes_parceiro")
 }
 
 model CaracteristicaImovel {
@@ -650,4 +706,31 @@ enum OrigemCadastroImovel {
   REDES_SOCIAIS
   WHATSAPP
   OUTRO
+}
+
+enum TipoParceiro {
+  INDICADOR
+  CORRETOR_PARCEIRO
+  IMOBILIARIA
+  CAPTADOR
+  OUTRO
+}
+
+enum StatusParceiro {
+  ATIVO
+  INATIVO
+  ARQUIVADO
+}
+
+enum TipoNegocioIndicacao {
+  VENDA
+  LOCACAO
+  TEMPORADA
+}
+
+enum StatusIndicacaoParceiro {
+  EM_ANDAMENTO
+  CONCLUIDA
+  PAGA
+  CANCELADA
 }

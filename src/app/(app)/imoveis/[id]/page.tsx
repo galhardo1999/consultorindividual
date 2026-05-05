@@ -3,9 +3,9 @@
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit2, Trash2, Bed, Bath, Car, Maximize, Users, MapPin, Check, Building, Tag, Home, X, Share2, ChevronLeft, ChevronRight } from "lucide-react";
+import { ArrowLeft, Edit2, Trash2, Bed, Bath, Car, Maximize, Users, MapPin, Check, Building, Home, X, Share2, ChevronLeft, ChevronRight, Handshake, CircleDollarSign, Settings } from "lucide-react";
 import {
-  formatCurrency, formatDate, propertyTypeLabel, propertyStatusLabel
+  formatCurrency, propertyTypeLabel, propertyStatusLabel, statusIndicacaoParceiroLabel, tipoNegocioIndicacaoLabel
 } from "@/lib/utils";
 
 interface PropertyDetail {
@@ -54,6 +54,26 @@ interface PropertyDetail {
     telefone: string | null;
     email: string | null;
   } | null;
+  indicacaoParceiro?: {
+    id: string;
+    tipoNegocio: string;
+    status: string;
+    comissaoPercentual: number | null;
+    comissaoValorFixo: number | null;
+    valorNegocioFinal: number | null;
+    valorComissaoFinal: number | null;
+    concluidaEm: string | null;
+    pagaEm: string | null;
+    observacoes: string | null;
+    parceiro: {
+      id: string;
+      nome: string;
+      telefone: string | null;
+      whatsapp: string | null;
+      email: string | null;
+      tipo: string;
+    };
+  } | null;
   fotos?: { id: string; url: string; isCapa: boolean }[];
 }
 
@@ -65,6 +85,20 @@ const STATUS_COLORS: Record<string, string> = {
   INDISPONIVEL: "bg-gray-500/10 text-gray-400 border-gray-500/20",
 };
 
+const STATUS_INDICACAO_COLORS: Record<string, string> = {
+  EM_ANDAMENTO: "badge-warning",
+  CONCLUIDA: "badge-info",
+  PAGA: "badge-success",
+  CANCELADA: "badge-secondary",
+};
+
+const parseValorInformado = (valor: string | null) => {
+  if (!valor) return null;
+  const valorNormalizado = valor.replace(/\./g, "").replace(",", ".").replace(/[^\d.]/g, "");
+  const numero = Number(valorNormalizado);
+  return Number.isFinite(numero) ? numero : null;
+};
+
 export default function ImovelDetailPage() {
   const { id } = useParams<{ id: string }>();
   const router = useRouter();
@@ -72,6 +106,7 @@ export default function ImovelDetailPage() {
   const [loading, setLoading] = useState(true);
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
   const [linkCopiado, setLinkCopiado] = useState(false);
+  const [menuAberto, setMenuAberto] = useState(false);
 
   useEffect(() => {
     fetch(`/api/imoveis/${id}`)
@@ -150,6 +185,38 @@ export default function ImovelDetailPage() {
     router.push("/imoveis");
   }
 
+  async function atualizarIndicacao(status: "CONCLUIDA" | "PAGA") {
+    if (!imovel?.indicacaoParceiro) return;
+
+    let corpo: {
+      status: "CONCLUIDA" | "PAGA";
+      valorNegocioFinal?: number;
+      valorComissaoFinal?: number;
+    } = { status };
+
+    if (status === "CONCLUIDA") {
+      const valorNegocioFinal = parseValorInformado(window.prompt("Valor final da venda ou locação"));
+      if (valorNegocioFinal === null) return;
+      const valorComissaoFinal = parseValorInformado(window.prompt("Comissão final do parceiro. Deixe vazio para calcular pela regra cadastrada."));
+      corpo = {
+        status,
+        valorNegocioFinal,
+        ...(valorComissaoFinal !== null ? { valorComissaoFinal } : {}),
+      };
+    }
+
+    const resposta = await fetch(`/api/indicacoes/${imovel.indicacaoParceiro.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(corpo),
+    });
+
+    if (!resposta.ok) return;
+
+    const indicacaoAtualizada = await resposta.json();
+    setProperty((dadosAtuais) => dadosAtuais ? { ...dadosAtuais, indicacaoParceiro: indicacaoAtualizada } : dadosAtuais);
+  }
+
   if (loading) {
     return (
       <div className="page animate-pulse">
@@ -209,14 +276,41 @@ export default function ImovelDetailPage() {
             {linkCopiado ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
             {linkCopiado ? <span className="text-green-400">Link Copiado</span> : "Compartilhar"}
           </button>
-          <button onClick={deleteProperty} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors">
-            <Trash2 size={16} />
-            Excluir
-          </button>
-          <Link href={`/imoveis/${id}/editar`} className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20">
-            <Edit2 size={16} />
-            Editar Imóvel
-          </Link>
+          
+          <div className="relative">
+            <button
+              onClick={() => setMenuAberto(!menuAberto)}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-brand-500 text-white hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/20"
+            >
+              <Settings size={16} />
+              Opções
+            </button>
+            
+            {menuAberto && (
+              <>
+                <div 
+                  className="fixed inset-0 z-40" 
+                  onClick={() => setMenuAberto(false)}
+                />
+                <div className="absolute right-0 mt-2 w-48 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 py-2">
+                  <Link 
+                    href={`/imoveis/${id}/editar`} 
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                  >
+                    <Edit2 size={16} />
+                    Editar Imóvel
+                  </Link>
+                  <button 
+                    onClick={deleteProperty} 
+                    className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
+                  >
+                    <Trash2 size={16} />
+                    Excluir
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -435,14 +529,76 @@ export default function ImovelDetailPage() {
                   <p className="text-surface-400 text-sm">Nenhum proprietário vinculado.</p>
                 </div>
               )}
-
-              <Link href={`/imoveis/${id}/editar`} className="w-full py-3 px-4 rounded-xl font-bold bg-brand-500 hover:bg-brand-600 text-white transition-colors flex items-center justify-center gap-2 shadow-lg shadow-brand-500/20">
-                <Edit2 size={18} />
-                Editar Informações
-              </Link>
             </div>
 
             {/* Interested Clients Card */}
+            {imovel.indicacaoParceiro && (
+              <div className="bg-surface-900 border border-surface-800 rounded-3xl p-6 shadow-xl">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-surface-50 flex items-center gap-2">
+                    <Handshake size={18} className="text-brand-400" />
+                    Indicação
+                  </h3>
+                  <span className={`badge ${STATUS_INDICACAO_COLORS[imovel.indicacaoParceiro.status] || "badge-secondary"}`}>
+                    {statusIndicacaoParceiroLabel(imovel.indicacaoParceiro.status)}
+                  </span>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-surface-800/50 border border-surface-700/50">
+                    <div className="text-surface-50 font-semibold">{imovel.indicacaoParceiro.parceiro.nome}</div>
+                    <div className="text-surface-400 text-sm mt-1">
+                      {tipoNegocioIndicacaoLabel(imovel.indicacaoParceiro.tipoNegocio)}
+                      {imovel.indicacaoParceiro.parceiro.telefone ? ` · ${imovel.indicacaoParceiro.parceiro.telefone}` : ""}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-sm">
+                    <div className="rounded-2xl bg-surface-800/50 border border-surface-700/50 p-3">
+                      <div className="text-surface-400">Regra</div>
+                      <div className="text-surface-100 font-semibold mt-1">
+                        {imovel.indicacaoParceiro.comissaoValorFixo
+                          ? formatCurrency(imovel.indicacaoParceiro.comissaoValorFixo)
+                          : imovel.indicacaoParceiro.comissaoPercentual
+                            ? `${imovel.indicacaoParceiro.comissaoPercentual}%`
+                            : "Não definida"}
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-surface-800/50 border border-surface-700/50 p-3">
+                      <div className="text-surface-400">Comissão final</div>
+                      <div className="text-surface-100 font-semibold mt-1">
+                        {imovel.indicacaoParceiro.valorComissaoFinal
+                          ? formatCurrency(imovel.indicacaoParceiro.valorComissaoFinal)
+                          : "Pendente"}
+                      </div>
+                    </div>
+                  </div>
+
+                  {imovel.indicacaoParceiro.status === "EM_ANDAMENTO" && (
+                    <button
+                      type="button"
+                      onClick={() => atualizarIndicacao("CONCLUIDA")}
+                      className="w-full py-3 px-4 rounded-xl font-bold bg-brand-500 hover:bg-brand-600 text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <CircleDollarSign size={18} />
+                      Concluir Negócio
+                    </button>
+                  )}
+
+                  {imovel.indicacaoParceiro.status === "CONCLUIDA" && (
+                    <button
+                      type="button"
+                      onClick={() => atualizarIndicacao("PAGA")}
+                      className="w-full py-3 px-4 rounded-xl font-bold bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Check size={18} />
+                      Marcar como Paga
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="bg-surface-900 border border-surface-800 rounded-3xl p-6 shadow-xl">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-surface-50 flex items-center gap-2">

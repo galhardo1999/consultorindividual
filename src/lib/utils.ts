@@ -112,6 +112,36 @@ export function propertyStatusLabel(status: string): string {
   return labels[status] || status;
 }
 
+export function tipoParceiroLabel(tipo: string): string {
+  const rotulos: Record<string, string> = {
+    INDICADOR: "Indicador",
+    CORRETOR_PARCEIRO: "Corretor Parceiro",
+    IMOBILIARIA: "Imobiliária",
+    CAPTADOR: "Captador",
+    OUTRO: "Outro",
+  };
+  return rotulos[tipo] ?? tipo;
+}
+
+export function statusIndicacaoParceiroLabel(status: string): string {
+  const rotulos: Record<string, string> = {
+    EM_ANDAMENTO: "Em andamento",
+    CONCLUIDA: "Concluída",
+    PAGA: "Paga",
+    CANCELADA: "Cancelada",
+  };
+  return rotulos[status] ?? status;
+}
+
+export function tipoNegocioIndicacaoLabel(tipo: string): string {
+  const rotulos: Record<string, string> = {
+    VENDA: "Venda",
+    LOCACAO: "Locação",
+    TEMPORADA: "Temporada",
+  };
+  return rotulos[tipo] ?? tipo;
+}
+
 export function interactionTypeLabel(type: string): string {
   const labels: Record<string, string> = {
     LIGACAO: "Ligação",
@@ -217,4 +247,3 @@ export function reaisParaInput(valor: unknown): string {
   if (!num || isNaN(num)) return "";
   return maskCurrency(String(Math.round(num * 100)));
 }
-
