@@ -11,6 +11,45 @@ const loginSchema = z.object({
   password: z.string().min(6),
 });
 
+const tentativasLogin = new Map<string, { contagem: number; resetEm: number }>();
+const LIMITE_TENTATIVAS_LOGIN = 5;
+const JANELA_LOGIN_MS = 15 * 60 * 1000;
+
+const limparTentativasExpiradas = () => {
+  const agora = Date.now();
+  for (const [chave, entrada] of tentativasLogin.entries()) {
+    if (agora > entrada.resetEm) tentativasLogin.delete(chave);
+  }
+};
+
+const obterIp = (requisicao?: Request) =>
+  requisicao?.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+  requisicao?.headers.get("x-real-ip") ??
+  "desconhecido";
+
+const obterChaveRateLimit = (email: string, requisicao?: Request) =>
+  `${obterIp(requisicao)}:${email.toLowerCase()}`;
+
+const loginPermitido = (chave: string) => {
+  limparTentativasExpiradas();
+  const agora = Date.now();
+  const entrada = tentativasLogin.get(chave);
+
+  if (!entrada || agora > entrada.resetEm) {
+    tentativasLogin.set(chave, { contagem: 1, resetEm: agora + JANELA_LOGIN_MS });
+    return true;
+  }
+
+  if (entrada.contagem >= LIMITE_TENTATIVAS_LOGIN) return false;
+
+  entrada.contagem += 1;
+  return true;
+};
+
+const limparTentativasLogin = (chave: string) => {
+  tentativasLogin.delete(chave);
+};
+
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
   providers: [
@@ -24,11 +63,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         email: { label: "Email", type: "email" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials) {
+      async authorize(credentials, requisicao) {
         const parsed = loginSchema.safeParse(credentials);
         if (!parsed.success) return null;
 
         const { email, password } = parsed.data;
+        const chaveRateLimit = obterChaveRateLimit(email, requisicao);
+        if (!loginPermitido(chaveRateLimit)) return null;
 
         const usuario = await prisma.usuario.findUnique({
           where: { email },
@@ -41,6 +82,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         const senhaValida = await bcrypt.compare(password, usuario.senhaHash);
         if (!senhaValida) return null;
+
+        limparTentativasLogin(chaveRateLimit);
 
         return {
           id: usuario.id,

@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\Alexandre\\\\Desktop\\\\PROJETOS\\\\consultorindividual\" -Recurse -Name -Include \"*.ts\", \"*.tsx\", \"*.js\", \"*.jsx\", \"package.json\", \".env*\", \"next.config.*\")",
+      "Bash(Select-Object -First 100)"
+    ]
+  }
+}

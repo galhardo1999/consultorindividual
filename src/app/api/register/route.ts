@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 
 // ─── Rate limiting simples em memória (Edge-safe) ─────────────────────────────
 // Para produção com múltiplas instâncias, use Upstash Redis
@@ -32,6 +33,12 @@ const verificarRateLimit = (ip: string): boolean => {
   entrada.contagem += 1;
   return true;
 };
+
+const respostaCadastroRecebido = () =>
+  NextResponse.json(
+    { mensagem: "Se os dados estiverem corretos, sua solicitação de cadastro será processada." },
+    { status: 201 }
+  );
 
 // ─── Schema de validação ───────────────────────────────────────────────────────
 
@@ -77,7 +84,7 @@ export async function POST(request: Request) {
 
     const existente = await prisma.usuario.findUnique({ where: { email } });
     if (existente) {
-      return NextResponse.json({ error: "E-mail já cadastrado" }, { status: 409 });
+      return respostaCadastroRecebido();
     }
 
     const senhaHash = await bcrypt.hash(password, 12);
@@ -91,6 +98,10 @@ export async function POST(request: Request) {
       { status: 201 }
     );
   } catch (erro) {
+    if (erro instanceof Prisma.PrismaClientKnownRequestError && erro.code === "P2002") {
+      return respostaCadastroRecebido();
+    }
+
     console.error("[REGISTER]", erro);
     return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }

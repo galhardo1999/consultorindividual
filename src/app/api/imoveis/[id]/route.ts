@@ -15,6 +15,9 @@ const atualizacaoSchema = z.object({
   estado: z.string().nullable().optional(),
   endereco: z.string().nullable().optional(),
   numero: z.string().nullable().optional(),
+  complemento: z.string().nullable().optional(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   codigoInterno: z.string().nullable().optional(),
   descricao: z.string().nullable().optional(),
   quartos: z.number().int().nullable().optional(),
@@ -100,11 +103,14 @@ export async function PATCH(requisicao: Request, { params }: { params: Promise<{
       (dadosValidados.bairro !== undefined && dadosValidados.bairro !== existente.bairro) ||
       (dadosValidados.cep !== undefined && dadosValidados.cep !== existente.cep) ||
       (dadosValidados.endereco !== undefined && dadosValidados.endereco !== existente.endereco) ||
-      (dadosValidados.numero !== undefined && dadosValidados.numero !== existente.numero);
+      (dadosValidados.numero !== undefined && dadosValidados.numero !== existente.numero) ||
+      (dadosValidados.complemento !== undefined && dadosValidados.complemento !== existente.complemento);
+
+    const coordenadasEnviadas = dadosValidados.latitude !== undefined || dadosValidados.longitude !== undefined;
 
     const dadosAtualizacao: Prisma.ImovelUpdateInput = {
       ...dadosValidados,
-      ...(enderecoAlterado ? { latitude: null, longitude: null } : {}),
+      ...(enderecoAlterado && !coordenadasEnviadas ? { latitude: null, longitude: null } : {}),
     };
 
     if (fotos && fotos.length > 0) {

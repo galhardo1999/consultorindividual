@@ -19,7 +19,6 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { X, ImagePlus, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 interface GerenciadorFotosProps {
   fotosIniciais: string[];
@@ -99,6 +98,24 @@ const SortablePhoto = ({
 const TIPOS_PERMITIDOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 const TAMANHO_MAX_BYTES = 5 * 1024 * 1024;
 
+const enviarImagem = async (arquivo: File, pasta: string) => {
+  const formulario = new FormData();
+  formulario.append("arquivo", arquivo);
+  if (pasta) formulario.append("pasta", pasta);
+
+  const resposta = await fetch("/api/storage/imagens", {
+    method: "POST",
+    body: formulario,
+  });
+
+  const dados = (await resposta.json()) as { url?: string; error?: string };
+  if (!resposta.ok || !dados.url) {
+    throw new Error(dados.error || "Erro ao enviar imagem");
+  }
+
+  return dados.url;
+};
+
 export function GerenciadorFotos({
   fotosIniciais,
   pasta,
@@ -171,24 +188,8 @@ export function GerenciadorFotos({
     try {
       const urls: string[] = [];
       for (const file of arquivos) {
-        const ext = file.name.split(".").pop()?.toLowerCase() ?? "jpg";
-        const nome = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${ext}`;
-        const caminho = pasta ? `${pasta}/${nome}` : nome;
-
-        const { error } = await supabase.storage
-          .from("imoveis")
-          .upload(caminho, file);
-
-        if (error) {
-          console.error("Erro no upload:", error);
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from("imoveis")
-          .getPublicUrl(caminho);
-
-        if (publicUrlData) urls.push(publicUrlData.publicUrl);
+        const url = await enviarImagem(file, pasta);
+        urls.push(url);
       }
 
       if (urls.length > 0) {

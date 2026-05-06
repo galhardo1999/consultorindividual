@@ -5,8 +5,8 @@ import PublicImovelClient from "./client";
 
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
-  const imovel = await prisma.imovel.findUnique({
-    where: { id },
+  const imovel = await prisma.imovel.findFirst({
+    where: { id, autorizadoDivulgacao: true, arquivadoEm: null, status: "DISPONIVEL" },
     select: { titulo: true, cidade: true, estado: true }
   });
   if (!imovel) return { title: "Imóvel não encontrado" };
@@ -19,10 +19,41 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function PublicImovelPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
 
-  const imovel = await prisma.imovel.findUnique({
-    where: { id },
-    include: {
-      fotos: { orderBy: { ordem: 'asc' } },
+  const imovel = await prisma.imovel.findFirst({
+    where: { id, autorizadoDivulgacao: true, arquivadoEm: null, status: "DISPONIVEL" },
+    select: {
+      id: true,
+      titulo: true,
+      descricao: true,
+      tipoImovel: true,
+      finalidade: true,
+      precoVenda: true,
+      valorAluguel: true,
+      valorCondominio: true,
+      valorIptu: true,
+      cidade: true,
+      bairro: true,
+      estado: true,
+      endereco: true,
+      numero: true,
+      areaTotal: true,
+      quartos: true,
+      suites: true,
+      vagasGaragem: true,
+      mobiliado: true,
+      aceitaFinanciamento: true,
+      aceitaPermuta: true,
+      piscina: true,
+      churrasqueira: true,
+      varandaGourmet: true,
+      elevador: true,
+      portaria24h: true,
+      academia: true,
+      destaques: true,
+      fotos: {
+        select: { url: true },
+        orderBy: { ordem: 'asc' }
+      },
       usuario: {
         select: {
           nome: true,

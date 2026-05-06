@@ -1,14 +1,57 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ChevronLeft, ChevronRight, MapPin, Bed, Bath, Car, Maximize, Check, Phone, Share2, Mail, Home, ArrowRight, Star, Moon, Sun, ChevronDown, MoveRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, MapPin, Check, Share2, Home, Moon, Sun, ChevronDown, MoveRight } from "lucide-react";
 import { formatCurrency, propertyTypeLabel } from "@/lib/utils";
 
-export default function PublicImovelClient({ imovel, corretor }: { imovel: any, corretor: any }) {
+interface FotoPublica {
+  url: string;
+}
+
+interface ImovelPublico {
+  id: string;
+  titulo: string;
+  descricao: string | null;
+  tipoImovel: string;
+  finalidade: string;
+  precoVenda: number | null;
+  valorAluguel: number | null;
+  valorCondominio: number | null;
+  valorIptu: number | null;
+  cidade: string;
+  bairro: string | null;
+  estado: string | null;
+  endereco: string | null;
+  numero: string | null;
+  areaTotal: number | null;
+  quartos: number | null;
+  suites: number | null;
+  vagasGaragem: number | null;
+  mobiliado: boolean;
+  aceitaFinanciamento: boolean;
+  aceitaPermuta: boolean;
+  piscina: boolean;
+  churrasqueira: boolean;
+  varandaGourmet: boolean;
+  elevador: boolean;
+  portaria24h: boolean;
+  academia: boolean;
+  destaques: string | null;
+  fotos: FotoPublica[];
+}
+
+interface CorretorPublico {
+  nome: string;
+  telefone: string | null;
+  email: string | null;
+  avatarUrl: string | null;
+}
+
+export default function PublicImovelClient({ imovel, corretor }: { imovel: ImovelPublico, corretor: CorretorPublico }) {
   const [viewerIndex, setViewerIndex] = useState<number>(0);
   const [scrollY, setScrollY] = useState(0);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
-  const [mensagem, setMensagem] = useState(`Olá ${corretor.nome?.split(" ")[0]}, solicito atendimento exclusivo referente ao imóvel "${imovel.titulo}".`);
+  const mensagem = `Olá ${corretor.nome?.split(" ")[0]}, solicito atendimento exclusivo referente ao imóvel "${imovel.titulo}".`;
 
   const scrolled = scrollY > 50;
 
@@ -283,7 +326,7 @@ export default function PublicImovelClient({ imovel, corretor }: { imovel: any, 
                 <div className="p-12 border-l border-surface-800/50 relative group">
                   <div className="absolute top-0 -left-[1px] w-px h-0 bg-brand-400 transition-all duration-1000 group-hover:h-full" />
                   <p className="text-surface-300 font-light leading-relaxed whitespace-pre-wrap text-xl italic">
-                    "{imovel.destaques}"
+                    &quot;{imovel.destaques}&quot;
                   </p>
                 </div>
               )}

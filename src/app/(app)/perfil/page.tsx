@@ -4,11 +4,10 @@ import { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { Save, Loader2, User, Mail, Phone, Lock, Shield, CheckCircle2, Camera } from "lucide-react";
 import { maskTelefone } from "@/lib/utils";
-import { supabase } from "@/lib/supabase";
 import { getPerfil, atualizarPerfil, alterarSenha, atualizarAvatarUrl } from "./actions";
 
 export default function PerfilPage() {
-  const { data: session, update: updateSession } = useSession();
+  const { update: updateSession } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState<"info" | "security">("info");
@@ -51,6 +50,24 @@ export default function PerfilPage() {
     setTimeout(() => setToast(null), 3000);
   };
 
+  const enviarAvatar = async (arquivo: File) => {
+    const formulario = new FormData();
+    formulario.append("arquivo", arquivo);
+    formulario.append("pasta", "avatars");
+
+    const resposta = await fetch("/api/storage/imagens", {
+      method: "POST",
+      body: formulario,
+    });
+
+    const dados = (await resposta.json()) as { url?: string; error?: string };
+    if (!resposta.ok || !dados.url) {
+      throw new Error(dados.error || "Erro ao enviar imagem");
+    }
+
+    return dados.url;
+  };
+
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -67,19 +84,7 @@ export default function PerfilPage() {
 
     setUploadingAvatar(true);
     try {
-      const fileExt = file.name.split(".").pop();
-      const fileName = `${session?.user?.id}-${Math.random()}.${fileExt}`;
-      const filePath = `avatars/${fileName}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from("imoveis")
-        .upload(filePath, file);
-
-      if (uploadError) throw uploadError;
-
-      const { data } = supabase.storage.from("imoveis").getPublicUrl(filePath);
-      
-      const newUrl = data.publicUrl;
+      const newUrl = await enviarAvatar(file);
       setAvatarUrl(newUrl);
       
       const res = await atualizarAvatarUrl(newUrl);
@@ -89,8 +94,8 @@ export default function PerfilPage() {
       } else {
         throw new Error(res.error || "Erro ao salvar no banco");
       }
-    } catch (err: any) {
-      console.error(err);
+    } catch (erro) {
+      console.error(erro);
       showToast("Erro ao fazer upload da foto", "error");
     } finally {
       setUploadingAvatar(false);

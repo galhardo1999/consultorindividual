@@ -30,9 +30,10 @@ interface SidebarProps {
   isOpen?: boolean;
   isCollapsed?: boolean;
   onClose?: () => void;
+  onToggleDesktop?: () => void;
 }
 
-export function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) {
+export function Sidebar({ isOpen, isCollapsed, onClose, onToggleDesktop }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -55,11 +56,17 @@ export function Sidebar({ isOpen, isCollapsed, onClose }: SidebarProps) {
           style={{ borderColor: "var(--color-surface-800)" }}
         >
           <div
-            className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
+            className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isCollapsed ? "cursor-pointer" : ""}`}
             style={{
               background: "linear-gradient(135deg, #6470f3, #5158e8)",
               boxShadow: "0 4px 12px rgba(100,112,243,0.35)",
             }}
+            onClick={() => {
+              if (isCollapsed && onToggleDesktop) {
+                onToggleDesktop();
+              }
+            }}
+            title={isCollapsed ? "Expandir menu" : ""}
           >
             <Building2 size={18} color="white" />
           </div>

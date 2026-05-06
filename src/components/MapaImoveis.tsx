@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import type { Map as LeafletMap, Marker } from "leaflet";
+import "leaflet/dist/leaflet.css";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createRoot, type Root } from "react-dom/client";
+import { Bath, BedDouble, Car, ExternalLink, Home, MapPin, Ruler } from "lucide-react";
+import type { DivIcon, Map as LeafletMap, Marker } from "leaflet";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-export interface MapImovel {
+export interface ImovelMapa {
   id: string;
   titulo: string;
   tipoImovel: string;
@@ -14,28 +15,44 @@ export interface MapImovel {
   status: string;
   cidade: string;
   bairro: string | null;
-  estado: string | null;
   endereco: string | null;
   numero: string | null;
+  estado: string | null;
   cep: string | null;
   quartos: number | null;
   banheiros: number | null;
   vagasGaragem: number | null;
   areaUtil: number | null;
-  lat: number;
-  lng: number;
-  // URLs de todas as fotos do imóvel, ordenadas (capa primeiro)
+  latitude: number;
+  longitude: number;
   fotos: string[];
 }
 
-interface MapaImoveisProps {
-  imoveis: MapImovel[];
-  onSearchCoords?: (lat: number, lng: number) => void;
+interface CoordenadasMapa {
+  latitude: number;
+  longitude: number;
+  zoom?: number;
 }
 
-// ─── Label helpers ─────────────────────────────────────────────────────────────
+interface MapaImoveisProps {
+  imoveis: ImovelMapa[];
+  imovelSelecionadoId: string | null;
+  coordenadasBusca: CoordenadasMapa | null;
+  onSelecionarImovel: (imovelId: string) => void;
+}
 
-const tipoLabel: Record<string, string> = {
+interface MarcadorRenderizado {
+  marcador: Marker;
+  raiz: Root;
+}
+
+const desmontarRaizPopup = (raiz: Root) => {
+  window.setTimeout(() => {
+    raiz.unmount();
+  }, 0);
+};
+
+const rotuloTipo: Record<string, string> = {
   APARTAMENTO: "Apartamento",
   CASA: "Casa",
   CASA_CONDOMINIO: "Casa em Condomínio",
@@ -45,37 +62,15 @@ const tipoLabel: Record<string, string> = {
   GALPAO: "Galpão",
   CHACARA: "Chácara",
   FAZENDA: "Fazenda",
+  AREA_RURAL: "Área rural",
+  COBERTURA: "Cobertura",
+  KITNET: "Kitnet",
+  STUDIO: "Studio",
+  PREDIO_COMERCIAL: "Prédio comercial",
   OUTRO: "Outro",
 };
 
-const tipoIcone: Record<string, string> = {
-  CASA: "🏠",
-  APARTAMENTO: "🏢",
-  CASA_CONDOMINIO: "🏘️",
-  TERRENO: "🏞️",
-  SALA_COMERCIAL: "💼",
-  LOJA: "🏪",
-  GALPAO: "🏭",
-  CHACARA: "🌳",
-  FAZENDA: "🚜",
-  AREA_RURAL: "🌾",
-  COBERTURA: "🌇",
-  KITNET: "🛋️",
-  STUDIO: "🛋️",
-  PREDIO_COMERCIAL: "🏙️",
-  OUTRO: "📍",
-};
-
-const statusColor: Record<string, string> = {
-  DISPONIVEL: "#22c55e",
-  RESERVADO: "#f59e0b",
-  VENDIDO: "#ef4444",
-  LOCADO: "#3b82f6",
-  INDISPONIVEL: "#6b7280",
-  ARQUIVADO: "#6b7280",
-};
-
-const statusLabel: Record<string, string> = {
+const rotuloStatus: Record<string, string> = {
   DISPONIVEL: "Disponível",
   RESERVADO: "Reservado",
   VENDIDO: "Vendido",
@@ -84,356 +79,290 @@ const statusLabel: Record<string, string> = {
   ARQUIVADO: "Arquivado",
 };
 
-function formatCurrency(v: number) {
-  return new Intl.NumberFormat("pt-BR", {
+
+
+const classeStatusPopup: Record<string, string> = {
+  DISPONIVEL: "border-emerald-200 bg-emerald-50 text-emerald-700",
+  RESERVADO: "border-amber-200 bg-amber-50 text-amber-700",
+  VENDIDO: "border-red-200 bg-red-50 text-red-700",
+  LOCADO: "border-sky-200 bg-sky-50 text-sky-700",
+  INDISPONIVEL: "border-slate-200 bg-slate-50 text-slate-600",
+  ARQUIVADO: "border-slate-200 bg-slate-50 text-slate-600",
+};
+
+const formatarMoeda = (valor: number) =>
+  new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
     maximumFractionDigits: 0,
-  }).format(v);
-}
+  }).format(valor);
 
-// ─── Component ────────────────────────────────────────────────────────────────
+const montarEndereco = (imovel: ImovelMapa) => {
+  const partes: string[] = [];
+  if (imovel.endereco) partes.push(imovel.endereco);
+  if (imovel.numero) partes.push(`Nº ${imovel.numero}`);
+  if (imovel.bairro) partes.push(imovel.bairro);
+  partes.push([imovel.cidade, imovel.estado].filter(Boolean).join(" - "));
+  if (imovel.cep) partes.push(`CEP ${imovel.cep}`);
+  return partes.filter(Boolean).join(", ");
+};
 
-export function MapaImoveis({ imoveis, onSearchCoords }: MapaImoveisProps) {
+const obterSiglaTipo = (tipoImovel: string) => {
+  const rotulo = rotuloTipo[tipoImovel] ?? tipoImovel.replace(/_/g, " ");
+  const palavras = rotulo.split(" ").filter(Boolean);
+  return palavras
+    .slice(0, 2)
+    .map((palavra) => palavra[0])
+    .join("")
+    .toUpperCase();
+};
+
+const normalizarUrlImagem = (url: string) => {
+  try {
+    const endereco = new URL(url);
+    return endereco.protocol === "https:" || endereco.protocol === "http:" ? url : null;
+  } catch {
+    return null;
+  }
+};
+
+const corPorStatus: Record<string, string> = {
+  DISPONIVEL: "#22c55e",
+  RESERVADO: "#f59e0b",
+  VENDIDO: "#ef4444",
+  LOCADO: "#3b82f6",
+  INDISPONIVEL: "#6b7280",
+  ARQUIVADO: "#6b7280",
+};
+
+const criarIconeMarcador = (L: typeof import("leaflet"), imovel: ImovelMapa): DivIcon => {
+  const cor = corPorStatus[imovel.status] ?? "#6470f3";
+  const sigla = obterSiglaTipo(imovel.tipoImovel);
+
+  return L.divIcon({
+    className: "",
+    html: `
+      <div style="
+        width:40px;height:40px;
+        background:${cor};
+        border-radius:50% 50% 50% 0;
+        transform:rotate(-45deg);
+        border:3px solid white;
+        box-shadow:0 3px 12px rgba(0,0,0,0.35);
+        display:flex;align-items:center;justify-content:center;
+      ">
+        <span style="transform:rotate(45deg);font-size:11px;font-weight:900;color:white;line-height:1">${sigla}</span>
+      </div>
+    `,
+    iconSize: [40, 40],
+    iconAnchor: [20, 40],
+    popupAnchor: [0, -38],
+  });
+};
+
+const PopupImovel = ({ imovel }: { imovel: ImovelMapa }) => {
+  const fotoPrincipal = imovel.fotos.map(normalizarUrlImagem).find((url) => url !== null);
+  const endereco = montarEndereco(imovel);
+  const classeStatus = classeStatusPopup[imovel.status] ?? "border-brand-200 bg-brand-50 text-brand-700";
+
+  return (
+    <article className="w-[280px] overflow-hidden rounded-lg bg-white text-slate-950">
+      <div className="relative h-36 w-full overflow-hidden rounded-t-lg bg-slate-100">
+        {fotoPrincipal ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={fotoPrincipal} alt={imovel.titulo} className="h-full w-full object-cover" />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center bg-slate-100 text-slate-400">
+            <Home size={42} aria-hidden="true" />
+          </div>
+        )}
+        <span className={`absolute left-3 top-3 rounded-full border px-2.5 py-1 text-[11px] font-bold ${classeStatus}`}>
+          {rotuloStatus[imovel.status] ?? imovel.status}
+        </span>
+      </div>
+
+      <div className="space-y-3 p-3">
+        <div>
+          <h3 className="line-clamp-2 text-sm font-bold leading-snug text-slate-950">{imovel.titulo}</h3>
+          <p className="mt-1 text-xs font-medium text-slate-500">{rotuloTipo[imovel.tipoImovel] ?? imovel.tipoImovel}</p>
+        </div>
+
+        <p className="flex gap-1.5 text-xs leading-relaxed text-slate-600">
+          <MapPin size={14} className="mt-0.5 shrink-0 text-slate-400" aria-hidden="true" />
+          <span>{endereco}</span>
+        </p>
+
+        <div className="flex flex-wrap gap-2 text-xs font-semibold text-slate-600">
+          {imovel.quartos ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1">
+              <BedDouble size={13} aria-hidden="true" />
+              {imovel.quartos}
+            </span>
+          ) : null}
+          {imovel.banheiros ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1">
+              <Bath size={13} aria-hidden="true" />
+              {imovel.banheiros}
+            </span>
+          ) : null}
+          {imovel.vagasGaragem ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1">
+              <Car size={13} aria-hidden="true" />
+              {imovel.vagasGaragem}
+            </span>
+          ) : null}
+          {imovel.areaUtil ? (
+            <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-1">
+              <Ruler size={13} aria-hidden="true" />
+              {imovel.areaUtil} m²
+            </span>
+          ) : null}
+        </div>
+
+        <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3">
+          <strong className="text-base font-black text-slate-950">{formatarMoeda(imovel.precoVenda)}</strong>
+          <a
+            href={`/imoveis/${imovel.id}`}
+            className="inline-flex h-9 items-center gap-1.5 rounded-md bg-slate-950 px-3 text-xs font-bold text-white transition hover:bg-slate-800"
+          >
+            Ver
+            <ExternalLink size={13} aria-hidden="true" />
+          </a>
+        </div>
+      </div>
+    </article>
+  );
+};
+
+export function MapaImoveis({
+  imoveis,
+  imovelSelecionadoId,
+  coordenadasBusca,
+  onSelecionarImovel,
+}: MapaImoveisProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<LeafletMap | null>(null);
+  const mapaRef = useRef<LeafletMap | null>(null);
   const leafletRef = useRef<typeof import("leaflet") | null>(null);
-  const markersRef = useRef<Marker[]>([]);
-  const [mapReady, setMapReady] = useState(false);
+  const marcadoresRef = useRef<Map<string, MarcadorRenderizado>>(new Map());
+  const [mapaPronto, setMapaPronto] = useState(false);
 
-  // ── One-time map initialization ──────────────────────────────────────────
+  const coordenadas = useMemo(
+    () => imoveis.map((imovel) => [imovel.latitude, imovel.longitude] as [number, number]),
+    [imoveis]
+  );
+
   useEffect(() => {
     if (!containerRef.current) return;
 
-    // cancelled flag prevents async init from continuing after cleanup
-    let cancelled = false;
+    let cancelado = false;
+    const marcadores = marcadoresRef.current;
 
-    async function init() {
+    const inicializarMapa = async () => {
       const L = await import("leaflet");
+      if (cancelado || !containerRef.current || mapaRef.current) return;
 
-      // After the async boundary: bail out if unmounted or already initialized
-      if (cancelled || !containerRef.current || mapRef.current) return;
-
-      // Fix default icon paths (broken in bundlers)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      delete (L.Icon.Default.prototype as any)._getIconUrl;
-      L.Icon.Default.mergeOptions({
-        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
-        iconRetinaUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
-        shadowUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
-      });
-
-      const map = L.map(containerRef.current, {
+      const mapa = L.map(containerRef.current, {
         center: [-15.7801, -47.9292],
         zoom: 5,
-        zoomControl: true,
+        zoomControl: false,
       });
 
-      // Check again right after synchronous L.map call
-      if (cancelled) {
-        map.remove();
-        return;
-      }
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution:
-          '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      L.control.zoom({ position: "bottomright" }).addTo(mapa);
+      L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
         maxZoom: 19,
-      }).addTo(map);
+        keepBuffer: 8,
+      }).addTo(mapa);
 
+      mapaRef.current = mapa;
       leafletRef.current = L;
-      mapRef.current = map;
-      setMapReady(true);
-    }
+      setMapaPronto(true);
 
-    init().catch(console.error);
+      // Duplo rAF: garante que o browser pintou pelo menos um frame com
+      // o CSS aplicado antes de recalcular as dimensões do container.
+      // setTimeout(0) não é suficiente — o CSS pode ainda não estar pintado.
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (!cancelado) mapa.invalidateSize();
+        });
+      });
+    };
+
+    inicializarMapa().catch((erro) => {
+      console.error("Erro ao inicializar mapa:", erro);
+    });
 
     return () => {
-      cancelled = true;
-      // Clear markers list so they are re-added on next mount
-      markersRef.current = [];
-      if (mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
+      cancelado = true;
+      for (const { marcador, raiz } of marcadores.values()) {
+        marcador.remove();
+        desmontarRaizPopup(raiz);
       }
+      marcadores.clear();
+      mapaRef.current?.remove();
+      mapaRef.current = null;
       leafletRef.current = null;
-      setMapReady(false);
+      setMapaPronto(false);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ── Markers: update whenever imoveis list or map readiness changes ────────
   useEffect(() => {
-    const map = mapRef.current;
+    const mapa = mapaRef.current;
     const L = leafletRef.current;
-    if (!mapReady || !map || !L) return;
+    if (!mapaPronto || !mapa || !L) return;
 
-    // Remove existing markers
-    markersRef.current.forEach((m) => m.remove());
-    markersRef.current = [];
+    for (const { marcador, raiz } of marcadoresRef.current.values()) {
+      marcador.remove();
+      desmontarRaizPopup(raiz);
+    }
+    marcadoresRef.current.clear();
 
     for (const imovel of imoveis) {
-      const color = statusColor[imovel.status] ?? "#6470f3";
+      const elementoPopup = document.createElement("div");
+      const raiz = createRoot(elementoPopup);
+      raiz.render(<PopupImovel imovel={imovel} />);
 
-      const svgIcon = L.divIcon({
-        className: "",
-        html: `
-          <div style="
-            width:36px;height:36px;
-            background:${color};
-            border-radius:50% 50% 50% 0;
-            transform:rotate(-45deg);
-            border:3px solid white;
-            box-shadow:0 3px 10px rgba(0,0,0,0.35);
-            display:flex;align-items:center;justify-content:center;
-          ">
-            <span style="transform:rotate(45deg);font-size:14px">${tipoIcone[imovel.tipoImovel] ?? "📍"}</span>
-          </div>
-        `,
-        iconSize: [36, 36],
-        iconAnchor: [18, 36],
-        popupAnchor: [0, -36],
-      });
+      const marcador = L.marker([imovel.latitude, imovel.longitude], {
+        icon: criarIconeMarcador(L, imovel),
+        title: imovel.titulo,
+      })
+        .bindPopup(elementoPopup, {
+          closeButton: true,
+          maxWidth: 320,
+          minWidth: 280,
+          className: "prime-popup-imovel",
+        })
+        .on("click", () => onSelecionarImovel(imovel.id))
+        .addTo(mapa);
 
-      const buildAddress = () => {
-        const parts = [];
-        if (imovel.endereco) parts.push(imovel.endereco);
-        if (imovel.numero) parts.push(`Nº ${imovel.numero}`);
-        if (imovel.bairro) parts.push(imovel.bairro);
-        
-        let cityPart = imovel.cidade;
-        if (imovel.cep) cityPart += `, CEP ${imovel.cep}`;
-        parts.push(cityPart);
-        
-        return parts.join(", ");
-      };
-
-      const formatPlural = (count: number | null, singular: string, plural: string) => {
-        if (!count) return "";
-        return count === 1 ? `1 ${singular}` : `${count} ${plural}`;
-      };
-
-      const featuresHtml = [
-        imovel.quartos ? `<span>🛏️ ${formatPlural(imovel.quartos, 'quarto', 'quartos')}</span>` : '',
-        imovel.banheiros ? `<span>🚿 ${formatPlural(imovel.banheiros, 'banheiro', 'banheiros')}</span>` : '',
-        imovel.vagasGaragem ? `<span>🚗 ${formatPlural(imovel.vagasGaragem, 'vaga', 'vagas')}</span>` : ''
-      ].filter(Boolean).join('<span style="color:#cbd5e1;margin:0 6px">•</span>');
-
-      // ── Carrossel de fotos ──────────────────────────────────────────────────
-      // ID único por imóvel para isolar os event handlers de cada popup
-      const carouselId = `car-${imovel.id.replace(/[^a-z0-9]/gi, "")}`;
-
-      const buildCarouselHtml = (): string => {
-        if (imovel.fotos.length === 0) {
-          // Placeholder quando não há fotos
-          return `
-            <div style="width:100%;height:150px;background:#f1f5f9;border-radius:10px;
-              margin-bottom:12px;display:flex;align-items:center;justify-content:center;
-              border:1px solid #e2e8f0;">
-              <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                <rect width="48" height="48" rx="10" fill="#e2e8f0"/>
-                <path d="M24 10L8 24h5v14h10V28h6v10h10V24h5L24 10z" fill="#94a3b8"/>
-              </svg>
-            </div>`;
-        }
-
-        if (imovel.fotos.length === 1) {
-          // Sem carrossel para 1 foto
-          return `
-            <div style="width:100%;height:150px;border-radius:10px;margin-bottom:12px;
-              overflow:hidden;border:1px solid #e2e8f0;">
-              <img src="${imovel.fotos[0]}" alt="${imovel.titulo}"
-                style="width:100%;height:100%;object-fit:cover;display:block;" />
-            </div>`;
-        }
-
-        // Carrossel com múltiplas fotos
-        const slides = imovel.fotos
-          .map(
-            (url, idx) => `
-            <div style="flex:0 0 100%;height:150px;overflow:hidden;">
-              <img src="${url}" alt="Foto ${idx + 1} de ${imovel.titulo}"
-                loading="${idx === 0 ? "eager" : "lazy"}"
-                style="width:100%;height:100%;object-fit:cover;display:block;" />
-            </div>`
-          )
-          .join("");
-
-        const dots = imovel.fotos
-          .map(
-            (_, idx) => `
-            <span id="${carouselId}-dot-${idx}" style="
-              width:6px;height:6px;border-radius:50%;cursor:pointer;
-              background:${idx === 0 ? "#fff" : "rgba(255,255,255,0.45)"};
-              transition:background 0.2s;display:inline-block;
-            " onclick="(function(){
-              var t=document.getElementById('${carouselId}-track');
-              t.scrollTo({left:${idx}*t.offsetWidth,behavior:'smooth'});
-            })()"></span>`
-          )
-          .join("");
-
-        return `
-          <div id="${carouselId}" style="position:relative;width:100%;height:150px;
-            border-radius:10px;margin-bottom:12px;overflow:hidden;border:1px solid #e2e8f0;">
-
-            <!-- Slides -->
-            <div id="${carouselId}-track" style="
-              display:flex;height:100%;overflow-x:scroll;
-              scroll-snap-type:x mandatory;scrollbar-width:none;"
-              onscroll="(function(el){
-                var idx=Math.round(el.scrollLeft/el.offsetWidth);
-                el.parentElement.querySelectorAll('[id^=\'${carouselId}-dot-\']').forEach(function(d,i){
-                  d.style.background=i===idx?'#fff':'rgba(255,255,255,0.45)';
-                });
-                document.getElementById('${carouselId}-count').textContent=(idx+1)+'/'+${imovel.fotos.length};
-              })(this)">
-              ${slides}
-            </div>
-
-            <!-- Botão Anterior -->
-            <button onclick="(function(){
-              var t=document.getElementById('${carouselId}-track');
-              t.scrollBy({left:-t.offsetWidth,behavior:'smooth'});
-            })()" style="
-              position:absolute;left:6px;top:50%;transform:translateY(-50%);
-              width:26px;height:26px;border-radius:50%;border:none;
-              background:rgba(0,0,0,0.45);color:#fff;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;
-              font-size:14px;line-height:1;z-index:2;">&#8249;</button>
-
-            <!-- Botão Próximo -->
-            <button onclick="(function(){
-              var t=document.getElementById('${carouselId}-track');
-              t.scrollBy({left:t.offsetWidth,behavior:'smooth'});
-            })()" style="
-              position:absolute;right:6px;top:50%;transform:translateY(-50%);
-              width:26px;height:26px;border-radius:50%;border:none;
-              background:rgba(0,0,0,0.45);color:#fff;cursor:pointer;
-              display:flex;align-items:center;justify-content:center;
-              font-size:14px;line-height:1;z-index:2;">&#8250;</button>
-
-            <!-- Contador -->
-            <span id="${carouselId}-count" style="
-              position:absolute;top:7px;right:8px;
-              background:rgba(0,0,0,0.5);color:#fff;
-              font-size:10px;font-weight:600;padding:2px 6px;
-              border-radius:999px;z-index:2;
-            ">1/${imovel.fotos.length}</span>
-
-            <!-- Indicadores (pontos) -->
-            <div style="
-              position:absolute;bottom:7px;left:50%;transform:translateX(-50%);
-              display:flex;gap:4px;z-index:2;">${dots}</div>
-          </div>
-
-          <style>#${carouselId}-track::-webkit-scrollbar{display:none;}
-          #${carouselId}-track>div{scroll-snap-align:start;}</style>`;
-      };
-
-      const photoHtml = buildCarouselHtml();
-
-      const popupHtml = `
-        <div style="font-family:Inter,sans-serif;width:240px;padding:4px">
-          ${photoHtml}
-          <div style="font-weight:700;font-size:15px;margin-bottom:6px;color:#0f172a;line-height:1.2">${imovel.titulo}</div>
-          
-          <div style="display:flex;align-items:center;gap:6px;margin-bottom:8px">
-            <span style="background:${color}22;color:${color};font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid ${color}44">
-              ${statusLabel[imovel.status] ?? imovel.status}
-            </span>
-            <span style="font-size:11px;color:#64748b;font-weight:500;">${tipoLabel[imovel.tipoImovel] ?? imovel.tipoImovel}</span>
-          </div>
-          
-          <div style="font-size:12px;color:#64748b;margin-bottom:8px;line-height:1.4">
-            📍 ${buildAddress()}
-          </div>
-          
-          ${featuresHtml ? `<div style="display:flex;align-items:center;flex-wrap:wrap;font-size:11px;color:#475569;margin-bottom:10px;font-weight:500;">${featuresHtml}</div>` : ''}
-          
-          <div style="font-size:18px;font-weight:800;color:#000000;margin-bottom:12px;letter-spacing:-0.5px;">
-            ${formatCurrency(imovel.precoVenda)}
-          </div>
-          
-          <a href="/imoveis/${imovel.id}" style="
-            display:block;text-align:center;background:#0f172a;color:white;
-            text-decoration:none;padding:8px 12px;border-radius:8px;
-            font-size:13px;font-weight:600;transition:background 0.15s
-          " onmouseover="this.style.background='#1e293b'" onmouseout="this.style.background='#0f172a'">
-            Ver detalhes
-          </a>
-        </div>
-      `;
-
-      const marker = L.marker([imovel.lat, imovel.lng], { icon: svgIcon })
-        .bindPopup(popupHtml, { maxWidth: 280 })
-        .addTo(map);
-
-      markersRef.current.push(marker);
+      marcadoresRef.current.set(imovel.id, { marcador, raiz });
     }
 
-    // Fit bounds when we have markers
-    if (imoveis.length > 0) {
-      const bounds = L.latLngBounds(imoveis.map((i) => [i.lat, i.lng]));
-      map.fitBounds(bounds, { padding: [60, 60], maxZoom: 14 });
+    if (coordenadas.length > 0) {
+      const limites = L.latLngBounds(coordenadas);
+      mapa.fitBounds(limites, { padding: [56, 56], maxZoom: 14 });
     }
+  }, [coordenadas, imoveis, mapaPronto, onSelecionarImovel]);
 
-    // Expose fly-to for address search
-    if (onSearchCoords) {
-      (window as unknown as Record<string, unknown>).__mapFlyTo = (
-        lat: number,
-        lng: number
-      ) => {
-        map.flyTo([lat, lng], 13, { duration: 1.5 });
-      };
-    }
-  }, [imoveis, mapReady, onSearchCoords]);
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    if (!mapaPronto || !mapa || !coordenadasBusca) return;
 
-  return (
-    <div
-      ref={containerRef}
-      style={{ width: "100%", height: "100%", position: "absolute", inset: 0 }}
-    />
-  );
-}
+    mapa.setView([coordenadasBusca.latitude, coordenadasBusca.longitude], coordenadasBusca.zoom ?? 13, {
+      animate: true,
+      duration: 0.8,
+    });
+  }, [coordenadasBusca, mapaPronto]);
 
-// ─── Search hook ──────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const mapa = mapaRef.current;
+    const marcadorSelecionado = imovelSelecionadoId ? marcadoresRef.current.get(imovelSelecionadoId) : null;
+    if (!mapaPronto || !mapa || !marcadorSelecionado) return;
 
-export function useMapSearch() {
-  const [query, setQuery] = useState("");
-  const [searching, setSearching] = useState(false);
-  const [error, setError] = useState("");
+    const posicao = marcadorSelecionado.marcador.getLatLng();
+    mapa.setView(posicao, Math.max(mapa.getZoom(), 15), { animate: true, duration: 0.6 });
+    marcadorSelecionado.marcador.openPopup();
+  }, [imovelSelecionadoId, mapaPronto]);
 
-  async function search(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setSearching(true);
-    setError("");
-
-    try {
-      const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Brasil")}&limit=1`;
-      const res = await fetch(url, {
-        headers: { "Accept-Language": "pt-BR" },
-      });
-      const data = (await res.json()) as Array<{ lat: string; lon: string }>;
-
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat);
-        const lng = parseFloat(data[0].lon);
-        const flyTo = (window as unknown as Record<string, unknown>)
-          .__mapFlyTo as ((lat: number, lng: number) => void) | undefined;
-        flyTo?.(lat, lng);
-      } else {
-        setError("Cidade não encontrada. Tente outro nome.");
-      }
-    } catch {
-      setError("Erro ao buscar cidade. Tente novamente.");
-    } finally {
-      setSearching(false);
-    }
-  }
-
-  return { query, setQuery, searching, error, search };
+  return <div ref={containerRef} className="absolute inset-0 h-full w-full" />;
 }

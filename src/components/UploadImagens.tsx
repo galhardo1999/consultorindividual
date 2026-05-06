@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { UploadCloud, X, Loader2 } from "lucide-react";
-import { supabase } from "@/lib/supabase";
 
 interface UploadImagensProps {
   onUpload: (urls: string[]) => void;
@@ -17,6 +16,24 @@ export function UploadImagens({ onUpload, maxFiles = 10, pasta }: UploadImagensP
   const TIPOS_PERMITIDOS = ["image/jpeg", "image/png", "image/webp", "image/gif"];
   const TAMANHO_MAX_MB = 5;
   const TAMANHO_MAX_BYTES = TAMANHO_MAX_MB * 1024 * 1024;
+
+  async function enviarImagem(arquivo: File) {
+    const formulario = new FormData();
+    formulario.append("arquivo", arquivo);
+    if (pasta) formulario.append("pasta", pasta);
+
+    const resposta = await fetch("/api/storage/imagens", {
+      method: "POST",
+      body: formulario,
+    });
+
+    const dados = (await resposta.json()) as { url?: string; error?: string };
+    if (!resposta.ok || !dados.url) {
+      throw new Error(dados.error || "Erro ao enviar imagem");
+    }
+
+    return dados.url;
+  }
 
   async function handleSelectFiles(e: React.ChangeEvent<HTMLInputElement>) {
     if (!e.target.files) return;
@@ -50,26 +67,7 @@ export function UploadImagens({ onUpload, maxFiles = 10, pasta }: UploadImagensP
     try {
       const urls: string[] = [];
       for (const { file } of newFotos) {
-        const fileExt = file.name.split('.').pop()?.toLowerCase() ?? "jpg";
-        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`;
-        const filePath = pasta ? `${pasta}/${fileName}` : `${fileName}`;
-
-        const { data, error } = await supabase.storage
-          .from('imoveis')
-          .upload(filePath, file);
-
-        if (error) {
-          console.error("Erro no upload:", error);
-          continue;
-        }
-
-        const { data: publicUrlData } = supabase.storage
-          .from('imoveis')
-          .getPublicUrl(filePath);
-
-        if (publicUrlData) {
-          urls.push(publicUrlData.publicUrl);
-        }
+        urls.push(await enviarImagem(file));
       }
       
       onUpload(urls);

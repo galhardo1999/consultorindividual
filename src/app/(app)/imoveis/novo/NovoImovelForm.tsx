@@ -68,6 +68,18 @@ const obterTipoNegocioInicial = (finalidade: string): "VENDA" | "LOCACAO" | "TEM
   return "VENDA";
 };
 
+const validarCoordenada = (valor: string, campo: string, minimo: number, maximo: number) => {
+  const valorLimpo = valor.trim();
+  if (!valorLimpo) return { valor: null };
+
+  const numero = Number(valorLimpo.replace(",", "."));
+  if (!Number.isFinite(numero) || numero < minimo || numero > maximo) {
+    return { valor: null, erro: `${campo} deve estar entre ${minimo} e ${maximo}.` };
+  }
+
+  return { valor: numero };
+};
+
 export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelFormProps) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
@@ -91,6 +103,8 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
     endereco: imovel?.endereco || "",
     numero: imovel?.numero || "",
     complemento: imovel?.complemento || "",
+    latitude: imovel?.latitude?.toString() || "",
+    longitude: imovel?.longitude?.toString() || "",
 
     // Valores Venda
     precoVenda: reaisParaInput(imovel?.precoVenda),
@@ -212,8 +226,14 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
     observacoesIndicacao: indicacaoInicial?.observacoes || "",
   });
 
+  const camposEndereco: Array<keyof typeof form> = ["cep", "cidade", "bairro", "endereco", "numero", "complemento"];
+
   const update = (campo: keyof typeof form, valor: string | boolean) => {
-    setForm((dadosAtuais) => ({ ...dadosAtuais, [campo]: valor }));
+    setForm((dadosAtuais) => ({
+      ...dadosAtuais,
+      [campo]: valor,
+      ...(camposEndereco.includes(campo) ? { latitude: "", longitude: "" } : {}),
+    }));
   };
 
   const atualizarParceiroIndicador = (parceiroId: string) => {
@@ -257,6 +277,20 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
     setError("");
     setLoading(true);
 
+    const latitudeValidada = validarCoordenada(form.latitude, "Latitude", -90, 90);
+    if (latitudeValidada.erro) {
+      setError(latitudeValidada.erro);
+      setLoading(false);
+      return;
+    }
+
+    const longitudeValidada = validarCoordenada(form.longitude, "Longitude", -180, 180);
+    if (longitudeValidada.erro) {
+      setError(longitudeValidada.erro);
+      setLoading(false);
+      return;
+    }
+
     const dadosEnvio: Parameters<typeof criarImovel>[0] = {
       titulo: form.titulo,
       tipoImovel: form.tipoImovel,
@@ -270,6 +304,8 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
       endereco: form.endereco,
       numero: form.numero,
       complemento: form.complemento,
+      latitude: latitudeValidada.valor,
+      longitude: longitudeValidada.valor,
       descricao: form.descricao,
       destaques: form.destaques,
       tags: form.tags,
@@ -748,6 +784,38 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
           <div className="form-group">
             <label className="label">Número</label>
             <input type="text" className="input" value={form.numero} onChange={(e) => update("numero", e.target.value)} />
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+          <div className="form-group">
+            <label className="label">Complemento</label>
+            <input type="text" className="input" placeholder="Ex: Apto 101, Bloco B" value={form.complemento} onChange={(e) => update("complemento", e.target.value)} />
+          </div>
+          <div className="form-group">
+            <label className="label">Latitude</label>
+            <input
+              type="number"
+              step="any"
+              min={-90}
+              max={90}
+              className="input"
+              placeholder="Ex: -23.55052"
+              value={form.latitude}
+              onChange={(e) => update("latitude", e.target.value)}
+            />
+          </div>
+          <div className="form-group">
+            <label className="label">Longitude</label>
+            <input
+              type="number"
+              step="any"
+              min={-180}
+              max={180}
+              className="input"
+              placeholder="Ex: -46.63331"
+              value={form.longitude}
+              onChange={(e) => update("longitude", e.target.value)}
+            />
           </div>
         </div>
       </Section>

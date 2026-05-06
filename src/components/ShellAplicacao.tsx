@@ -13,9 +13,8 @@ const ConteudoAplicacao = ({ children }: { children: React.ReactNode }) => {
   const caminho = usePathname();
   const ehRotaMapa = caminho === "/mapa";
 
-  // Função para lidar com o botão do Header (Hamburger)
   const alternarMenu = () => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
       setMenuAberto(true);
       return;
     }
@@ -24,12 +23,16 @@ const ConteudoAplicacao = ({ children }: { children: React.ReactNode }) => {
   };
 
   const fecharMenu = () => {
-    if (typeof window !== "undefined" && window.innerWidth < 1024) {
+    if (typeof window !== "undefined" && window.innerWidth < 768) {
       setMenuAberto(false);
       return;
     }
 
     setMenuRecolhido(true);
+  };
+
+  const alternarCollapse = () => {
+    setMenuRecolhido((valorAtual) => !valorAtual);
   };
 
   return (
@@ -38,6 +41,7 @@ const ConteudoAplicacao = ({ children }: { children: React.ReactNode }) => {
         isOpen={menuAberto}
         isCollapsed={menuRecolhido}
         onClose={fecharMenu}
+        onToggleDesktop={alternarCollapse}
       />
       <div className={`main-content min-w-0 flex-1 ${menuRecolhido ? "collapsed" : ""}`}>
         {!ehRotaMapa && (

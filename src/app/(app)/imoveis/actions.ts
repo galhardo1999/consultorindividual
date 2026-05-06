@@ -136,17 +136,20 @@ export const atualizarImovel = async (
     const { fotos, indicacaoParceiro, ...restoDados } = data;
 
     // Se o endereço for alterado, resetamos a geolocalização para forçar nova busca no mapa
-    const hasAddressChange =
+    const enderecoAlterado =
       "endereco" in restoDados ||
       "numero" in restoDados ||
       "bairro" in restoDados ||
       "cidade" in restoDados ||
       "estado" in restoDados ||
-      "cep" in restoDados;
+      "cep" in restoDados ||
+      "complemento" in restoDados;
 
-    const dataToUpdate: Prisma.ImovelUpdateInput = {
+    const coordenadasEnviadas = "latitude" in restoDados || "longitude" in restoDados;
+
+    const dadosAtualizacao: Prisma.ImovelUpdateInput = {
       ...restoDados,
-      ...(hasAddressChange ? { latitude: null, longitude: null } : {}),
+      ...(enderecoAlterado && !coordenadasEnviadas ? { latitude: null, longitude: null } : {}),
       ...(fotos !== undefined
         ? {
             fotos: {
@@ -165,7 +168,7 @@ export const atualizarImovel = async (
       const imovelAtualizado = await transacao.imovel.update({
         where: { id, usuarioId: session.user.id },
         data: {
-          ...dataToUpdate,
+          ...dadosAtualizacao,
           ...(indicacaoParceiro?.parceiroId ? { origemCadastro: "INDICACAO" } : {}),
         },
       });

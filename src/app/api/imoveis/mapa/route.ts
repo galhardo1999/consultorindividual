@@ -1,10 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 
-// ─── Geocode helper ───────────────────────────────────────────────────────────
-
-interface DadosGeocode {
+interface DadosGeocodificacao {
   id: string;
   endereco?: string | null;
   numero?: string | null;
@@ -14,174 +14,269 @@ interface DadosGeocode {
   cep?: string | null;
 }
 
-async function geocodeAddress(
-  imovel: DadosGeocode
-): Promise<{ lat: number; lng: number } | "NOT_FOUND" | null> {
-  const headers = {
-    "User-Agent": "PrimeRealtyCRM/1.0 (consultorindividual@prime.com)",
-    "Accept-Language": "pt-BR,pt;q=0.9",
-  };
+const selecaoImovelMapa = {
+  id: true,
+  titulo: true,
+  tipoImovel: true,
+  finalidade: true,
+  precoVenda: true,
+  status: true,
+  cidade: true,
+  bairro: true,
+  endereco: true,
+  numero: true,
+  estado: true,
+  cep: true,
+  quartos: true,
+  banheiros: true,
+  vagasGaragem: true,
+  areaUtil: true,
+  latitude: true,
+  longitude: true,
+  fotos: {
+    select: { url: true, isCapa: true, ordem: true },
+    orderBy: [{ isCapa: "desc" }, { ordem: "asc" }],
+  },
+} satisfies Prisma.ImovelSelect;
 
+type ImovelComFotosMapa = Prisma.ImovelGetPayload<{ select: typeof selecaoImovelMapa }>;
+
+const esquemaGoogleGeocode = z.object({
+  status: z.string(),
+  results: z.array(
+    z.object({
+      geometry: z.object({
+        location: z.object({
+          lat: z.number(),
+          lng: z.number(),
+        }),
+      }),
+    })
+  ),
+});
+
+const esquemaNominatim = z.array(
+  z.object({
+    lat: z.string(),
+    lon: z.string(),
+    addresstype: z.string().optional(),
+    type: z.string().optional(),
+    class: z.string().optional(),
+  })
+);
+
+const esquemaBuscaLocalizacao = z.string().trim().min(2).max(120);
+
+const tiposGenericos = new Set([
+  "city",
+  "state",
+  "country",
+  "municipality",
+  "administrative",
+  "region",
+  "postcode",
+  "county",
+]);
+
+const headersGeocodificacao = {
+  "User-Agent": "PrimeRealtyCRM/1.0 (consultorindividual@prime.com)",
+  "Accept-Language": "pt-BR,pt;q=0.9",
+};
+
+const coordenadaValida = (latitude: number | null, longitude: number | null) =>
+  latitude !== null &&
+  longitude !== null &&
+  latitude > -90 &&
+  latitude <= 90 &&
+  longitude >= -180 &&
+  longitude <= 180;
+
+const criarImovelMapa = (imovel: ImovelComFotosMapa) => {
+  if (!coordenadaValida(imovel.latitude, imovel.longitude)) return null;
+
+  return {
+    id: imovel.id,
+    titulo: imovel.titulo,
+    tipoImovel: imovel.tipoImovel,
+    finalidade: imovel.finalidade,
+    precoVenda: imovel.precoVenda,
+    status: imovel.status,
+    cidade: imovel.cidade,
+    bairro: imovel.bairro,
+    endereco: imovel.endereco,
+    numero: imovel.numero,
+    estado: imovel.estado,
+    cep: imovel.cep,
+    quartos: imovel.quartos,
+    banheiros: imovel.banheiros,
+    vagasGaragem: imovel.vagasGaragem,
+    areaUtil: imovel.areaUtil,
+    latitude: imovel.latitude,
+    longitude: imovel.longitude,
+    fotos: imovel.fotos.map((foto) => foto.url),
+  };
+};
+
+const removerNulos = <T>(valor: T | null): valor is T => valor !== null;
+
+const montarEnderecoCompleto = (imovel: DadosGeocodificacao) =>
+  [imovel.endereco, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"]
+    .filter(Boolean)
+    .join(", ");
+
+const buscarCoordenadasEndereco = async (
+  imovel: DadosGeocodificacao
+): Promise<{ latitude: number; longitude: number } | "NAO_ENCONTRADO" | null> => {
   if (!imovel.endereco || imovel.endereco.trim() === "") {
-    console.warn(`[Geocode] Endereço insuficiente para o imóvel ID: ${imovel.id}`);
-    return "NOT_FOUND";
+    console.warn(`[Geocodificação] Endereço insuficiente para o imóvel ID: ${imovel.id}`);
+    return "NAO_ENCONTRADO";
   }
 
-  const genericTypes = [
-    "city", "state", "country", "municipality",
-    "administrative", "region", "postcode", "county",
-  ];
-
-  const fullAddress = [imovel.endereco, imovel.numero, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
-
-  // 0ª tentativa: Google Maps Geocoding API (se configurado)
+  const enderecoCompleto = montarEnderecoCompleto(imovel);
   const googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
+
   if (googleApiKey) {
     try {
-      const res = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(fullAddress)}&key=${googleApiKey}`
+      const resposta = await fetch(
+        `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(enderecoCompleto)}&key=${googleApiKey}`,
+        { signal: AbortSignal.timeout(6000) }
       );
-      if (res.ok) {
-        const data = await res.json();
-        if (data.status === "OK" && data.results.length > 0) {
-          const location = data.results[0].geometry.location;
-          console.info(`[Geocode Google] Localizado com sucesso: ${fullAddress}`);
-          return { lat: location.lat, lng: location.lng };
-        } else if (data.status === "ZERO_RESULTS") {
-          console.warn(`[Geocode Google] Não encontrado: ${fullAddress}`);
-        } else {
-          console.warn(`[Geocode Google] Erro API: ${data.status}`);
+
+      if (resposta.ok) {
+        const corpo: unknown = await resposta.json();
+        const dados = esquemaGoogleGeocode.safeParse(corpo);
+
+        if (dados.success && dados.data.status === "OK" && dados.data.results[0]) {
+          const localizacao = dados.data.results[0].geometry.location;
+          return { latitude: localizacao.lat, longitude: localizacao.lng };
+        }
+
+        if (dados.success && dados.data.status !== "ZERO_RESULTS") {
+          console.warn(`[Geocodificação Google] Status inesperado: ${dados.data.status}`);
         }
       }
-    } catch (err) {
-      console.warn(`[Geocode Google] Falha na rede: ${fullAddress}`, err);
+    } catch (erro) {
+      console.warn(`[Geocodificação Google] Falha ao buscar: ${enderecoCompleto}`, erro);
     }
   }
 
-  // 1ª tentativa: Busca livre completa (Rua, Número, Bairro, Cidade, Estado)
-  const query1 = fullAddress;
-  
-  // 2ª tentativa: Sem número (ajuda no Nominatim Brasil pois OSM tem poucos números mapeados)
-  const query2 = [imovel.endereco, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
-  
-  // 3ª tentativa: Apenas Rua, Cidade, Estado
-  const query3 = [imovel.endereco, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", ");
+  const consultas = Array.from(
+    new Set([
+      enderecoCompleto,
+      [imovel.endereco, imovel.bairro, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", "),
+      [imovel.endereco, imovel.cidade, imovel.estado, "Brasil"].filter(Boolean).join(", "),
+    ])
+  );
 
-  // Arrays de queries únicas para evitar chamadas duplicadas
-  const attempts = Array.from(new Set([query1, query2, query3]));
-
-  for (const q of attempts) {
+  for (const consulta of consultas) {
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
-        { headers, signal: AbortSignal.timeout(6000) }
+      const resposta = await fetch(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(consulta)}&limit=1`,
+        { headers: headersGeocodificacao, signal: AbortSignal.timeout(6000) }
       );
 
-      if (res.status === 429) {
-        console.warn(`[Geocode] Rate limit atingido.`);
-        return null; // Força re-tentativa na próxima rodada do cron
+      if (resposta.status === 429) {
+        console.warn("[Geocodificação] Rate limit atingido.");
+        return null;
       }
 
-      if (res.ok) {
-        const data = (await res.json()) as Array<{ lat: string; lon: string; addresstype?: string; type?: string; class?: string }>;
-        
-        if (data?.length > 0) {
-          const resultType = data[0].addresstype ?? data[0].type ?? data[0].class ?? "";
-          // Ignora retornos ultra-genéricos (só achou a cidade) a menos que seja a última tentativa
-          if (genericTypes.includes(resultType) && q !== query3) {
-            console.warn(`[Geocode] Retorno genérico (${resultType}) ignorado para: ${q}`);
-            continue;
-          }
-          console.info(`[Geocode] Localizado com sucesso (${q})`);
-          return { lat: parseFloat(data[0].lat), lng: parseFloat(data[0].lon) };
-        }
+      if (!resposta.ok) continue;
+
+      const corpo: unknown = await resposta.json();
+      const dados = esquemaNominatim.safeParse(corpo);
+      if (!dados.success || !dados.data[0]) continue;
+
+      const resultado = dados.data[0];
+      const tipoResultado = resultado.addresstype ?? resultado.type ?? resultado.class ?? "";
+      const consultaFinal = consulta === consultas[consultas.length - 1];
+
+      if (tiposGenericos.has(tipoResultado) && !consultaFinal) {
+        continue;
       }
-    } catch (err) {
-      console.warn(`[Geocode] Falha/Timeout na query: ${q}`, err);
+
+      return {
+        latitude: Number.parseFloat(resultado.lat),
+        longitude: Number.parseFloat(resultado.lon),
+      };
+    } catch (erro) {
+      console.warn(`[Geocodificação] Falha ao buscar: ${consulta}`, erro);
     }
   }
 
-  console.warn(`[Geocode] Endereço não localizado após todas as tentativas: ${query1}`);
-  return "NOT_FOUND";
-}
+  return "NAO_ENCONTRADO";
+};
 
-// ─── GET — fast path: only already-geocoded properties ───────────────────────
+const buscarLocalizacaoLivre = async (busca: string) => {
+  const resposta = await fetch(
+    `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(`${busca}, Brasil`)}&limit=1`,
+    { headers: headersGeocodificacao, signal: AbortSignal.timeout(6000) }
+  );
 
-export async function GET() {
+  if (!resposta.ok) return null;
+
+  const corpo: unknown = await resposta.json();
+  const dados = esquemaNominatim.safeParse(corpo);
+  if (!dados.success || !dados.data[0]) return null;
+
+  return {
+    latitude: Number.parseFloat(dados.data[0].lat),
+    longitude: Number.parseFloat(dados.data[0].lon),
+  };
+};
+
+export async function GET(request: NextRequest) {
   const session = await auth();
   if (!session?.user?.id) {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const [imoveisComCoords, pendingCount] = await Promise.all([
-    prisma.imovel.findMany({
-      where: {
-        usuarioId: session?.user?.id || "",
-        arquivadoEm: null,
-        latitude: { not: null, gt: -90 }, // Ignora falhas (-999)
-        longitude: { not: null },
-      },
-      select: {
-        id: true,
-        titulo: true,
-        tipoImovel: true,
-        finalidade: true,
-        precoVenda: true,
-        status: true,
-        cidade: true,
-        bairro: true,
-        endereco: true,
-        numero: true,
-        estado: true,
-        cep: true,
-        quartos: true,
-        banheiros: true,
-        vagasGaragem: true,
-        areaUtil: true,
-        latitude: true,
-        longitude: true,
-        fotos: {
-          select: { url: true, isCapa: true, ordem: true },
-          orderBy: [{ isCapa: "desc" }, { ordem: "asc" }],
+  try {
+    const busca = request.nextUrl.searchParams.get("busca");
+
+    if (busca !== null) {
+      const buscaValidada = esquemaBuscaLocalizacao.safeParse(busca);
+      if (!buscaValidada.success) {
+        return NextResponse.json(
+          { error: "Dados inválidos", details: buscaValidada.error.flatten() },
+          { status: 400 }
+        );
+      }
+
+      const coordenadas = await buscarLocalizacaoLivre(buscaValidada.data);
+      if (!coordenadas) {
+        return NextResponse.json({ error: "Localização não encontrada" }, { status: 404 });
+      }
+
+      return NextResponse.json(coordenadas);
+    }
+
+    const [imoveisComCoordenadas, pendentesGeocodificacao] = await prisma.$transaction([
+      prisma.imovel.findMany({
+        where: {
+          usuarioId: session.user.id,
+          arquivadoEm: null,
+          latitude: { not: null, gt: -90, lte: 90 },
+          longitude: { not: null, gte: -180, lte: 180 },
         },
-      },
-    }),
-    prisma.imovel.count({
-      where: {
-        usuarioId: session?.user?.id || "",
-        arquivadoEm: null,
-        latitude: null,
-      },
-    }),
-  ]);
+        select: selecaoImovelMapa,
+      }),
+      prisma.imovel.count({
+        where: {
+          usuarioId: session.user.id,
+          arquivadoEm: null,
+          OR: [{ latitude: null }, { longitude: null }],
+        },
+      }),
+    ]);
 
-  const imoveis = imoveisComCoords.map((i) => ({
-    id: i.id,
-    titulo: i.titulo,
-    tipoImovel: i.tipoImovel,
-    finalidade: i.finalidade,
-    precoVenda: i.precoVenda,
-    status: i.status,
-    cidade: i.cidade,
-    bairro: i.bairro,
-    endereco: i.endereco,
-    numero: i.numero,
-    estado: i.estado,
-    cep: i.cep,
-    quartos: i.quartos,
-    banheiros: i.banheiros,
-    vagasGaragem: i.vagasGaragem,
-    areaUtil: i.areaUtil,
-    lat: i.latitude as number,
-    lng: i.longitude as number,
-    // Array de URLs de fotos ordenadas: capa primeiro, depois por ordem
-    fotos: i.fotos.map((f) => f.url),
-  }));
+    const imoveis = imoveisComCoordenadas.map(criarImovelMapa).filter(removerNulos);
 
-  return NextResponse.json({ imoveis, pendingGeocode: pendingCount });
+    return NextResponse.json({ imoveis, pendentesGeocodificacao });
+  } catch (erro) {
+    console.error("Erro ao carregar imóveis do mapa:", erro);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
+  }
 }
-
-// ─── POST — background geocoding (max 10 per call) ───────────────────────────
 
 export async function POST() {
   const session = await auth();
@@ -189,91 +284,69 @@ export async function POST() {
     return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
   }
 
-  const semCoords = await prisma.imovel.findMany({
-    where: {
-      usuarioId: session?.user?.id || "",
-      arquivadoEm: null,
-      latitude: null,
-    },
-    select: {
-      id: true,
-      titulo: true,
-      tipoImovel: true,
-      finalidade: true,
-      precoVenda: true,
-      status: true,
-      cidade: true,
-      bairro: true,
-      endereco: true,
-      numero: true,
-      estado: true,
-      cep: true,
-      quartos: true,
-      banheiros: true,
-      vagasGaragem: true,
-      areaUtil: true,
-      fotos: {
-        select: { url: true, isCapa: true, ordem: true },
-        orderBy: [{ isCapa: "desc" }, { ordem: "asc" }],
+  try {
+    const imoveisSemCoordenadas = await prisma.imovel.findMany({
+      where: {
+        usuarioId: session.user.id,
+        arquivadoEm: null,
+        OR: [{ latitude: null }, { longitude: null }],
       },
-    },
-    take: 10, // Respeita o rate-limit do Nominatim e timeout serverless
-  });
-
-  const geocoded = [];
-
-  for (const imovel of semCoords) {
-    // Nominatim policy: max 1 req/sec
-    await new Promise((r) => setTimeout(r, 1100));
-
-    const coords = await geocodeAddress(imovel);
-    if (coords === null) continue; // Falha de rede temporária, mantém null para tentar novamente depois
-
-    let finalLat = -999;
-    let finalLng = -999;
-
-    if (coords !== "NOT_FOUND") {
-      finalLat = coords.lat;
-      finalLng = coords.lng;
-    }
-
-    await prisma.imovel.update({
-      where: { id: imovel.id },
-      data: { latitude: finalLat, longitude: finalLng },
+      select: selecaoImovelMapa,
+      take: 10,
     });
 
-    if (coords !== "NOT_FOUND") {
-      geocoded.push({
-        id: imovel.id,
-        titulo: imovel.titulo,
-        tipoImovel: imovel.tipoImovel,
-        finalidade: imovel.finalidade,
-        precoVenda: imovel.precoVenda,
-        status: imovel.status,
-        cidade: imovel.cidade,
-        bairro: imovel.bairro,
-        endereco: imovel.endereco,
-        numero: imovel.numero,
-        estado: imovel.estado,
-        cep: imovel.cep,
-        quartos: imovel.quartos,
-        banheiros: imovel.banheiros,
-        vagasGaragem: imovel.vagasGaragem,
-        areaUtil: imovel.areaUtil,
-        lat: coords.lat,
-        lng: coords.lng,
-        fotos: imovel.fotos.map((f) => f.url),
+    const imoveisGeocodificados = [];
+
+    for (const imovel of imoveisSemCoordenadas) {
+      await new Promise((resolver) => setTimeout(resolver, 1100));
+
+      const coordenadas = await buscarCoordenadasEndereco(imovel);
+      if (coordenadas === null) continue;
+
+      const latitude = coordenadas === "NAO_ENCONTRADO" ? -999 : coordenadas.latitude;
+      const longitude = coordenadas === "NAO_ENCONTRADO" ? -999 : coordenadas.longitude;
+
+      await prisma.imovel.updateMany({
+        where: { id: imovel.id, usuarioId: session.user.id },
+        data: { latitude, longitude },
       });
+
+      if (coordenadas !== "NAO_ENCONTRADO") {
+        imoveisGeocodificados.push({
+          id: imovel.id,
+          titulo: imovel.titulo,
+          tipoImovel: imovel.tipoImovel,
+          finalidade: imovel.finalidade,
+          precoVenda: imovel.precoVenda,
+          status: imovel.status,
+          cidade: imovel.cidade,
+          bairro: imovel.bairro,
+          endereco: imovel.endereco,
+          numero: imovel.numero,
+          estado: imovel.estado,
+          cep: imovel.cep,
+          quartos: imovel.quartos,
+          banheiros: imovel.banheiros,
+          vagasGaragem: imovel.vagasGaragem,
+          areaUtil: imovel.areaUtil,
+          latitude: coordenadas.latitude,
+          longitude: coordenadas.longitude,
+          fotos: imovel.fotos.map((foto) => foto.url),
+        });
+      }
     }
+
+    const restantes = await prisma.imovel.count({
+      where: {
+        usuarioId: session.user.id,
+        arquivadoEm: null,
+        OR: [{ latitude: null }, { longitude: null }],
+      },
+    });
+
+    return NextResponse.json({ imoveis: imoveisGeocodificados, restantes });
+  } catch (erro) {
+    console.error("Erro ao geocodificar imóveis:", erro);
+    return NextResponse.json({ error: "Erro interno" }, { status: 500 });
   }
-
-  const remainingCount = await prisma.imovel.count({
-    where: {
-      usuarioId: session?.user?.id || "",
-      arquivadoEm: null,
-      latitude: null,
-    },
-  });
-
-  return NextResponse.json({ imoveis: geocoded, remaining: remainingCount });
 }
