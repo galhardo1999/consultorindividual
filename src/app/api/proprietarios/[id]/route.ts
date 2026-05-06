@@ -115,7 +115,7 @@ export async function DELETE(_req: Request, { params }: ContextoRota) {
 
   try {
     // onDelete: SetNull trata a desvinculação de imóveis automaticamente
-    await prisma.proprietario.delete({ where: { id } });
+    await prisma.proprietario.delete({ where: { id, usuarioId: session.user.id } });
     return NextResponse.json({ ok: true });
   } catch (erro) {
     return erroInterno("[PROPRIETARIOS DELETE]", erro);

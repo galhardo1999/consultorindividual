@@ -106,7 +106,14 @@ export async function getPerfil() {
     if (!usuario) return { error: "Usuário não encontrado" };
 
     const isOAuthOnly = !usuario.senhaHash;
-    const { senhaHash, ...usuarioData } = usuario;
+    const usuarioData = {
+      id: usuario.id,
+      nome: usuario.nome,
+      email: usuario.email,
+      telefone: usuario.telefone,
+      avatarUrl: usuario.avatarUrl,
+      criadoEm: usuario.criadoEm,
+    };
 
     return { success: true, usuario: usuarioData, isOAuthOnly };
   } catch (error) {

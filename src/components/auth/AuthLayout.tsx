@@ -1,7 +1,7 @@
 import { ReactNode } from "react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { Logo } from "@/components/ui/Logo";
-import { Building2, Users, Target, CheckCircle2, MapPin } from "lucide-react";
+import { Building2, Users, Target, MapPin } from "lucide-react";
 
 interface AuthLayoutProps {
   children: ReactNode;

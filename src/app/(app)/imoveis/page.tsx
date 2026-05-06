@@ -1,9 +1,11 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Search, Filter, Home, ChevronRight, ChevronLeft, Bed, Bath, Car, Maximize, X } from "lucide-react";
 import { formatCurrency, propertyTypeLabel, propertyStatusLabel } from "@/lib/utils";
+import { PROPERTY_TYPES, PURPOSES, STATUSES } from "@/constants/options";
 
 interface Imovel {
   id: string;
@@ -30,12 +32,6 @@ interface Imovel {
   fotos?: { url: string; isCapa: boolean }[];
 }
 
-const TIPOS_IMOVEL = [
-  "APARTAMENTO", "CASA", "CASA_CONDOMINIO", "TERRENO", "SALA_COMERCIAL",
-  "LOJA", "GALPAO", "CHACARA", "FAZENDA", "COBERTURA", "KITNET", "STUDIO",
-  "PREDIO_COMERCIAL", "AREA_RURAL", "OUTRO",
-];
-
 const FINALIDADES = [
   { value: "VENDA", label: "Venda" },
   { value: "LOCACAO", label: "Locação" },
@@ -43,7 +39,7 @@ const FINALIDADES = [
   { value: "TEMPORADA", label: "Temporada" },
 ];
 
-const STATUS_IMOVEL = ["DISPONIVEL", "RESERVADO", "VENDIDO", "LOCADO", "INDISPONIVEL"];
+void FINALIDADES;
 
 const STATUS_COLORS: Record<string, string> = {
   DISPONIVEL: "badge-success",
@@ -134,7 +130,7 @@ function ImovelCard({ imovel }: { imovel: Imovel }) {
         <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", flexGrow: 1 }}>
           <p style={{ color: "var(--color-surface-400)", fontSize: "0.8rem", marginBottom: "0.25rem" }}>
             <span style={{ textTransform: "capitalize" }}>{propertyTypeLabel(imovel.tipoImovel).toLowerCase()}</span> para{" "}
-            <span style={{ textTransform: "lowercase" }}>{FINALIDADES.find((p) => p.value === imovel.finalidade)?.label || imovel.finalidade}</span>
+            <span style={{ textTransform: "lowercase" }}>{PURPOSES.find((p) => p.value === imovel.finalidade)?.label || imovel.finalidade}</span>
             {imovel.areaUtil ? ` com ${imovel.areaUtil} m²` : ""}
           </p>
           <h3 className="font-semibold" style={{ color: "var(--color-surface-50)", fontSize: "1.1rem", marginBottom: "0.75rem", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>
@@ -231,6 +227,7 @@ export default function ImoveisPage() {
 
   const formatLabel = (str: string) =>
     str.split("_").map((w) => w.charAt(0) + w.slice(1).toLowerCase()).join(" ");
+  void formatLabel;
 
   return (
     <div className="page relative">
@@ -350,14 +347,14 @@ export default function ImoveisPage() {
                     <label className="label">Finalidade</label>
                     <select className="select w-full" value={tempFilters.finalidade} onChange={(e) => updateTempFilter("finalidade", e.target.value)}>
                       <option value="">Todas</option>
-                      {FINALIDADES.map((f) => (<option key={f.value} value={f.value}>{f.label}</option>))}
+                      {PURPOSES.map((f) => (<option key={f.value} value={f.value}>{f.label}</option>))}
                     </select>
                   </div>
                   <div>
                     <label className="label">Status</label>
                     <select className="select w-full" value={tempFilters.status} onChange={(e) => updateTempFilter("status", e.target.value)}>
                       <option value="">Todos</option>
-                      {STATUS_IMOVEL.map((s) => (<option key={s} value={s}>{formatLabel(s)}</option>))}
+                      {STATUSES.map((s) => (<option key={s.value} value={s.value}>{s.label}</option>))}
                     </select>
                   </div>
                 </div>
@@ -365,7 +362,7 @@ export default function ImoveisPage() {
                   <label className="label">Tipo de Imóvel</label>
                   <select className="select w-full" value={tempFilters.tipoImovel} onChange={(e) => updateTempFilter("tipoImovel", e.target.value)}>
                     <option value="">Todos os tipos</option>
-                    {TIPOS_IMOVEL.map((t) => (<option key={t} value={t}>{propertyTypeLabel(t)}</option>))}
+                    {PROPERTY_TYPES.map((t) => (<option key={t.value} value={t.value}>{t.label}</option>))}
                   </select>
                 </div>
               </div>

@@ -7,12 +7,12 @@ const criarPrisma = () => {
   const cliente = new PrismaClient({
     log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
   }).$extends(withAccelerate());
-  return cliente as unknown as PrismaClient;
+  return cliente as object as PrismaClient;
 };
 
 type ClientePrisma = ReturnType<typeof criarPrisma>;
 
-const globalForPrisma = globalThis as unknown as {
+const globalForPrisma = globalThis as typeof globalThis & {
   prisma: ClientePrisma | undefined;
 };
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -136,15 +136,15 @@ export default function ClienteDetailPage() {
   const [selectedPropertyId, setSelectedPropertyId] = useState("");
   const [statusInteresse, setInterestStatus] = useState("INTERESSADO");
 
-  async function loadClient() {
+  const loadClient = useCallback(async () => {
     const res = await fetch(`/api/clientes/${id}`);
     if (!res.ok) { router.push("/clientes"); return; }
     const data = await res.json();
     setClient(data);
     setLoading(false);
-  }
+  }, [id, router]);
 
-  useEffect(() => { loadClient(); }, [id]);
+  useEffect(() => { loadClient(); }, [loadClient]);
 
   async function updateStage(estagioJornada: string) {
     setSaving(true);
@@ -445,7 +445,7 @@ export default function ClienteDetailPage() {
               {cliente.preferencia?.notasPessoais && (
                 <div className="bg-surface-900/60 rounded-lg p-3 border border-surface-700/50">
                   <p className="text-[10px] font-bold text-surface-500 uppercase tracking-widest mb-1.5">Notas</p>
-                  <p className="text-xs text-surface-300 leading-relaxed italic">"{cliente.preferencia.notasPessoais}"</p>
+                  <p className="text-xs text-surface-300 leading-relaxed italic">&quot;{cliente.preferencia.notasPessoais}&quot;</p>
                 </div>
               )}
             </div>
@@ -654,7 +654,7 @@ export default function ClienteDetailPage() {
                           </div>
                           {interesse.feedback && (
                             <p className="text-sm text-surface-300 mt-3 bg-surface-900 p-2.5 rounded-lg border border-surface-700/50 italic flex gap-2">
-                              <span className="text-xl leading-none opacity-50">"</span>
+                              <span className="text-xl leading-none opacity-50">&quot;</span>
                               {interesse.feedback}
                             </p>
                           )}

@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, MapPin, Check, Share2, Home, Moon, Sun, ChevronDown, MoveRight } from "lucide-react";

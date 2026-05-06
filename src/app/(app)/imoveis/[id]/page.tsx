@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -116,7 +117,7 @@ export default function ImovelDetailPage() {
       })
       .then((d) => { if (d) { setProperty(d); setLoading(false); } })
       .catch(() => setLoading(false));
-  }, [id]);
+  }, [id, router]);
 
   useEffect(() => {
     if (viewerIndex !== null) {

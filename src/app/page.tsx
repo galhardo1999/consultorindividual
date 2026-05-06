@@ -6,9 +6,7 @@ import {
   Users,
   LineChart,
   LayoutDashboard,
-  Smartphone,
   Zap,
-  UserPlus,
   Key,
   Star,
   Quote,
@@ -454,7 +452,7 @@ function SecaoProvaSocial() {
                 ))}
               </div>
               <p className="text-xl text-[var(--color-surface-50)] mb-10 leading-relaxed font-medium">
-                "{depoimento.texto}"
+                &quot;{depoimento.texto}&quot;
               </p>
               <div className="flex items-center gap-4">
                 {/* eslint-disable-next-line @next/next/no-img-element */}

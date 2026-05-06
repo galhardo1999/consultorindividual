@@ -103,7 +103,7 @@ export default function EditarClientePage() {
           aceitaPermuta: data.preferencia?.aceitaPermuta || false,
           notasPessoais: data.preferencia?.notasPessoais || "",
         });
-      } catch (err) {
+      } catch {
         setError("Erro ao carregar dados.");
       } finally {
         setLoading(false);

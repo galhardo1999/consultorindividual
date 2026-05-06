@@ -8,7 +8,46 @@ const esquema = z.object({
   novaSenha: z.string().min(8, "A senha deve ter pelo menos 8 caracteres"),
 });
 
+const mapaRateLimit = new Map<string, { tentativas: number; resetEm: number }>();
+const LIMITE_TENTATIVAS = 5;
+const JANELA_MS = 15 * 60 * 1000;
+
+const limparEntradasExpiradas = () => {
+  const agora = Date.now();
+  for (const [ip, entrada] of mapaRateLimit.entries()) {
+    if (agora > entrada.resetEm) mapaRateLimit.delete(ip);
+  }
+};
+
+const verificarRateLimit = (ip: string) => {
+  limparEntradasExpiradas();
+  const agora = Date.now();
+  const entrada = mapaRateLimit.get(ip);
+
+  if (!entrada || agora > entrada.resetEm) {
+    mapaRateLimit.set(ip, { tentativas: 1, resetEm: agora + JANELA_MS });
+    return true;
+  }
+
+  if (entrada.tentativas >= LIMITE_TENTATIVAS) return false;
+
+  entrada.tentativas += 1;
+  return true;
+};
+
 export const POST = async (req: NextRequest): Promise<NextResponse> => {
+  const ip =
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
+    req.headers.get("x-real-ip") ??
+    "desconhecido";
+
+  if (!verificarRateLimit(ip)) {
+    return NextResponse.json(
+      { error: "Muitas tentativas. Aguarde 15 minutos e tente novamente." },
+      { status: 429 }
+    );
+  }
+
   try {
     const corpo = await req.json();
     const parsed = esquema.safeParse(corpo);

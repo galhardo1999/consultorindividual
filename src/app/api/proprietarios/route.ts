@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { Prisma, StatusProprietario, TipoPessoaProprietario } from "@prisma/client";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -45,6 +46,11 @@ function parsePagination(searchParams: URLSearchParams) {
   return { page, limit, skip: (page - 1) * limit };
 }
 
+const obterValorEnum = <T extends Record<string, string>>(opcoes: T, valor?: string) => {
+  if (!valor) return undefined;
+  return Object.values(opcoes).find((opcao) => opcao === valor) as T[keyof T] | undefined;
+};
+
 // ─── GET /proprietarios ───────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
@@ -64,7 +70,10 @@ export async function GET(request: Request) {
 
     const { page, limit, skip } = parsePagination(searchParams);
 
-    const where = {
+    const statusValidado = obterValorEnum(StatusProprietario, status);
+    const tipoPessoaValidado = obterValorEnum(TipoPessoaProprietario, tipoPessoa);
+
+    const where: Prisma.ProprietarioWhereInput = {
       usuarioId: session.user.id,
       ...(busca && {
         OR: [
@@ -74,8 +83,8 @@ export async function GET(request: Request) {
           { documento: { contains: busca, mode: "insensitive" as const } },
         ],
       }),
-      ...(status && { status: status as never }),
-      ...(tipoPessoa && { tipoPessoa: tipoPessoa as never }),
+      ...(statusValidado && { status: statusValidado }),
+      ...(tipoPessoaValidado && { tipoPessoa: tipoPessoaValidado }),
       ...(cidade && { cidade: { contains: cidade, mode: "insensitive" as const } }),
       ...(estado && { estado: { equals: estado, mode: "insensitive" as const } }),
       ...(comImoveis && { imoveis: { some: {} } }),

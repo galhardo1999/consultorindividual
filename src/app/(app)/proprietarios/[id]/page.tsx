@@ -1,4 +1,5 @@
 "use client";
+/* eslint-disable @next/next/no-img-element */
 
 import React, { useEffect, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
@@ -238,7 +239,7 @@ export default function ProprietarioDetailPage() {
       })
       .then((d) => { if (d) { setProprietario(d); setLoading(false); } })
       .catch(() => setLoading(false));
-  }, [id]);
+  }, [id, router]);
 
   async function archiveProprietario() {
     if (!confirm("Deseja excluir/arquivar este proprietário? Os imóveis vinculados não serão excluídos.")) return;

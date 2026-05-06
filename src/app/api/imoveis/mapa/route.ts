@@ -296,6 +296,7 @@ export async function POST() {
     });
 
     const imoveisGeocodificados = [];
+    const atualizacoesCoordenadas = [];
 
     for (const imovel of imoveisSemCoordenadas) {
       await new Promise((resolver) => setTimeout(resolver, 1100));
@@ -306,10 +307,10 @@ export async function POST() {
       const latitude = coordenadas === "NAO_ENCONTRADO" ? -999 : coordenadas.latitude;
       const longitude = coordenadas === "NAO_ENCONTRADO" ? -999 : coordenadas.longitude;
 
-      await prisma.imovel.updateMany({
+      atualizacoesCoordenadas.push(prisma.imovel.updateMany({
         where: { id: imovel.id, usuarioId: session.user.id },
         data: { latitude, longitude },
-      });
+      }));
 
       if (coordenadas !== "NAO_ENCONTRADO") {
         imoveisGeocodificados.push({
@@ -334,6 +335,10 @@ export async function POST() {
           fotos: imovel.fotos.map((foto) => foto.url),
         });
       }
+    }
+
+    if (atualizacoesCoordenadas.length > 0) {
+      await prisma.$transaction(atualizacoesCoordenadas);
     }
 
     const restantes = await prisma.imovel.count({

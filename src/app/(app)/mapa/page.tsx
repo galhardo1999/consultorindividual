@@ -35,7 +35,7 @@ interface CoordenadasLocalizacao {
   longitude: number;
 }
 
-const opcoesStatus = [
+const opcoesStatusDisponiveis = [
   { valor: "TODOS", rotulo: "Todos" },
   { valor: "DISPONIVEL", rotulo: "Disponíveis" },
   { valor: "RESERVADO", rotulo: "Reservados" },
@@ -61,7 +61,7 @@ const rotuloTipo: Record<string, string> = {
   OUTRO: "Outro",
 };
 
-const rotuloFinalidade: Record<string, string> = {
+const rotuloFinalidadeMapa: Record<string, string> = {
   VENDA: "Venda",
   LOCACAO: "Locação",
   VENDA_LOCACAO: "Venda e locação",
@@ -147,12 +147,16 @@ const montarEndereco = (imovel: ImovelMapa) => {
   return partes.filter(Boolean).join(", ");
 };
 
-const obterFinalidades = (imoveis: ImovelMapa[]) => {
+const obterFinalidadesMapa = (imoveis: ImovelMapa[]) => {
   const finalidades = new Set(imoveis.map((imovel) => imovel.finalidade).filter(Boolean));
   return Array.from(finalidades).sort((a, b) => a.localeCompare(b, "pt-BR"));
 };
 
 
+
+void opcoesStatusDisponiveis;
+void rotuloFinalidadeMapa;
+void obterFinalidadesMapa;
 
 const ItemImovel = ({
   imovel,
@@ -278,7 +282,7 @@ export default function MapaPage() {
     } finally {
       setCarregando(false);
     }
-  }, [imovelSelecionadoId]);
+  }, []);
 
   const executarGeocodificacao = useCallback(async () => {
     if (geocodificacaoEmAndamentoRef.current || pendentesGeocodificacao <= 0) return;

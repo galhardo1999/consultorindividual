@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
-import { Plus, Search, Filter, Contact, Home, X, Mail, Phone, ChevronRight } from "lucide-react";
-import { maskTelefone, formatDate } from "@/lib/utils";
+import { Plus, Search, Filter, Contact, Home, X, Mail, Phone } from "lucide-react";
+import { maskTelefone } from "@/lib/utils";
 
 interface Proprietario {
   id: string;

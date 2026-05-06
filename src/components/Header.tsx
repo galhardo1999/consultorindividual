@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Menu, Plus, Search, Moon, Sun } from "lucide-react";
+import { Search, Moon, Sun } from "lucide-react";
 import { getInitials } from "@/lib/utils";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -11,7 +11,7 @@ interface HeaderProps {
   usuario?: { nome?: string | null; email?: string | null; image?: string | null };
 }
 
-export function Header({ onMenuToggle, usuario }: HeaderProps) {
+export function Header({ usuario }: HeaderProps) {
   const [theme, setTheme] = useState<"light" | "dark">("dark");
   const router = useRouter();
 

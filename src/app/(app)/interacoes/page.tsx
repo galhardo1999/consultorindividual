@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { MessageSquare, Phone, Mail, Calendar, Clock, CheckCircle2, Home, Filter, X } from "lucide-react";
+import { MessageSquare, Phone, Mail, Calendar, Clock, CheckCircle2 } from "lucide-react";
 import Link from "next/link";
 import { formatDateTime, formatDate, interactionTypeLabel } from "@/lib/utils";
 

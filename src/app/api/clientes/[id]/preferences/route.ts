@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { z } from "zod";
+import { CondicaoImovel, Prisma, TipoImovel } from "@prisma/client";
 
 const preferenciaSchema = z.object({
-  tipoImovel: z.string().nullable().optional(),
+  tipoImovel: z.enum(TipoImovel).nullable().optional(),
   precoMinimo: z.number().nullable().optional(),
   precoMaximo: z.number().nullable().optional(),
   cidadeInteresse: z.string().nullable().optional(),
@@ -14,7 +15,7 @@ const preferenciaSchema = z.object({
   minVagas: z.number().int().nullable().optional(),
   areaMinima: z.number().nullable().optional(),
   areaMaxima: z.number().nullable().optional(),
-  condicaoImovel: z.string().nullable().optional(),
+  condicaoImovel: z.enum(CondicaoImovel).nullable().optional(),
   aceitaFinanciamento: z.boolean().nullable().optional(),
   aceitaPermuta: z.boolean().nullable().optional(),
   condominioFechado: z.boolean().nullable().optional(),
@@ -23,6 +24,8 @@ const preferenciaSchema = z.object({
   prazoMudanca: z.string().nullable().optional(),
   notasPessoais: z.string().nullable().optional(),
 });
+
+const normalizarTexto = (valor: string | null | undefined) => (valor === "" ? null : valor ?? null);
 
 export async function PUT(
   request: Request,
@@ -46,25 +49,40 @@ export async function PUT(
     }
 
     const cliente = await prisma.cliente.findUnique({
-      where: { id, usuarioId: session?.user?.id || "" },
+      where: { id, usuarioId: session.user.id },
     });
 
     if (!cliente) {
       return NextResponse.json({ error: "Cliente não encontrado" }, { status: 404 });
     }
 
-    // Normalize: convert empty strings to null
-    const data: Record<string, unknown> = { ...parsed.data };
-    Object.keys(data).forEach((key) => {
-      if (data[key] === "") data[key] = null;
-    });
+    const dadosPreferencia: Omit<Prisma.PreferenciaClienteUncheckedCreateInput, "clienteId"> = {
+      tipoImovel: parsed.data.tipoImovel ?? null,
+      precoMinimo: parsed.data.precoMinimo ?? null,
+      precoMaximo: parsed.data.precoMaximo ?? null,
+      cidadeInteresse: normalizarTexto(parsed.data.cidadeInteresse),
+      bairrosInteresse: normalizarTexto(parsed.data.bairrosInteresse),
+      minQuartos: parsed.data.minQuartos ?? null,
+      minBanheiros: parsed.data.minBanheiros ?? null,
+      minVagas: parsed.data.minVagas ?? null,
+      areaMinima: parsed.data.areaMinima ?? null,
+      areaMaxima: parsed.data.areaMaxima ?? null,
+      condicaoImovel: parsed.data.condicaoImovel ?? null,
+      aceitaFinanciamento: parsed.data.aceitaFinanciamento ?? null,
+      aceitaPermuta: parsed.data.aceitaPermuta ?? null,
+      condominioFechado: parsed.data.condominioFechado ?? null,
+      caracteristicasPreferidas: normalizarTexto(parsed.data.caracteristicasPreferidas),
+      restricoes: normalizarTexto(parsed.data.restricoes),
+      prazoMudanca: normalizarTexto(parsed.data.prazoMudanca),
+      notasPessoais: normalizarTexto(parsed.data.notasPessoais),
+    };
 
     const preferencia = await prisma.preferenciaCliente.upsert({
       where: { clienteId: id },
-      update: data as any,
+      update: dadosPreferencia,
       create: {
         clienteId: id,
-        ...(data as any),
+        ...dadosPreferencia,
       },
     });
 

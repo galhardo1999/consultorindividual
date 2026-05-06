@@ -3,11 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import {
-  Plus, Search, Filter, Users, ChevronRight, Phone, Mail,
+  Plus, Search, Filter, Users, Phone, Mail,
   X, MessageSquare
 } from "lucide-react";
 import {
-  journeyStageLabel, journeyStageColor, urgencyLabel, formatDate
+  journeyStageLabel, journeyStageColor, urgencyLabel
 } from "@/lib/utils";
 
 interface Cliente {
@@ -59,6 +59,8 @@ const initialFilters = {
   atualizadoEmInicio: "",
   atualizadoEmFim: "",
 };
+
+type ValorFiltro = (typeof initialFilters)[keyof typeof initialFilters];
 
 export default function ClientesPage() {
   const [clientes, setClients] = useState<Cliente[]>([]);
@@ -126,7 +128,7 @@ export default function ClientesPage() {
     setShowFilters(false);
   }
 
-  function updateTempFilter(key: keyof typeof initialFilters, value: any) {
+  function updateTempFilter(key: keyof typeof initialFilters, value: ValorFiltro) {
     setTempFilters(prev => ({ ...prev, [key]: value }));
   }
 

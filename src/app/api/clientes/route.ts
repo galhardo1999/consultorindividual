@@ -2,6 +2,19 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import {
+  EstadoCivil,
+  EstagioJornada,
+  FormaPagamento,
+  NivelUrgencia,
+  ObjetivoCompra,
+  OrigemLead,
+  PreAprovacaoCredito,
+  Prisma,
+  StatusCliente,
+  StatusImovel,
+  TipoImovel,
+} from "@prisma/client";
 
 // ─── Schema de validação ───────────────────────────────────────────────────────
 
@@ -43,6 +56,11 @@ const clienteSchema = z.object({
   }).optional(),
 });
 
+const obterValorEnum = <T extends Record<string, string>>(opcoes: T, valor?: string) => {
+  if (!valor) return undefined;
+  return Object.values(opcoes).find((opcao) => opcao === valor) as T[keyof T] | undefined;
+};
+
 // ─── GET /api/clientes ────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
@@ -62,6 +80,7 @@ export async function GET(request: Request) {
   const estagioJornada = searchParams.get("estagioJornada") || undefined;
   const nivelUrgencia = searchParams.get("nivelUrgencia") || undefined;
   const status = searchParams.get("status") || undefined;
+  const statusValidado = obterValorEnum(StatusCliente, status);
 
   // ── Perfil do cliente ───────────────────────────────────────────────────────
   const estadoCivil = searchParams.get("estadoCivil") || undefined;
@@ -91,8 +110,9 @@ export async function GET(request: Request) {
   const atualizadoEmFim = searchParams.get("atualizadoEmFim") || undefined;
 
   // ── Montagem do where ───────────────────────────────────────────────────────
-  const where = {
+  const where: Prisma.ClienteWhereInput = {
     usuarioId,
+    ...(statusValidado && { status: statusValidado }),
 
     ...(busca && {
       OR: [
@@ -179,10 +199,23 @@ export async function GET(request: Request) {
       .filter((c) => c.preferencia)
       .map((c) => c.id);
 
-    const interessesExistentes = await prisma.interesseClienteImovel.findMany({
-      where: { clienteId: { in: idsClientesComPreferencia } },
-      select: { clienteId: true, imovelId: true },
-    });
+    const [interessesExistentes, imoveisDisponiveis] = await prisma.$transaction([
+      prisma.interesseClienteImovel.findMany({
+        where: { clienteId: { in: idsClientesComPreferencia } },
+        select: { clienteId: true, imovelId: true },
+      }),
+      prisma.imovel.findMany({
+        where: { usuarioId, status: StatusImovel.DISPONIVEL },
+        select: {
+          id: true,
+          tipoImovel: true,
+          cidade: true,
+          precoVenda: true,
+          quartos: true,
+          areaUtil: true,
+        },
+      }),
+    ]);
 
     const mapaInteresses = new Map<string, string[]>();
     for (const i of interessesExistentes) {
@@ -190,35 +223,26 @@ export async function GET(request: Request) {
       mapaInteresses.get(i.clienteId)!.push(i.imovelId);
     }
 
-    const clientesComOportunidades = await Promise.all(
-      clientes.map(async (cliente) => {
+    const clientesComOportunidades = clientes.map((cliente) => {
         if (!cliente.preferencia) return { ...cliente, oportunidadesCount: 0 };
 
         const p = cliente.preferencia;
         const imovelIdsVinculados = mapaInteresses.get(cliente.id) ?? [];
+        const cidadeInteresse = p.cidadeInteresse?.toLocaleLowerCase("pt-BR");
 
-        const filtro: Record<string, unknown> = {
-          usuarioId,
-          status: "DISPONIVEL",
-          id: { notIn: imovelIdsVinculados },
-          ...(p.tipoImovel && { tipoImovel: p.tipoImovel }),
-          ...(p.cidadeInteresse && {
-            cidade: { contains: p.cidadeInteresse, mode: "insensitive" },
-          }),
-          ...((p.precoMinimo !== null || p.precoMaximo !== null) && {
-            precoVenda: {
-              ...(p.precoMinimo !== null && { gte: p.precoMinimo }),
-              ...(p.precoMaximo !== null && { lte: p.precoMaximo }),
-            },
-          }),
-          ...(p.minQuartos !== null && { quartos: { gte: p.minQuartos } }),
-          ...(p.areaMinima !== null && { areaUtil: { gte: p.areaMinima } }),
-        };
+        const oportunidadesCount = imoveisDisponiveis.filter((imovel) => {
+          if (imovelIdsVinculados.includes(imovel.id)) return false;
+          if (p.tipoImovel && imovel.tipoImovel !== p.tipoImovel) return false;
+          if (cidadeInteresse && !imovel.cidade.toLocaleLowerCase("pt-BR").includes(cidadeInteresse)) return false;
+          if (p.precoMinimo !== null && (imovel.precoVenda === null || imovel.precoVenda < p.precoMinimo)) return false;
+          if (p.precoMaximo !== null && (imovel.precoVenda === null || imovel.precoVenda > p.precoMaximo)) return false;
+          if (p.minQuartos !== null && (imovel.quartos === null || imovel.quartos < p.minQuartos)) return false;
+          if (p.areaMinima !== null && (imovel.areaUtil === null || imovel.areaUtil < p.areaMinima)) return false;
+          return true;
+        }).length;
 
-        const oportunidadesCount = await prisma.imovel.count({ where: filtro as any });
         return { ...cliente, oportunidadesCount };
-      })
-    );
+      });
 
     return NextResponse.json({ clientes: clientesComOportunidades, total, page: pagina, limit: limite });
   } catch (erro) {
@@ -243,31 +267,56 @@ export async function POST(request: Request) {
     }
 
     const { documento, dataNascimento, proximoContato, preferencia, ...resto } = parsed.data;
+    const tipoImovelPreferencia = obterValorEnum(TipoImovel, preferencia?.tipoImovel ?? undefined);
+    const dadosPreferencia = preferencia
+      ? {
+          tipoImovel: tipoImovelPreferencia ?? null,
+          precoMinimo: preferencia.precoMinimo ?? null,
+          precoMaximo: preferencia.precoMaximo ?? null,
+          cidadeInteresse: preferencia.cidadeInteresse || null,
+          bairrosInteresse: preferencia.bairrosInteresse || null,
+          minQuartos: preferencia.minQuartos ?? null,
+          areaMinima: preferencia.areaMinima ?? null,
+          aceitaFinanciamento: preferencia.aceitaFinanciamento ?? null,
+          aceitaPermuta: preferencia.aceitaPermuta ?? null,
+          notasPessoais: preferencia.notasPessoais || null,
+        }
+      : undefined;
 
-    const dadosCriacao: Record<string, unknown> = {
-      ...resto,
+    const dadosCriacao: Prisma.ClienteUncheckedCreateInput = {
+      usuarioId,
+      nomeCompleto: resto.nomeCompleto,
+      telefone: resto.telefone,
+      whatsapp: resto.whatsapp || null,
+      email: resto.email || null,
       documento: documento || null,
       dataNascimento:
         dataNascimento && !isNaN(new Date(`${dataNascimento}T00:00:00.000Z`).getTime())
           ? new Date(`${dataNascimento}T00:00:00.000Z`)
           : null,
+      estadoCivil: obterValorEnum(EstadoCivil, resto.estadoCivil),
+      temFilhos: resto.temFilhos,
+      profissao: resto.profissao || null,
+      rendaMensal: resto.rendaMensal,
+      cidadeAtual: resto.cidadeAtual || null,
+      origemLead: obterValorEnum(OrigemLead, resto.origemLead),
+      estagioJornada: obterValorEnum(EstagioJornada, resto.estagioJornada),
+      objetivoCompra: obterValorEnum(ObjetivoCompra, resto.objetivoCompra),
+      formaPagamento: obterValorEnum(FormaPagamento, resto.formaPagamento),
+      nivelUrgencia: obterValorEnum(NivelUrgencia, resto.nivelUrgencia),
+      prazoCompra: resto.prazoCompra || null,
+      budgetMaximo: resto.budgetMaximo,
+      preAprovacaoCredito: obterValorEnum(PreAprovacaoCredito, resto.preAprovacaoCredito),
       proximoContato:
         proximoContato && !isNaN(new Date(proximoContato).getTime())
           ? new Date(proximoContato)
           : null,
+      observacoes: resto.observacoes || null,
+      preferencia: dadosPreferencia ? { create: dadosPreferencia } : undefined,
     };
 
-    // Normaliza strings vazias para null
-    for (const chave of Object.keys(dadosCriacao)) {
-      if (dadosCriacao[chave] === "") dadosCriacao[chave] = null;
-    }
-
     const cliente = await prisma.cliente.create({
-      data: {
-        ...dadosCriacao,
-        usuarioId,
-        preferencia: preferencia ? { create: preferencia } : undefined,
-      } as never,
+      data: dadosCriacao,
     });
 
     return NextResponse.json(cliente, { status: 201 });

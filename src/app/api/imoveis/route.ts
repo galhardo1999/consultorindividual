@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { z } from "zod";
+import { FinalidadeImovel, Prisma, StatusImovel, TipoImovel } from "@prisma/client";
 
 // ─── Schema de validação completo ─────────────────────────────────────────────
 
@@ -213,6 +214,11 @@ const imovelSchema = z.object({
   fotos: z.array(z.string().url()).optional(),
 });
 
+const obterValorEnum = <T extends Record<string, string>>(opcoes: T, valor?: string) => {
+  if (!valor) return undefined;
+  return Object.values(opcoes).find((opcao) => opcao === valor) as T[keyof T] | undefined;
+};
+
 // ─── GET /api/imoveis ─────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
@@ -243,11 +249,14 @@ export async function GET(request: Request) {
   const pagina = Math.max(1, parseInt(searchParams.get("page") || "1"));
   const limite = Math.min(100, Math.max(1, parseInt(searchParams.get("limit") || "20")));
   const pular = (pagina - 1) * limite;
+  const tipoImovelValidado = obterValorEnum(TipoImovel, tipoImovel);
+  const finalidadeValidada = obterValorEnum(FinalidadeImovel, finalidade);
+  const statusValidado = obterValorEnum(StatusImovel, status);
 
   // Filtro de preço dinâmico por finalidade
-  const filtroPreco: Record<string, unknown> = {};
+  const filtroPreco: Prisma.ImovelWhereInput = {};
   if (precoMinimo !== undefined || precoMaximo !== undefined) {
-    const condicao: Record<string, number> = {};
+    const condicao: Prisma.FloatNullableFilter<"Imovel"> = {};
     if (precoMinimo !== undefined) condicao.gte = precoMinimo;
     if (precoMaximo !== undefined) condicao.lte = precoMaximo;
     filtroPreco.OR = [
@@ -257,7 +266,7 @@ export async function GET(request: Request) {
     ];
   }
 
-  const where = {
+  const where: Prisma.ImovelWhereInput = {
     usuarioId,
     arquivadoEm: status === "ARQUIVADO" ? { not: null } : status ? undefined : null,
     ...(busca && {
@@ -268,11 +277,11 @@ export async function GET(request: Request) {
         { codigoInterno: { contains: busca, mode: "insensitive" as const } },
       ],
     }),
-    ...(tipoImovel && { tipoImovel: tipoImovel as never }),
-    ...(finalidade && { finalidade: finalidade as never }),
+    ...(tipoImovelValidado && { tipoImovel: tipoImovelValidado }),
+    ...(finalidadeValidada && { finalidade: finalidadeValidada }),
     ...(cidade && { cidade: { contains: cidade, mode: "insensitive" as const } }),
     ...(bairro && { bairro: { contains: bairro, mode: "insensitive" as const } }),
-    ...(status && status !== "ARQUIVADO" && { status: status as never }),
+    ...(statusValidado && statusValidado !== StatusImovel.ARQUIVADO && { status: statusValidado }),
     ...(minQuartos && { quartos: { gte: minQuartos } }),
     ...(minVagas && { vagasGaragem: { gte: minVagas } }),
     ...(minArea && { areaUtil: { gte: minArea } }),
