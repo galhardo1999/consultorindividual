@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { Save, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { maskCurrency, parseCurrency, reaisParaInput } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
-import { UploadImagens } from "@/components/UploadImagens";
+import { GerenciadorFotos } from "@/components/GerenciadorFotos";
 import { criarImovel, atualizarImovel } from "../actions";
 import { FinalidadeImovel, Prisma, StatusImovel, TipoImovel, TopografiaTerreno, UrgenciaNegociacao } from "@prisma/client";
 import { PROPERTY_TYPES, PURPOSES, STATUSES, TOPOGRAPHY, URGENCY, TIPOS_NEGOCIO_INDICACAO_OPCOES } from "@/constants/options";
@@ -72,7 +72,7 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [fotos, setFotos] = useState<string[]>([]);
+  const [fotos, setFotos] = useState<string[]>(() => imovel?.fotos?.sort((a,b) => a.ordem - b.ordem).map(f => f.url) || []);
   const [imovelId] = useState(() => imovel?.id || crypto.randomUUID());
   const indicacaoInicial = imovel?.indicacaoParceiro as IndicacaoParceiroForm | null | undefined;
 
@@ -391,7 +391,8 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
         dadosEnvio.pocoArtesiano = form.pocoArtesiano;
     }
 
-    if (fotos.length > 0) {
+    // Sempre envia as fotos na edição para permitir exclusão e reordenação. Na criação, só se tiver.
+    if (imovel || fotos.length > 0) {
       dadosEnvio.fotos = fotos;
     }
 
@@ -421,7 +422,6 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
   const isTerreno = ["TERRENO", "AREA_RURAL"].includes(form.tipoImovel);
   const isComercial = ["SALA_COMERCIAL", "LOJA", "GALPAO", "PREDIO_COMERCIAL"].includes(form.tipoImovel);
   const isRural = ["CHACARA", "FAZENDA", "AREA_RURAL"].includes(form.tipoImovel);
-  const fotosSalvas = imovel?.fotos ?? [];
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -755,26 +755,11 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
       {/* Fotos */}
       <Section title="Fotos do Imóvel">
         <div className="mt-4">
-          {fotosSalvas.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-medium mb-3" style={{ color: "var(--color-surface-400)" }}>
-                Fotos Salvas ({fotosSalvas.length})
-              </h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-                {fotosSalvas.map((foto) => (
-                  <div key={foto.id} className="relative group rounded-md overflow-hidden aspect-square bg-gray-100 border border-gray-200" style={{ borderColor: "var(--color-surface-700)" }}>
-                    <img src={foto.url} alt="Foto salva" className="w-full h-full object-cover" />
-                    {foto.isCapa && (
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-1 font-medium">
-                        CAPA
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          <UploadImagens pasta={imovelId} onUpload={(urls) => setFotos(prev => [...prev, ...urls])} />
+          <GerenciadorFotos 
+            fotosIniciais={imovel?.fotos?.sort((a,b) => a.ordem - b.ordem).map(f => f.url) || []} 
+            pasta={imovelId} 
+            onChange={(novasFotos) => setFotos(novasFotos)} 
+          />
         </div>
       </Section>
 
@@ -817,7 +802,7 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
       </Section>
 
       {/* Indicação */}
-      <Section title="Parceiro Indicador" defaultOpen={Boolean(form.indicacaoParceiroId)}>
+      <Section title="Parceiro" defaultOpen={Boolean(form.indicacaoParceiroId)}>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
           <div className="form-group">
             <label className="label">Parceiro</label>

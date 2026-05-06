@@ -129,7 +129,7 @@ export default function ImovelDetailPage() {
 
   useEffect(() => {
     if (viewerIndex === null) return;
-    
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
         setViewerIndex(null);
@@ -145,7 +145,7 @@ export default function ImovelDetailPage() {
         });
       }
     };
-    
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [viewerIndex, imovel]);
@@ -276,7 +276,7 @@ export default function ImovelDetailPage() {
             {linkCopiado ? <Check size={16} className="text-green-400" /> : <Share2 size={16} />}
             {linkCopiado ? <span className="text-green-400">Link Copiado</span> : "Compartilhar"}
           </button>
-          
+
           <div className="relative">
             <button
               onClick={() => setMenuAberto(!menuAberto)}
@@ -285,23 +285,23 @@ export default function ImovelDetailPage() {
               <Settings size={16} />
               Opções
             </button>
-            
+
             {menuAberto && (
               <>
-                <div 
-                  className="fixed inset-0 z-40" 
+                <div
+                  className="fixed inset-0 z-40"
                   onClick={() => setMenuAberto(false)}
                 />
                 <div className="absolute right-0 mt-2 w-48 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 py-2">
-                  <Link 
-                    href={`/imoveis/${id}/editar`} 
+                  <Link
+                    href={`/imoveis/${id}/editar`}
                     className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
                   >
                     <Edit2 size={16} />
                     Editar Imóvel
                   </Link>
-                  <button 
-                    onClick={deleteProperty} 
+                  <button
+                    onClick={deleteProperty}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
                   >
                     <Trash2 size={16} />
@@ -332,7 +332,7 @@ export default function ImovelDetailPage() {
               <img src={imovel.fotos![0].url} alt={imovel.titulo} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-transparent pointer-events-none" />
             </div>
-            
+
             {/* Additional Photos */}
             {imovel.fotos!.length > 1 && (
               <div className="hidden md:grid grid-rows-2 gap-2 col-span-1 lg:col-span-1">
@@ -343,7 +343,7 @@ export default function ImovelDetailPage() {
                 ))}
               </div>
             )}
-            
+
             {/* Rightmost column for 4+ photos */}
             {imovel.fotos!.length > 3 && (
               <div className="hidden lg:grid grid-rows-2 gap-2 col-span-1">
@@ -369,7 +369,7 @@ export default function ImovelDetailPage() {
             <p className="text-surface-400 font-medium">Nenhuma foto cadastrada</p>
           </div>
         )}
-        
+
         {/* Status Badges Overlay */}
         <div className="absolute top-4 left-4 flex gap-2">
           <span className={`px-3 py-1 rounded-full text-xs font-bold border backdrop-blur-md shadow-lg ${STATUS_COLORS[imovel.status]}`}>
@@ -385,10 +385,10 @@ export default function ImovelDetailPage() {
 
       {/* Main Content Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        
+
         {/* Left Column (70%) - Property Details */}
         <div className="lg:col-span-2 space-y-8">
-          
+
           {/* Header Info */}
           <div className="hidden lg:block border-b border-surface-800 pb-6">
             <div className="flex items-center gap-2 text-brand-400 text-sm font-semibold tracking-wider uppercase mb-2">
@@ -429,7 +429,7 @@ export default function ImovelDetailPage() {
           {(imovel.destaques || attributes.length > 0) && (
             <div className="space-y-4">
               <h2 className="text-2xl font-bold text-surface-50">Destaques e Comodidades</h2>
-              
+
               {attributes.length > 0 && (
                 <div className="flex flex-wrap gap-3 mb-4">
                   {attributes.map(attr => (
@@ -455,7 +455,7 @@ export default function ImovelDetailPage() {
         {/* Right Column (30%) - Sticky Actions & Owner */}
         <div className="lg:col-span-1">
           <div className="sticky top-8 space-y-6">
-            
+
             {/* Price Card */}
             <div className="bg-surface-900 border border-surface-800 rounded-3xl p-6 shadow-xl">
               <div className="mb-6 pb-6 border-b border-surface-800">
@@ -491,7 +491,7 @@ export default function ImovelDetailPage() {
                     </div>
                   </div>
                 )}
-                
+
                 <div className="mt-4 space-y-2">
                   {imovel.valorCondominio && (
                     <div className="flex justify-between items-center text-surface-300 text-sm">
@@ -537,7 +537,7 @@ export default function ImovelDetailPage() {
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-surface-50 flex items-center gap-2">
                     <Handshake size={18} className="text-brand-400" />
-                    Indicação
+                    Parceiro
                   </h3>
                   <span className={`badge ${STATUS_INDICACAO_COLORS[imovel.indicacaoParceiro.status] || "badge-secondary"}`}>
                     {statusIndicacaoParceiroLabel(imovel.indicacaoParceiro.status)}
@@ -642,7 +642,7 @@ export default function ImovelDetailPage() {
                 </div>
               )}
             </div>
-            
+
           </div>
         </div>
       </div>
@@ -670,11 +670,11 @@ export default function ImovelDetailPage() {
             <button onClick={handlePrevImage} className="absolute left-4 z-20 p-3 rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/80 transition-all">
               <ChevronLeft size={36} />
             </button>
-            
+
             <div className="w-full h-full p-4 md:p-12 pb-24 md:pb-32 flex items-center justify-center z-10">
-              <img 
-                src={imovel.fotos[viewerIndex].url} 
-                alt="Visualização do imóvel" 
+              <img
+                src={imovel.fotos[viewerIndex].url}
+                alt="Visualização do imóvel"
                 className="max-w-full max-h-full object-contain"
               />
             </div>
@@ -687,7 +687,7 @@ export default function ImovelDetailPage() {
             <div className="absolute bottom-0 left-0 w-full text-center drop-shadow-md bg-gradient-to-t from-black/80 to-transparent pt-24 pb-6 pointer-events-none z-20">
               <h3 className="text-white font-semibold text-lg md:text-xl px-4">{imovel.titulo}</h3>
               <p className="text-white/80 text-sm md:text-base mt-1">
-                {imovel.finalidade === 'LOCACAO' ? 'Aluguel ' : imovel.finalidade === 'VENDA' ? 'Venda ' : 'Venda ou Locação '} 
+                {imovel.finalidade === 'LOCACAO' ? 'Aluguel ' : imovel.finalidade === 'VENDA' ? 'Venda ' : 'Venda ou Locação '}
                 <span className="font-bold text-white ml-1">
                   {imovel.finalidade === 'VENDA' ? (imovel.precoVenda > 0 ? formatCurrency(imovel.precoVenda) : 'Sob consulta') : (imovel.valorAluguel ? formatCurrency(imovel.valorAluguel) : 'Sob consulta')}
                 </span>
@@ -699,7 +699,7 @@ export default function ImovelDetailPage() {
           {imovel.fotos.length > 1 && (
             <div className="h-24 w-full bg-black flex items-center gap-2 px-4 overflow-x-auto shrink-0 pb-2 z-30">
               {imovel.fotos.map((foto, idx) => (
-                <button 
+                <button
                   key={foto.id}
                   onClick={() => setViewerIndex(idx)}
                   className={`h-16 w-24 shrink-0 overflow-hidden transition-all rounded ${viewerIndex === idx ? 'ring-2 ring-brand-500 opacity-100' : 'opacity-50 hover:opacity-100'}`}
