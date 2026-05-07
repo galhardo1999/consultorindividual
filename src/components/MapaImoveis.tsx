@@ -127,12 +127,12 @@ const normalizarUrlImagem = (url: string) => {
 };
 
 const corPorStatus: Record<string, string> = {
-  DISPONIVEL: "#22c55e",
-  RESERVADO: "#f59e0b",
-  VENDIDO: "#ef4444",
-  LOCADO: "#3b82f6",
+  DISPONIVEL: "#3b82f6",
+  RESERVADO: "#f0ca34ff",
+  VENDIDO: "#22c55e",
+  LOCADO: "#8c0f8fff",
   INDISPONIVEL: "#6b7280",
-  ARQUIVADO: "#6b7280",
+  ARQUIVADO: "#000000ff",
 };
 
 const criarIconeMarcador = (L: typeof import("leaflet"), imovel: ImovelMapa): DivIcon => {
