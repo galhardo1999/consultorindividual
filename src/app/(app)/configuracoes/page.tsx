@@ -6,7 +6,7 @@ import { Save, Loader2, User, Mail, Phone, Lock, Shield, CheckCircle2, Camera } 
 import { maskTelefone } from "@/lib/utils";
 import { getPerfil, atualizarPerfil, alterarSenha, atualizarAvatarUrl } from "./actions";
 
-export default function PerfilPage() {
+export default function ConfiguracoesPage() {
   const { update: updateSession } = useSession();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -118,7 +118,7 @@ export default function PerfilPage() {
     if (res.error) {
       showToast(res.error, "error");
     } else {
-      showToast("Perfil atualizado com sucesso", "success");
+      showToast("Configurações atualizadas com sucesso", "success");
       // Opcional: atualizar a sessão para refletir o novo nome no header imediatamente
       updateSession({ name: nome });
     }
@@ -152,7 +152,7 @@ export default function PerfilPage() {
   return (
     <div className="page relative">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-[var(--color-surface-50)]">Meu Perfil</h1>
+        <h1 className="text-2xl font-bold text-[var(--color-surface-50)]">Configurações</h1>
         <p className="text-[var(--color-surface-400)] text-sm mt-1">
           Gerencie suas informações pessoais e de segurança
         </p>

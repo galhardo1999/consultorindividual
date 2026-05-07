@@ -67,7 +67,7 @@ export function Header({ usuario }: HeaderProps) {
 
         {/* Avatar */}
         {usuario && (
-          <Link href="/perfil" className="ml-2">
+          <Link href="/configuracoes" className="ml-2">
             <div
               className="avatar cursor-pointer"
               style={{
@@ -76,7 +76,7 @@ export function Header({ usuario }: HeaderProps) {
                 fontSize: "0.8rem",
                 transition: "opacity 0.15s",
               }}
-              title={usuario.nome || "Perfil"}
+              title={usuario.nome || "Configurações"}
             >
               {usuario.image ? (
                 // eslint-disable-next-line @next/next/no-img-element

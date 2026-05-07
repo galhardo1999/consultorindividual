@@ -34,7 +34,7 @@ export async function atualizarPerfil(data: { nome: string; telefone?: string })
       },
     });
 
-    revalidatePath("/perfil");
+    revalidatePath("/configuracoes");
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar perfil:", error);
@@ -132,7 +132,7 @@ export async function atualizarAvatarUrl(url: string) {
       data: { avatarUrl: url },
     });
 
-    revalidatePath("/perfil");
+    revalidatePath("/configuracoes");
     return { success: true };
   } catch (error) {
     console.error("Erro ao atualizar avatar:", error);
