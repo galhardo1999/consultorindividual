@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 import {
   EstadoCivil,
@@ -264,6 +265,13 @@ export async function POST(request: Request) {
     const parsed = clienteSchema.safeParse(corpo);
     if (!parsed.success) {
       return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
+    }
+
+    if (parsed.data.documento) {
+      const duplicado = await isDocumentoDuplicado(parsed.data.documento, usuarioId, "CLIENTE");
+      if (duplicado) {
+        return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+      }
     }
 
     const { documento, dataNascimento, proximoContato, preferencia, ...resto } = parsed.data;

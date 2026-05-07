@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 import { Prisma, StatusProprietario, TipoPessoaProprietario } from "@prisma/client";
 
@@ -130,6 +131,13 @@ export async function POST(request: Request) {
       );
 
     const { email, ...resto } = parsed.data;
+
+    if (resto.documento) {
+      const duplicado = await isDocumentoDuplicado(resto.documento, session.user.id, "PROPRIETARIO");
+      if (duplicado) {
+        return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+      }
+    }
 
     const proprietario = await prisma.proprietario.create({
       data: { ...resto, email: email || undefined, usuarioId: session.user.id },

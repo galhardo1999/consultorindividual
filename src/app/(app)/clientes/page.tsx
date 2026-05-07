@@ -32,7 +32,6 @@ const JOURNEY_STAGES = [
 
 const URGENCY_LEVELS = ["ALTA", "MEDIA", "BAIXA", "SEM_URGENCIA"];
 const ESTADO_CIVIL = ["SOLTEIRO", "CASADO", "DIVORCIADO", "VIUVO", "UNIAO_ESTAVEL", "OUTRO"];
-const PRE_APROVACAO = ["SIM", "NAO", "EM_ANALISE"];
 const OBJETIVO_COMPRA = ["MORADIA_PROPRIA", "INVESTIMENTO", "LOCACAO", "VERANEIO", "OUTRO"];
 const FORMA_PAGAMENTO = ["FINANCIAMENTO", "PERMUTA", "VISTA", "MISTO", "A_DEFINIR"];
 const ORIGEM_LEAD = ["INDICACAO", "PORTAL_IMOBILIARIO", "REDES_SOCIAIS", "WHATSAPP", "SITE_PROPRIO", "CAPTACAO_ATIVA", "EVENTO", "OUTRO"];
@@ -43,21 +42,11 @@ const initialFilters = {
   status: "",
   estadoCivil: "",
   temFilhos: "",
-  profissao: "",
-  rendaMensalMin: "",
-  rendaMensalMax: "",
   budgetMaximoMin: "",
   budgetMaximoMax: "",
-  preAprovacaoCredito: "",
   objetivoCompra: "",
   formaPagamento: "",
-  prazoCompra: "",
   origemLead: "",
-  proximoContatoAtrasado: false,
-  criadoEmInicio: "",
-  criadoEmFim: "",
-  atualizadoEmInicio: "",
-  atualizadoEmFim: "",
 };
 
 type ValorFiltro = (typeof initialFilters)[keyof typeof initialFilters];
@@ -461,24 +450,11 @@ export default function ClientesPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="label">Profissão</label>
-                  <input type="text" className="input w-full" placeholder="Ex: Médico, Engenheiro..." value={tempFilters.profissao} onChange={(e) => updateTempFilter("profissao", e.target.value)} />
-                </div>
               </div>
 
               {/* Qualificação Financeira */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-[var(--color-brand-400)] uppercase tracking-wider pt-2 border-t border-[var(--color-surface-800)]">Qualificação Financeira</h3>
-                
-                <div>
-                  <label className="label">Renda Mensal</label>
-                  <div className="flex items-center gap-2">
-                    <input type="number" className="input w-full" placeholder="Mínimo" value={tempFilters.rendaMensalMin} onChange={(e) => updateTempFilter("rendaMensalMin", e.target.value)} />
-                    <span className="text-[var(--color-surface-500)]">-</span>
-                    <input type="number" className="input w-full" placeholder="Máximo" value={tempFilters.rendaMensalMax} onChange={(e) => updateTempFilter("rendaMensalMax", e.target.value)} />
-                  </div>
-                </div>
 
                 <div>
                   <label className="label">Budget Máximo (Orçamento)</label>
@@ -487,14 +463,6 @@ export default function ClientesPage() {
                     <span className="text-[var(--color-surface-500)]">-</span>
                     <input type="number" className="input w-full" placeholder="Máximo" value={tempFilters.budgetMaximoMax} onChange={(e) => updateTempFilter("budgetMaximoMax", e.target.value)} />
                   </div>
-                </div>
-
-                <div>
-                  <label className="label">Pré-aprovação de Crédito</label>
-                  <select className="select w-full" value={tempFilters.preAprovacaoCredito} onChange={(e) => updateTempFilter("preAprovacaoCredito", e.target.value)}>
-                    <option value="">Qualquer</option>
-                    {PRE_APROVACAO.map((s) => <option key={s} value={s}>{formatLabel(s)}</option>)}
-                  </select>
                 </div>
               </div>
 
@@ -519,54 +487,18 @@ export default function ClientesPage() {
                   </div>
                 </div>
 
-                <div>
-                  <label className="label">Prazo de Compra Estimado</label>
-                  <input type="text" className="input w-full" placeholder="Ex: 3 meses, Imediato..." value={tempFilters.prazoCompra} onChange={(e) => updateTempFilter("prazoCompra", e.target.value)} />
-                </div>
               </div>
 
               {/* Gestão Comercial */}
               <div className="space-y-4">
                 <h3 className="text-sm font-semibold text-[var(--color-brand-400)] uppercase tracking-wider pt-2 border-t border-[var(--color-surface-800)]">Gestão Comercial</h3>
-                
+
                 <div>
                   <label className="label">Origem do Lead</label>
                   <select className="select w-full" value={tempFilters.origemLead} onChange={(e) => updateTempFilter("origemLead", e.target.value)}>
                     <option value="">Todas</option>
                     {ORIGEM_LEAD.map((s) => <option key={s} value={s}>{formatLabel(s)}</option>)}
                   </select>
-                </div>
-
-                <label className="flex items-center gap-3 p-3 bg-[var(--color-surface-800)] rounded-md cursor-pointer border border-[var(--color-surface-700)] hover:border-[var(--color-surface-600)] transition-colors">
-                  <input 
-                    type="checkbox" 
-                    className="h-4 w-4 rounded border-[var(--color-surface-500)] text-[var(--color-brand-500)] focus:ring-[var(--color-brand-500)] bg-[var(--color-surface-900)]" 
-                    checked={tempFilters.proximoContatoAtrasado}
-                    onChange={(e) => updateTempFilter("proximoContatoAtrasado", e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-[var(--color-surface-100)]">Apenas contatos atrasados</span>
-                </label>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Criado Entre (Início)</label>
-                    <input type="date" className="input w-full" value={tempFilters.criadoEmInicio} onChange={(e) => updateTempFilter("criadoEmInicio", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Criado Entre (Fim)</label>
-                    <input type="date" className="input w-full" value={tempFilters.criadoEmFim} onChange={(e) => updateTempFilter("criadoEmFim", e.target.value)} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Atualizado Entre (Início)</label>
-                    <input type="date" className="input w-full" value={tempFilters.atualizadoEmInicio} onChange={(e) => updateTempFilter("atualizadoEmInicio", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Atualizado Entre (Fim)</label>
-                    <input type="date" className="input w-full" value={tempFilters.atualizadoEmFim} onChange={(e) => updateTempFilter("atualizadoEmFim", e.target.value)} />
-                  </div>
                 </div>
 
               </div>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 
 type ContextoRota = { params: Promise<{ id: string }> };
@@ -103,6 +104,13 @@ export async function PATCH(requisicao: Request, { params }: ContextoRota) {
     if (!existente) return naoEncontrado();
 
     const { email, ...dadosParceiro } = parsed.data;
+
+    if (dadosParceiro.documento) {
+      const duplicado = await isDocumentoDuplicado(dadosParceiro.documento, sessao.user.id, "PARCEIRO", id);
+      if (duplicado) {
+        return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+      }
+    }
 
     const parceiro = await prisma.parceiro.update({
       where: { id, usuarioId: sessao.user.id },

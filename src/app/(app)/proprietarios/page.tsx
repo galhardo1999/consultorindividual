@@ -42,9 +42,6 @@ const initialFilters = {
   tipoPessoa: "",
   cidade: "",
   estado: "",
-  comImoveis: false,
-  criadoEmInicio: "",
-  criadoEmFim: "",
 };
 
 export default function ProprietariosPage() {
@@ -404,35 +401,6 @@ export default function ProprietariosPage() {
                   <div>
                     <label className="label">Estado (UF)</label>
                     <input type="text" className="input w-full" placeholder="Ex: SP" maxLength={2} value={tempFilters.estado} onChange={(e) => updateTempFilter("estado", e.target.value.toUpperCase())} />
-                  </div>
-                </div>
-              </div>
-
-              {/* Portfólio */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-[var(--color-brand-400)] uppercase tracking-wider pt-2 border-t border-[var(--color-surface-800)]">Portfólio</h3>
-                <label className="flex items-center gap-3 p-3 bg-[var(--color-surface-800)] rounded-md cursor-pointer border border-[var(--color-surface-700)] hover:border-[var(--color-surface-600)] transition-colors">
-                  <input
-                    type="checkbox"
-                    className="h-4 w-4 rounded"
-                    checked={tempFilters.comImoveis}
-                    onChange={(e) => updateTempFilter("comImoveis", e.target.checked)}
-                  />
-                  <span className="text-sm font-medium text-[var(--color-surface-100)]">Apenas com imóveis cadastrados</span>
-                </label>
-              </div>
-
-              {/* Período de cadastro */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-[var(--color-brand-400)] uppercase tracking-wider pt-2 border-t border-[var(--color-surface-800)]">Período de Cadastro</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Criado Entre (Início)</label>
-                    <input type="date" className="input w-full" value={tempFilters.criadoEmInicio} onChange={(e) => updateTempFilter("criadoEmInicio", e.target.value)} />
-                  </div>
-                  <div>
-                    <label className="label">Criado Entre (Fim)</label>
-                    <input type="date" className="input w-full" value={tempFilters.criadoEmFim} onChange={(e) => updateTempFilter("criadoEmFim", e.target.value)} />
                   </div>
                 </div>
               </div>

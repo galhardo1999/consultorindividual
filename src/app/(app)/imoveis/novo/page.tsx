@@ -4,9 +4,12 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/lib/auth";
 import { NovoImovelForm } from "./NovoImovelForm";
 
-export default async function NovoImovelPage() {
+export default async function NovoImovelPage({ searchParams }: { searchParams: Promise<{ cloneId?: string }> }) {
   const sessao = await auth();
   if (!sessao?.user?.id) return null;
+
+  const params = await searchParams;
+  let imovelParaClonar: any = undefined;
 
   const [proprietarios, parceiros] = await Promise.all([
     prisma.proprietario.findMany({
@@ -25,6 +28,16 @@ export default async function NovoImovelPage() {
       },
       orderBy: { nome: "asc" },
     }),
+    ...(params.cloneId ? [
+      prisma.imovel.findUnique({
+        where: { id: params.cloneId, usuarioId: sessao.user.id },
+        include: { fotos: true, indicacaoParceiro: true },
+      }).then(imovel => {
+        if (imovel) {
+          imovelParaClonar = { ...imovel, codigoInterno: null }; // Evitar duplicar código interno
+        }
+      })
+    ] : [])
   ]);
 
   return (
@@ -34,14 +47,21 @@ export default async function NovoImovelPage() {
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>Novo Imóvel</h1>
+          <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>
+            {imovelParaClonar ? "Clonar Imóvel" : "Novo Imóvel"}
+          </h1>
           <p style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
-            Preencha os dados do imóvel
+            {imovelParaClonar ? "Revise e edite os dados do imóvel clonado" : "Preencha os dados do imóvel"}
           </p>
         </div>
       </div>
 
-      <NovoImovelForm proprietarios={proprietarios} parceiros={parceiros} />
+      <NovoImovelForm 
+        proprietarios={proprietarios} 
+        parceiros={parceiros} 
+        imovel={imovelParaClonar} 
+        isClone={!!imovelParaClonar} 
+      />
     </div>
   );
 }

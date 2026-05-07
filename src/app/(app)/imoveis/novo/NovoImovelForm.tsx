@@ -43,6 +43,7 @@ interface NovoImovelFormProps {
   proprietarios: Proprietario[];
   parceiros: Parceiro[];
   imovel?: ImovelFormulario;
+  isClone?: boolean;
 }
 
 const Section = ({ title, children, defaultOpen = true }: { title: string, children: React.ReactNode, defaultOpen?: boolean }) => {
@@ -80,7 +81,7 @@ const validarCoordenada = (valor: string, campo: string, minimo: number, maximo:
   return { valor: numero };
 };
 
-export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelFormProps) => {
+export const NovoImovelForm = ({ proprietarios, parceiros, imovel, isClone }: NovoImovelFormProps) => {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -433,7 +434,7 @@ export const NovoImovelForm = ({ proprietarios, parceiros, imovel }: NovoImovelF
     }
 
     let res;
-    if (imovel) {
+    if (imovel && !isClone) {
       res = await atualizarImovel(imovel.id, dadosEnvio);
     } else {
       res = await criarImovel(dadosEnvio);

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { TipoImovel } from "@prisma/client";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 
 const campoOpcional = z.string().optional().nullable();
@@ -123,6 +124,13 @@ export async function PATCH(req: Request, { params }: { params: Promise<{ id: st
     const body = await req.json();
     const parsed = updateSchema.safeParse(body);
     if (!parsed.success) return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
+
+    if (parsed.data.documento) {
+      const duplicado = await isDocumentoDuplicado(parsed.data.documento, session.user.id, "CLIENTE", id);
+      if (duplicado) {
+        return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+      }
+    }
 
     const { dataNascimento, proximoContato, preferencia, ...rest } = parsed.data;
     const dataToUpdate: Record<string, unknown> = { ...rest };

@@ -7,7 +7,7 @@ import {
   ArrowLeft, Edit2, Phone, Mail, MapPin, Calendar, Star, MessageSquare,
   Home, Plus, Trash2, Loader2, Clock, CheckCircle2, X, Save, Sparkles, TrendingUp, Bed,
   Activity, Target, AlertCircle, Bath, Car, Maximize, MessageCircle,
-  CreditCard, DollarSign, Users, Wallet, Search
+  CreditCard, DollarSign, Users, Wallet, Search, Settings, Share2
 } from "lucide-react";
 import {
   journeyStageLabel, journeyStageColor, formatDate,
@@ -105,6 +105,7 @@ export default function ClienteDetailPage() {
   const router = useRouter();
   const [cliente, setClient] = useState<ClientDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuAberto, setMenuAberto] = useState(false);
   const [activeTab, setActiveTab] = useState<"timeline" | "imoveis" | "oportunidades">("timeline");
   const [opportunities, setOpportunities] = useState<{
     id: string;
@@ -130,6 +131,7 @@ export default function ClienteDetailPage() {
     dataInteracao: new Date().toISOString().slice(0, 16),
     proximoFollowUp: "",
   });
+  const [editingInteractionId, setEditingInteractionId] = useState<string | null>(null);
 
   const [showInterestModal, setShowInterestModal] = useState(false);
   const [imoveis, setProperties] = useState<{ id: string, titulo: string, codigoInterno: string | null }[]>([]);
@@ -175,6 +177,59 @@ export default function ClienteDetailPage() {
       proximoFollowUp: "",
     });
     await loadClient();
+  }
+
+  async function updateInteraction() {
+    if (!editingInteractionId) return;
+    setSaving(true);
+    await fetch(`/api/interacoes/${editingInteractionId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newInteraction),
+    });
+    setSaving(false);
+    setShowInteractionModal(false);
+    setEditingInteractionId(null);
+    setNewInteraction({
+      tipoInteracao: "LIGACAO",
+      titulo: "",
+      descricao: "",
+      dataInteracao: new Date().toISOString().slice(0, 16),
+      proximoFollowUp: "",
+    });
+    await loadClient();
+  }
+
+  async function deleteInteraction(interactionId: string) {
+    if (!confirm("Tem certeza que deseja excluir esta interação?")) return;
+    setSaving(true);
+    await fetch(`/api/interacoes/${interactionId}`, { method: "DELETE" });
+    setSaving(false);
+    await loadClient();
+  }
+
+  function openEditInteraction(interacao: any) {
+    setEditingInteractionId(interacao.id);
+    setNewInteraction({
+      tipoInteracao: interacao.tipoInteracao,
+      titulo: interacao.titulo,
+      descricao: interacao.descricao || "",
+      dataInteracao: new Date(interacao.dataInteracao).toISOString().slice(0, 16),
+      proximoFollowUp: interacao.proximoFollowUp ? new Date(interacao.proximoFollowUp).toISOString().slice(0, 16) : "",
+    });
+    setShowInteractionModal(true);
+  }
+
+  function openAddInteraction() {
+    setEditingInteractionId(null);
+    setNewInteraction({
+      tipoInteracao: "LIGACAO",
+      titulo: "",
+      descricao: "",
+      dataInteracao: new Date().toISOString().slice(0, 16),
+      proximoFollowUp: "",
+    });
+    setShowInteractionModal(true);
   }
 
   async function deleteClient() {
@@ -244,15 +299,46 @@ export default function ClienteDetailPage() {
           </Link>
           <h1 className="text-2xl font-bold text-surface-50">Detalhes do Cliente</h1>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href={`/clientes/${id}/editar`} className="btn btn-secondary">
-            <Edit2 size={16} />
-            <span className="hidden sm:inline">Editar Cliente</span>
-          </Link>
-          <button className="btn btn-danger" onClick={deleteClient}>
-            <Trash2 size={16} />
-            <span className="hidden sm:inline">Excluir</span>
+        <div className="flex items-center gap-2 relative">
+          <button
+            onClick={() => setMenuAberto(!menuAberto)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-800 text-surface-200 hover:text-white hover:bg-surface-700 transition-colors border border-surface-700"
+          >
+            <Settings size={16} />
+            Opções
           </button>
+
+          {menuAberto && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setMenuAberto(false)}
+              />
+              <div className="absolute right-0 top-full mt-2 w-48 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 py-2">
+                <Link
+                  href={`/clientes/${id}/editar`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                >
+                  <Edit2 size={16} />
+                  Editar Cliente
+                </Link>
+                <Link
+                  href={`/clientes/novo?cloneId=${id}`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                >
+                  <Share2 size={16} className="rotate-90" />
+                  Clonar Cliente
+                </Link>
+                <button
+                  onClick={deleteClient}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
+                >
+                  <Trash2 size={16} />
+                  Excluir
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -551,7 +637,7 @@ export default function ClienteDetailPage() {
                   <h2 className="text-lg font-bold text-surface-50 flex items-center gap-2">
                     <Clock size={18} className="text-brand-400" /> Histórico de Interações
                   </h2>
-                  <button className="btn btn-primary btn-sm" onClick={() => setShowInteractionModal(true)}>
+                  <button className="btn btn-primary btn-sm" onClick={openAddInteraction}>
                     <Plus size={14} /> Registrar
                   </button>
                 </div>
@@ -563,7 +649,7 @@ export default function ClienteDetailPage() {
                     </div>
                     <p className="text-surface-100 font-medium mb-1">Nenhuma interação registrada</p>
                     <p className="text-sm text-surface-400 max-w-sm mb-6">Mantenha o histórico atualizado para um melhor acompanhamento deste cliente.</p>
-                    <button className="btn btn-primary" onClick={() => setShowInteractionModal(true)}>
+                    <button className="btn btn-primary" onClick={openAddInteraction}>
                       <Plus size={16} /> Registrar primeira interação
                     </button>
                   </div>
@@ -573,37 +659,52 @@ export default function ClienteDetailPage() {
                       const Icon = interactionIcons[interacao.tipoInteracao] || interactionIcons.DEFAULT;
                       return (
                         <div key={interacao.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active mb-8">
-                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-surface-950 bg-surface-800 text-brand-400 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10">
+                          <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-surface-950 bg-surface-800 text-brand-400 shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 shadow-sm z-10 transition-transform group-hover:scale-110">
                             <Icon size={16} />
                           </div>
-                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] card p-4 hover:border-brand-500/50 transition-colors">
-                            <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] card p-0 hover:border-brand-500/50 transition-colors overflow-hidden">
+                            <div className="p-4 bg-surface-800/40 border-b border-surface-700/50 flex items-start justify-between gap-2">
                               <div>
-                                <span className="inline-block px-2 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wider bg-surface-900 text-surface-300 border border-surface-700 mb-2">
-                                  {interactionTypeLabel(interacao.tipoInteracao)}
-                                </span>
-                                <h4 className="text-sm font-semibold text-surface-100">{interacao.titulo}</h4>
+                                <div className="flex items-center gap-2 mb-1.5">
+                                  <span className="inline-block px-2 py-0.5 rounded text-[0.65rem] font-bold uppercase tracking-wider bg-surface-900 text-brand-300 border border-brand-500/30">
+                                    {interactionTypeLabel(interacao.tipoInteracao)}
+                                  </span>
+                                  <time className="text-xs text-surface-400 whitespace-nowrap">{formatDateTime(interacao.dataInteracao)}</time>
+                                </div>
+                                <h4 className="text-sm font-semibold text-surface-50">{interacao.titulo}</h4>
                               </div>
-                              <time className="text-xs text-surface-400 whitespace-nowrap">{formatDateTime(interacao.dataInteracao)}</time>
+                              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button className="btn btn-ghost btn-icon w-8 h-8" onClick={() => openEditInteraction(interacao)}>
+                                  <Edit2 size={14} className="text-surface-400 hover:text-brand-400" />
+                                </button>
+                                <button className="btn btn-ghost btn-icon w-8 h-8" onClick={() => deleteInteraction(interacao.id)}>
+                                  <Trash2 size={14} className="text-surface-400 hover:text-danger-400" />
+                                </button>
+                              </div>
                             </div>
-                            {interacao.descricao && (
-                              <p className="text-sm text-surface-300 mt-2 bg-surface-900/50 p-3 rounded-lg border border-surface-700/50">
-                                {interacao.descricao}
-                              </p>
-                            )}
-                            {(interacao.proximoFollowUp || interacao.imovel) && (
-                              <div className="flex flex-wrap gap-3 mt-3 pt-3 border-t border-surface-700/50">
-                                {interacao.proximoFollowUp && (
-                                  <div className="flex items-center gap-1.5 text-xs text-amber-400 bg-amber-400/10 px-2 py-1 rounded-md">
-                                    <AlertCircle size={12} />
-                                    Follow-up: {formatDate(interacao.proximoFollowUp)}
-                                  </div>
+                            
+                            {(interacao.descricao || interacao.proximoFollowUp || interacao.imovel) && (
+                              <div className="p-4 bg-surface-900/20">
+                                {interacao.descricao && (
+                                  <p className="text-sm text-surface-300 whitespace-pre-wrap leading-relaxed">
+                                    {interacao.descricao}
+                                  </p>
                                 )}
-                                {interacao.imovel && (
-                                  <Link href={`/imoveis/${interacao.imovel.id}`} className="flex items-center gap-1.5 text-xs text-brand-400 bg-brand-400/10 px-2 py-1 rounded-md hover:bg-brand-400/20 transition-colors">
-                                    <Home size={12} />
-                                    {interacao.imovel.titulo}
-                                  </Link>
+                                {(interacao.proximoFollowUp || interacao.imovel) && (
+                                  <div className={`flex flex-wrap gap-3 ${interacao.descricao ? "mt-4 pt-4 border-t border-surface-700/50" : ""}`}>
+                                    {interacao.proximoFollowUp && (
+                                      <div className="flex items-center gap-1.5 text-xs font-medium text-amber-400 bg-amber-400/10 border border-amber-400/20 px-2.5 py-1.5 rounded-md">
+                                        <AlertCircle size={14} />
+                                        Follow-up: {formatDate(interacao.proximoFollowUp)}
+                                      </div>
+                                    )}
+                                    {interacao.imovel && (
+                                      <Link href={`/imoveis/${interacao.imovel.id}`} className="flex items-center gap-1.5 text-xs font-medium text-brand-300 bg-brand-500/10 border border-brand-500/20 px-2.5 py-1.5 rounded-md hover:bg-brand-500/20 transition-colors">
+                                        <Home size={14} />
+                                        {interacao.imovel.titulo}
+                                      </Link>
+                                    )}
+                                  </div>
                                 )}
                               </div>
                             )}
@@ -845,7 +946,7 @@ export default function ClienteDetailPage() {
         <div className="modal-overlay" onClick={() => setShowInteractionModal(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 className="font-semibold text-surface-50">Registrar Interação</h3>
+              <h3 className="font-semibold text-surface-50">{editingInteractionId ? "Editar Interação" : "Registrar Interação"}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setShowInteractionModal(false)}>
                 <X size={18} />
               </button>
@@ -888,7 +989,7 @@ export default function ClienteDetailPage() {
             </div>
             <div className="modal-footer">
               <button className="btn btn-secondary" onClick={() => setShowInteractionModal(false)}>Cancelar</button>
-              <button className="btn btn-primary" onClick={addInteraction} disabled={saving || !newInteraction.titulo}>
+              <button className="btn btn-primary" onClick={editingInteractionId ? updateInteraction : addInteraction} disabled={saving || !newInteraction.titulo}>
                 {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
                 Salvar
               </button>

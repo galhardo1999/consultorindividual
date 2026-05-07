@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
@@ -89,6 +90,13 @@ export async function PATCH(req: Request, { params }: ContextoRota) {
     return NextResponse.json({ error: "Dados inválidos", details: parsed.error.flatten() }, { status: 400 });
 
   const { email, ...resto } = parsed.data;
+
+  if (resto.documento) {
+    const duplicado = await isDocumentoDuplicado(resto.documento, session.user.id, "PROPRIETARIO", id);
+    if (duplicado) {
+      return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+    }
+  }
 
   try {
     const proprietario = await prisma.proprietario.update({

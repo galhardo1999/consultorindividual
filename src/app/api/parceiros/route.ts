@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { Prisma, StatusIndicacaoParceiro, StatusParceiro, TipoParceiro } from "@prisma/client";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isDocumentoDuplicado } from "@/lib/documentValidation";
 import { z } from "zod";
 
 const parceiroSchema = z.object({
@@ -202,6 +203,13 @@ export async function POST(requisicao: Request) {
     }
 
     const { email, ...dadosParceiro } = parsed.data;
+
+    if (dadosParceiro.documento) {
+      const duplicado = await isDocumentoDuplicado(dadosParceiro.documento, sessao.user.id, "PARCEIRO");
+      if (duplicado) {
+        return NextResponse.json({ error: "Já existe um cadastro com este CPF/CNPJ." }, { status: 400 });
+      }
+    }
 
     const parceiro = await prisma.parceiro.create({
       data: {

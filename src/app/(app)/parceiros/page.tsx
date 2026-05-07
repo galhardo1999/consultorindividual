@@ -43,10 +43,6 @@ const filtrosIniciais = {
   comissaoPercentualMax: "",
   comissaoValorFixoMin: "",
   comissaoValorFixoMax: "",
-  criadoEmInicio: "",
-  criadoEmFim: "",
-  atualizadoEmInicio: "",
-  atualizadoEmFim: "",
 };
 
 const percentualComissaoLabel = (parceiro: Parceiro) => {
@@ -236,7 +232,7 @@ export default function ParceirosPage() {
                     <th className="p-4 font-medium text-center">Indicações</th>
                     <th className="p-4 font-medium">% de Comissão</th>
                     <th className="p-4 font-medium text-right">Comissões Pendentes</th>
-                    <th className="p-4 font-medium text-right">Comissões Recebidas</th>
+                    <th className="p-4 font-medium text-right">Comissões Pagas</th>
                     <th className="p-4 font-medium text-right">Ações</th>
                   </tr>
                 </thead>
@@ -514,50 +510,6 @@ export default function ParceirosPage() {
                       placeholder="Máximo"
                       value={filtrosTemporarios.comissaoValorFixoMax}
                       onChange={(evento) => atualizarFiltroTemporario("comissaoValorFixoMax", evento.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <h3 className="text-sm font-semibold text-[var(--color-brand-400)] uppercase tracking-wider pt-2 border-t border-[var(--color-surface-800)]">Períodos</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Criado Entre (Início)</label>
-                    <input
-                      type="date"
-                      className="input w-full"
-                      value={filtrosTemporarios.criadoEmInicio}
-                      onChange={(evento) => atualizarFiltroTemporario("criadoEmInicio", evento.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Criado Entre (Fim)</label>
-                    <input
-                      type="date"
-                      className="input w-full"
-                      value={filtrosTemporarios.criadoEmFim}
-                      onChange={(evento) => atualizarFiltroTemporario("criadoEmFim", evento.target.value)}
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Atualizado Entre (Início)</label>
-                    <input
-                      type="date"
-                      className="input w-full"
-                      value={filtrosTemporarios.atualizadoEmInicio}
-                      onChange={(evento) => atualizarFiltroTemporario("atualizadoEmInicio", evento.target.value)}
-                    />
-                  </div>
-                  <div>
-                    <label className="label">Atualizado Entre (Fim)</label>
-                    <input
-                      type="date"
-                      className="input w-full"
-                      value={filtrosTemporarios.atualizadoEmFim}
-                      onChange={(evento) => atualizarFiltroTemporario("atualizadoEmFim", evento.target.value)}
                     />
                   </div>
                 </div>

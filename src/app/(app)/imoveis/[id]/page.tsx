@@ -301,6 +301,13 @@ export default function ImovelDetailPage() {
                     <Edit2 size={16} />
                     Editar Imóvel
                   </Link>
+                  <Link
+                    href={`/imoveis/novo?cloneId=${id}`}
+                    className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                  >
+                    <Share2 size={16} className="rotate-90" />
+                    Clonar Imóvel
+                  </Link>
                   <button
                     onClick={deleteProperty}
                     className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { maskTelefone, maskCPF } from "@/lib/utils";
@@ -18,8 +18,10 @@ import {
   PRE_APROVACAO 
 } from "@/constants/options";
 
-export default function NovoClientePage() {
+function NovoClienteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const cloneId = searchParams.get("cloneId");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"basic" | "journey" | "profile">("basic");
@@ -58,6 +60,52 @@ export default function NovoClientePage() {
     aceitaPermuta: false,
     notasPessoais: "",
   });
+
+  useEffect(() => {
+    if (cloneId) {
+      setLoading(true);
+      fetch(`/api/clientes/${cloneId}`)
+        .then(res => res.json())
+        .then(data => {
+          if (data && !data.error) {
+            setForm({
+              nomeCompleto: data.nomeCompleto + " (Cópia)",
+              telefone: data.telefone,
+              whatsapp: data.whatsapp || "",
+              email: data.email || "",
+              document: data.documento || "",
+              dataNascimento: data.dataNascimento ? data.dataNascimento.split('T')[0] : "",
+              estadoCivil: data.estadoCivil || "",
+              temFilhos: data.temFilhos === true ? "true" : data.temFilhos === false ? "false" : "",
+              cidadeAtual: data.cidadeAtual || "",
+              origemLead: data.origemLead || "INDICACAO",
+              estagioJornada: data.estagioJornada || "NOVO_LEAD",
+              formaPagamento: data.formaPagamento || "",
+              nivelUrgencia: data.nivelUrgencia || "MEDIA",
+              prazoCompra: data.prazoCompra || "",
+              preAprovacaoCredito: data.preAprovacaoCredito || "NAO",
+              objetivoCompra: data.objetivoCompra || "",
+              tipoImovel: data.preferencia?.tipoImovel || "",
+              budgetMaximo: data.budgetMaximo ? (data.budgetMaximo * 100).toString() : "",
+              precoMinimo: data.preferencia?.precoMinimo ? (data.preferencia?.precoMinimo * 100).toString() : "",
+              precoMaximo: data.preferencia?.precoMaximo ? (data.preferencia?.precoMaximo * 100).toString() : "",
+              cidadeInteresse: data.preferencia?.cidadeInteresse || "",
+              bairrosInteresse: data.preferencia?.bairrosInteresse || "",
+              minQuartos: data.preferencia?.minQuartos?.toString() || "",
+              minBanheiros: data.preferencia?.minBanheiros?.toString() || "",
+              minVagas: data.preferencia?.minVagas?.toString() || "",
+              areaMinima: data.preferencia?.areaMinima?.toString() || "",
+              areaMaxima: data.preferencia?.areaMaxima?.toString() || "",
+              aceitaFinanciamento: data.preferencia?.aceitaFinanciamento || false,
+              aceitaPermuta: data.preferencia?.aceitaPermuta || false,
+              notasPessoais: data.preferencia?.notasPessoais || "",
+            });
+          }
+        })
+        .catch(() => setError("Erro ao carregar dados para clonagem"))
+        .finally(() => setLoading(false));
+    }
+  }, [cloneId]);
 
   function update(campo: string, valor: string | boolean) {
     setForm((f) => ({ ...f, [campo]: valor }));
@@ -172,10 +220,10 @@ export default function NovoClientePage() {
         </Link>
         <div>
           <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>
-            Novo Cliente
+            {cloneId ? "Clonar Cliente" : "Novo Cliente"}
           </h1>
           <p style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
-            Preencha as informações do novo cliente
+            {cloneId ? "Revise e edite as informações do cliente clonado" : "Preencha as informações do novo cliente"}
           </p>
         </div>
       </div>
@@ -537,5 +585,13 @@ export default function NovoClientePage() {
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NovoClientePage() {
+  return (
+    <Suspense fallback={<div className="page flex justify-center py-12"><Loader2 size={32} className="animate-spin text-brand-500" /></div>}>
+      <NovoClienteContent />
+    </Suspense>
   );
 }
