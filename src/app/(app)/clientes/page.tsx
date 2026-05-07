@@ -71,7 +71,7 @@ export default function ClientesPage() {
 
       // Append all applied filters
       Object.entries(appliedFilters).forEach(([key, value]) => {
-        if (value !== "" && value !== false) {
+        if (value !== "") {
           params.set(key, String(value));
         }
       });
@@ -95,7 +95,7 @@ export default function ClientesPage() {
     return () => clearTimeout(t);
   }, [fetchClients]);
 
-  const activeFiltersCount = Object.values(appliedFilters).filter(v => v !== "" && v !== false).length;
+  const activeFiltersCount = Object.values(appliedFilters).filter(v => v !== "").length;
   const hasFilters = search !== "" || activeFiltersCount > 0;
 
   function handleOpenFilters() {

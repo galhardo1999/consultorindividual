@@ -61,7 +61,7 @@ export default function ProprietariosPage() {
       if (busca) params.set("search", busca);
       params.set("page", String(pagina));
       Object.entries(appliedFilters).forEach(([chave, valor]) => {
-        if (valor !== "" && valor !== false) params.set(chave, String(valor));
+        if (valor !== "") params.set(chave, String(valor));
       });
       const res = await fetch(`/api/proprietarios?${params}`);
       if (!res.ok) throw new Error("Falha ao buscar proprietários");
@@ -82,7 +82,7 @@ export default function ProprietariosPage() {
     return () => clearTimeout(t);
   }, [fetchProprietarios]);
 
-  const activeFiltersCount = Object.values(appliedFilters).filter((v) => v !== "" && v !== false).length;
+  const activeFiltersCount = Object.values(appliedFilters).filter((v) => v !== "").length;
   const hasFilters = busca !== "" || activeFiltersCount > 0;
 
   function handleOpenFilters() {
