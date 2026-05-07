@@ -15,32 +15,32 @@ model Usuario {
   id           String   @id @default(cuid())
   nome         String
   email        String   @unique
-  senhaHash    String?  // Null para usuários que só usam OAuth (Google, etc.)
+  senhaHash    String? // Null para usuários que só usam OAuth (Google, etc.)
   telefone     String?
   avatarUrl    String?
   ativo        Boolean  @default(true)
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  clientes               Cliente[]
-  imoveis                Imovel[]
-  interacoes             Interacao[]
-  etiquetas              Etiqueta[]
-  proprietarios          Proprietario[]
-  parceiros              Parceiro[]
-  indicacoesParceiro     IndicacaoParceiro[]
-  tokensRecuperacao      TokenRecuperacaoSenha[]
-  contasOAuth            ContaOAuth[]
+  clientes           Cliente[]
+  imoveis            Imovel[]
+  interacoes         Interacao[]
+  etiquetas          Etiqueta[]
+  proprietarios      Proprietario[]
+  parceiros          Parceiro[]
+  indicacoesParceiro IndicacaoParceiro[]
+  tokensRecuperacao  TokenRecuperacaoSenha[]
+  contasOAuth        ContaOAuth[]
 
   @@map("usuarios")
 }
 
 model ContaOAuth {
-  id          String   @id @default(cuid())
-  usuarioId   String
-  provedor    String   // "google", "github", etc.
-  provedorId  String   // ID do usuário no sistema do provedor
-  criadoEm    DateTime @default(now())
+  id         String   @id @default(cuid())
+  usuarioId  String
+  provedor   String // "google", "github", etc.
+  provedorId String // ID do usuário no sistema do provedor
+  criadoEm   DateTime @default(now())
 
   usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 
@@ -65,7 +65,7 @@ model TokenRecuperacaoSenha {
 }
 
 model Cliente {
-  id                  String    @id @default(cuid())
+  id                  String              @id @default(cuid())
   usuarioId           String
   nomeCompleto        String
   email               String?
@@ -78,22 +78,28 @@ model Cliente {
   profissao           String?
   rendaMensal         Float?
   cidadeAtual         String?
-  origemLead          OrigemLead @default(INDICACAO)
-  status              StatusCliente @default(ATIVO)
-  estagioJornada      EstagioJornada @default(NOVO_LEAD)
+  cidade              String?
+  estado              String?
+  endereco            String?
+  numero              String?
+  bairro              String?
+  cep                 String?
+  origemLead          OrigemLead          @default(INDICACAO)
+  status              StatusCliente       @default(ATIVO)
+  estagioJornada      EstagioJornada      @default(NOVO_LEAD)
   objetivoCompra      ObjetivoCompra?
   formaPagamento      FormaPagamento?
-  nivelUrgencia       NivelUrgencia @default(MEDIA)
+  nivelUrgencia       NivelUrgencia       @default(MEDIA)
   prazoCompra         String?
   budgetMaximo        Float?
   preAprovacaoCredito PreAprovacaoCredito @default(NAO)
   proximoContato      DateTime?
   observacoes         String?
   arquivadoEm         DateTime?
-  criadoEm            DateTime  @default(now())
-  atualizadoEm        DateTime  @updatedAt
+  criadoEm            DateTime            @default(now())
+  atualizadoEm        DateTime            @updatedAt
 
-  usuario          Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario          Usuario                  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   preferencia      PreferenciaCliente?
   interesses       InteresseClienteImovel[]
   interacoes       Interacao[]
@@ -102,32 +108,33 @@ model Cliente {
   @@index([usuarioId, estagioJornada])
   @@index([usuarioId, nivelUrgencia, arquivadoEm])
   @@index([usuarioId, status, arquivadoEm])
+  @@index([usuarioId, documento])
   @@map("clientes")
 }
 
 model PreferenciaCliente {
-  id                    String    @id @default(cuid())
-  clienteId             String    @unique
-  tipoImovel            TipoImovel?
-  precoMinimo           Float?
-  precoMaximo           Float?
-  cidadeInteresse       String?
-  bairrosInteresse      String?
-  minQuartos            Int?
-  minBanheiros          Int?
-  minVagas              Int?
-  areaMinima            Float?
-  areaMaxima            Float?
-  condicaoImovel        CondicaoImovel?
-  aceitaFinanciamento   Boolean?
-  aceitaPermuta         Boolean?
-  condominioFechado     Boolean?
+  id                        String          @id @default(cuid())
+  clienteId                 String          @unique
+  tipoImovel                TipoImovel?
+  precoMinimo               Float?
+  precoMaximo               Float?
+  cidadeInteresse           String?
+  bairrosInteresse          String?
+  minQuartos                Int?
+  minBanheiros              Int?
+  minVagas                  Int?
+  areaMinima                Float?
+  areaMaxima                Float?
+  condicaoImovel            CondicaoImovel?
+  aceitaFinanciamento       Boolean?
+  aceitaPermuta             Boolean?
+  condominioFechado         Boolean?
   caracteristicasPreferidas String?
-  restricoes            String?
-  prazoMudanca          String?
-  notasPessoais         String?
-  criadoEm              DateTime  @default(now())
-  atualizadoEm          DateTime  @updatedAt
+  restricoes                String?
+  prazoMudanca              String?
+  notasPessoais             String?
+  criadoEm                  DateTime        @default(now())
+  atualizadoEm              DateTime        @updatedAt
 
   cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
 
@@ -135,116 +142,116 @@ model PreferenciaCliente {
 }
 
 model Imovel {
-  id              String    @id @default(cuid())
-  usuarioId       String
-  proprietarioId  String?
+  id             String  @id @default(cuid())
+  usuarioId      String
+  proprietarioId String?
 
   // Identificação
-  codigoInterno   String?
-  titulo          String
-  descricao       String?
+  codigoInterno       String?
+  titulo              String
+  descricao           String?
   observacoesInternas String?
-  tipoImovel      TipoImovel
-  finalidade      FinalidadeImovel
-  status          StatusImovel @default(DISPONIVEL)
+  tipoImovel          TipoImovel
+  finalidade          FinalidadeImovel
+  status              StatusImovel     @default(DISPONIVEL)
 
   // Valores - venda
-  precoVenda              Float?
-  aceitaFinanciamento     Boolean @default(false)
-  aceitaPermuta           Boolean @default(false)
-  aceitaProposta          Boolean @default(true)
-  imovelQuitado           Boolean @default(false)
-  saldoDevedor            Float?
-  valorMinimoAceito       Float?
+  precoVenda          Float?
+  aceitaFinanciamento Boolean @default(false)
+  aceitaPermuta       Boolean @default(false)
+  aceitaProposta      Boolean @default(true)
+  imovelQuitado       Boolean @default(false)
+  saldoDevedor        Float?
+  valorMinimoAceito   Float?
 
   // Valores - locação
-  valorAluguel            Float?
-  valorCondominio         Float?
-  valorIptu               Float?
-  valorSeguroIncendio     Float?
-  valorSeguroFianca       Float?
-  valorCaucao             Float?
-  mesesCaucao             Int?
-  aceitaFiador            Boolean @default(false)
-  aceitaSeguroFianca      Boolean @default(false)
-  aceitaTituloCapitalizacao Boolean @default(false)
-  aceitaCaucao            Boolean @default(false)
-  contratoMinimoMeses     Int?
-  disponivelApartirDe     DateTime?
+  valorAluguel              Float?
+  valorCondominio           Float?
+  valorIptu                 Float?
+  valorSeguroIncendio       Float?
+  valorSeguroFianca         Float?
+  valorCaucao               Float?
+  mesesCaucao               Int?
+  aceitaFiador              Boolean   @default(false)
+  aceitaSeguroFianca        Boolean   @default(false)
+  aceitaTituloCapitalizacao Boolean   @default(false)
+  aceitaCaucao              Boolean   @default(false)
+  contratoMinimoMeses       Int?
+  disponivelApartirDe       DateTime?
 
   // Valores - temporada
-  valorTemporadaDiaria    Float?
-  valorTemporadaSemanal   Float?
-  valorTemporadaMensal    Float?
-  taxaLimpeza             Float?
-  taxaServico             Float?
-  quantidadeMaxHospedes   Int?
-  quantidadeMinDiarias    Int?
-  horarioCheckin          String?
-  horarioCheckout         String?
+  valorTemporadaDiaria  Float?
+  valorTemporadaSemanal Float?
+  valorTemporadaMensal  Float?
+  taxaLimpeza           Float?
+  taxaServico           Float?
+  quantidadeMaxHospedes Int?
+  quantidadeMinDiarias  Int?
+  horarioCheckin        String?
+  horarioCheckout       String?
 
   // Endereço
-  cep             String?
-  estado          String?
-  cidade          String
-  bairro          String?
-  endereco        String?
-  numero          String?
-  complemento     String?
-  latitude        Float?
-  longitude       Float?
+  cep         String?
+  estado      String?
+  cidade      String
+  bairro      String?
+  endereco    String?
+  numero      String?
+  complemento String?
+  latitude    Float?
+  longitude   Float?
 
   // Áreas
-  areaUtil        Float?
-  areaTotal       Float?
-  areaConstruida  Float?
-  areaTerreno     Float?
-  areaPrivativa   Float?
-  areaComum       Float?
+  areaUtil       Float?
+  areaTotal      Float?
+  areaConstruida Float?
+  areaTerreno    Float?
+  areaPrivativa  Float?
+  areaComum      Float?
 
   // Características residenciais
-  quartos         Int?
-  suites          Int?
-  banheiros       Int?
-  lavabos         Int?
-  vagasGaragem    Int?
-  salas           Int?
-  cozinhas        Int?
-  andar           Int?
-  totalAndares    Int?
-  unidadesPorAndar Int?
+  quartos           Int?
+  suites            Int?
+  banheiros         Int?
+  lavabos           Int?
+  vagasGaragem      Int?
+  salas             Int?
+  cozinhas          Int?
+  andar             Int?
+  totalAndares      Int?
+  unidadesPorAndar  Int?
   numeroApartamento String?
-  bloco           String?
+  bloco             String?
 
-  mobiliado       Boolean @default(false)
-  semiMobiliado   Boolean @default(false)
-  aceitaPets      Boolean @default(false)
-  varanda         Boolean @default(false)
-  sacada          Boolean @default(false)
-  varandaGourmet  Boolean @default(false)
-  quintal         Boolean @default(false)
-  piscina         Boolean @default(false)
-  churrasqueira   Boolean @default(false)
-  areaGourmet     Boolean @default(false)
-  closet          Boolean @default(false)
-  escritorio      Boolean @default(false)
-  despensa        Boolean @default(false)
-  deposito        Boolean @default(false)
-  areaServico     Boolean @default(false)
+  mobiliado      Boolean @default(false)
+  semiMobiliado  Boolean @default(false)
+  aceitaPets     Boolean @default(false)
+  varanda        Boolean @default(false)
+  sacada         Boolean @default(false)
+  varandaGourmet Boolean @default(false)
+  quintal        Boolean @default(false)
+  piscina        Boolean @default(false)
+  churrasqueira  Boolean @default(false)
+  areaGourmet    Boolean @default(false)
+  closet         Boolean @default(false)
+  escritorio     Boolean @default(false)
+  despensa       Boolean @default(false)
+  deposito       Boolean @default(false)
+  areaServico    Boolean @default(false)
 
   // Condomínio / prédio
-  nomeCondominio      String?
-  elevador            Boolean @default(false)
+  nomeCondominio       String?
+  elevador             Boolean @default(false)
   quantidadeElevadores Int?
-  portaria            Boolean @default(false)
-  portaria24h         Boolean @default(false)
-  seguranca24h        Boolean @default(false)
-  academia            Boolean @default(false)
-  salaoFestas         Boolean @default(false)
-  playground          Boolean @default(false)
-  quadra              Boolean @default(false)
-  sauna               Boolean @default(false)
-  coworking           Boolean @default(false)
+  portaria             Boolean @default(false)
+  portaria24h          Boolean @default(false)
+  seguranca24h         Boolean @default(false)
+  academia             Boolean @default(false)
+  salaoFestas          Boolean @default(false)
+  playground           Boolean @default(false)
+  quadra               Boolean @default(false)
+  sauna                Boolean @default(false)
+  coworking            Boolean @default(false)
 
   // Terreno
   frenteTerreno       Float?
@@ -253,45 +260,45 @@ model Imovel {
   ladoEsquerdoTerreno Float?
   topografia          TopografiaTerreno?
   tipoSolo            String?
-  murado              Boolean @default(false)
-  cercado             Boolean @default(false)
-  esquina             Boolean @default(false)
-  possuiAgua          Boolean @default(false)
-  possuiEnergia       Boolean @default(false)
-  possuiEsgoto        Boolean @default(false)
+  murado              Boolean            @default(false)
+  cercado             Boolean            @default(false)
+  esquina             Boolean            @default(false)
+  possuiAgua          Boolean            @default(false)
+  possuiEnergia       Boolean            @default(false)
+  possuiEsgoto        Boolean            @default(false)
   zoneamento          String?
 
   // Comercial / industrial
-  peDireito           Float?
-  quantidadeSalas     Int?
-  recepcao            Boolean @default(false)
-  copa                Boolean @default(false)
-  estoque             Boolean @default(false)
-  vitrine             Boolean @default(false)
-  doca                Boolean @default(false)
-  acessoCaminhao      Boolean @default(false)
-  energiaTrifasica    Boolean @default(false)
-  mezanino            Boolean @default(false)
-  elevadorCarga       Boolean @default(false)
-  tipoPiso            String?
-  fachada             String?
+  peDireito        Float?
+  quantidadeSalas  Int?
+  recepcao         Boolean @default(false)
+  copa             Boolean @default(false)
+  estoque          Boolean @default(false)
+  vitrine          Boolean @default(false)
+  doca             Boolean @default(false)
+  acessoCaminhao   Boolean @default(false)
+  energiaTrifasica Boolean @default(false)
+  mezanino         Boolean @default(false)
+  elevadorCarga    Boolean @default(false)
+  tipoPiso         String?
+  fachada          String?
 
   // Rural
-  areaHectares        Float?
-  areaAlqueires       Float?
-  casaSede            Boolean @default(false)
-  casaCaseiro         Boolean @default(false)
-  curral              Boolean @default(false)
-  barracao            Boolean @default(false)
-  pocoArtesiano       Boolean @default(false)
-  rio                 Boolean @default(false)
-  lago                Boolean @default(false)
-  nascente            Boolean @default(false)
-  pomar               Boolean @default(false)
-  pasto               Boolean @default(false)
-  tipoAcesso          String?
-  distanciaCidadeKm   Float?
-  estradaAsfaltada    Boolean @default(false)
+  areaHectares      Float?
+  areaAlqueires     Float?
+  casaSede          Boolean @default(false)
+  casaCaseiro       Boolean @default(false)
+  curral            Boolean @default(false)
+  barracao          Boolean @default(false)
+  pocoArtesiano     Boolean @default(false)
+  rio               Boolean @default(false)
+  lago              Boolean @default(false)
+  nascente          Boolean @default(false)
+  pomar             Boolean @default(false)
+  pasto             Boolean @default(false)
+  tipoAcesso        String?
+  distanciaCidadeKm Float?
+  estradaAsfaltada  Boolean @default(false)
 
   // Documentação
   documentacaoRegularizada Boolean @default(false)
@@ -306,46 +313,46 @@ model Imovel {
   observacoesDocumentacao  String?
 
   // Estratégia comercial
-  exclusividade            Boolean @default(false)
-  inicioExclusividade      DateTime?
-  fimExclusividade         DateTime?
-  comissaoPercentual       Float?
-  comissaoValorFixo        Float?
-  motivoVendaLocacao       String?
-  urgenciaProprietario     UrgenciaNegociacao?
-  margemNegociacao         Float?
-  pontosFortes             String?
-  pontosAtencao            String?
-  perfilClienteIdeal       String?
+  exclusividade        Boolean             @default(false)
+  inicioExclusividade  DateTime?
+  fimExclusividade     DateTime?
+  comissaoPercentual   Float?
+  comissaoValorFixo    Float?
+  motivoVendaLocacao   String?
+  urgenciaProprietario UrgenciaNegociacao?
+  margemNegociacao     Float?
+  pontosFortes         String?
+  pontosAtencao        String?
+  perfilClienteIdeal   String?
 
   // Divulgação
-  destaques                String?
-  tags                     String?
-  autorizadoDivulgacao     Boolean @default(true)
-  autorizadoPlaca          Boolean @default(false)
-  autorizadoPortais        Boolean @default(true)
-  linkTourVirtual          String?
-  linkVideo                String?
-  linkAnuncioExterno       String?
+  destaques            String?
+  tags                 String?
+  autorizadoDivulgacao Boolean @default(true)
+  autorizadoPlaca      Boolean @default(false)
+  autorizadoPortais    Boolean @default(true)
+  linkTourVirtual      String?
+  linkVideo            String?
+  linkAnuncioExterno   String?
 
   // Chaves / visita
-  chaveDisponivel          Boolean @default(false)
-  localChave               String?
-  instrucoesVisita         String?
+  chaveDisponivel  Boolean @default(false)
+  localChave       String?
+  instrucoesVisita String?
 
   // Controle
-  origemCadastro           OrigemCadastroImovel?
-  dataCaptacao             DateTime?
-  arquivadoEm              DateTime?
-  criadoEm                 DateTime @default(now())
-  atualizadoEm             DateTime @updatedAt
+  origemCadastro OrigemCadastroImovel?
+  dataCaptacao   DateTime?
+  arquivadoEm    DateTime?
+  criadoEm       DateTime              @default(now())
+  atualizadoEm   DateTime              @updatedAt
 
-  usuario         Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  proprietario    Proprietario? @relation(fields: [proprietarioId], references: [id], onDelete: SetNull)
-  caracteristicas CaracteristicaImovel[]
-  interesses      InteresseClienteImovel[]
-  interacoes      Interacao[]
-  fotos           FotoImovel[]
+  usuario           Usuario                  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  proprietario      Proprietario?            @relation(fields: [proprietarioId], references: [id], onDelete: SetNull)
+  caracteristicas   CaracteristicaImovel[]
+  interesses        InteresseClienteImovel[]
+  interacoes        Interacao[]
+  fotos             FotoImovel[]
   indicacaoParceiro IndicacaoParceiro?
 
   @@index([usuarioId])
@@ -363,50 +370,57 @@ model Imovel {
 }
 
 model Parceiro {
-  id                         String          @id @default(cuid())
-  usuarioId                  String
-  nome                       String
-  telefone                   String?
-  whatsapp                   String?
-  email                      String?
-  documento                  String?
-  tipo                       TipoParceiro    @default(INDICADOR)
-  status                     StatusParceiro  @default(ATIVO)
-  comissaoPadraoPercentual   Float?
-  comissaoPadraoValorFixo    Float?
-  observacoes                String?
-  criadoEm                   DateTime        @default(now())
-  atualizadoEm               DateTime        @updatedAt
+  id                       String         @id @default(cuid())
+  usuarioId                String
+  nome                     String
+  telefone                 String?
+  whatsapp                 String?
+  email                    String?
+  documento                String?
+  cidade                   String?
+  estado                   String?
+  endereco                 String?
+  numero                   String?
+  bairro                   String?
+  cep                      String?
+  tipo                     TipoParceiro   @default(INDICADOR)
+  status                   StatusParceiro @default(ATIVO)
+  comissaoPadraoPercentual Float?
+  comissaoPadraoValorFixo  Float?
+  observacoes              String?
+  criadoEm                 DateTime       @default(now())
+  atualizadoEm             DateTime       @updatedAt
 
-  usuario     Usuario              @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  indicacoes  IndicacaoParceiro[]
+  usuario    Usuario             @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  indicacoes IndicacaoParceiro[]
 
   @@index([usuarioId])
+  @@index([usuarioId, documento])
   @@index([usuarioId, status])
   @@index([usuarioId, tipo])
   @@map("parceiros")
 }
 
 model IndicacaoParceiro {
-  id                         String                  @id @default(cuid())
-  usuarioId                  String
-  parceiroId                 String
-  imovelId                   String                  @unique
-  tipoNegocio                TipoNegocioIndicacao
-  status                     StatusIndicacaoParceiro @default(EM_ANDAMENTO)
-  comissaoPercentual         Float?
-  comissaoValorFixo          Float?
-  valorNegocioFinal          Float?
-  valorComissaoFinal         Float?
-  observacoes                String?
-  concluidaEm                DateTime?
-  pagaEm                     DateTime?
-  criadoEm                   DateTime                @default(now())
-  atualizadoEm               DateTime                @updatedAt
+  id                 String                  @id @default(cuid())
+  usuarioId          String
+  parceiroId         String
+  imovelId           String                  @unique
+  tipoNegocio        TipoNegocioIndicacao
+  status             StatusIndicacaoParceiro @default(EM_ANDAMENTO)
+  comissaoPercentual Float?
+  comissaoValorFixo  Float?
+  valorNegocioFinal  Float?
+  valorComissaoFinal Float?
+  observacoes        String?
+  concluidaEm        DateTime?
+  pagaEm             DateTime?
+  criadoEm           DateTime                @default(now())
+  atualizadoEm       DateTime                @updatedAt
 
-  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  parceiro  Parceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
-  imovel    Imovel   @relation(fields: [imovelId], references: [id], onDelete: Cascade)
+  usuario  Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  parceiro Parceiro @relation(fields: [parceiroId], references: [id], onDelete: Cascade)
+  imovel   Imovel   @relation(fields: [imovelId], references: [id], onDelete: Cascade)
 
   @@index([usuarioId])
   @@index([usuarioId, parceiroId])
@@ -416,9 +430,9 @@ model IndicacaoParceiro {
 }
 
 model CaracteristicaImovel {
-  id                 String @id @default(cuid())
-  imovelId           String
-  tipoCaracteristica String
+  id                  String  @id @default(cuid())
+  imovelId            String
+  tipoCaracteristica  String
   valorCaracteristica String?
 
   imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
@@ -427,12 +441,12 @@ model CaracteristicaImovel {
 }
 
 model FotoImovel {
-  id        String   @id @default(cuid())
-  imovelId  String
-  url       String
-  ordem     Int      @default(0)
-  isCapa    Boolean  @default(false)
-  criadoEm  DateTime @default(now())
+  id       String   @id @default(cuid())
+  imovelId String
+  url      String
+  ordem    Int      @default(0)
+  isCapa   Boolean  @default(false)
+  criadoEm DateTime @default(now())
 
   imovel Imovel @relation(fields: [imovelId], references: [id], onDelete: Cascade)
 
@@ -440,17 +454,17 @@ model FotoImovel {
 }
 
 model InteresseClienteImovel {
-  id              String    @id @default(cuid())
+  id              String          @id @default(cuid())
   clienteId       String
   imovelId        String
   statusInteresse StatusInteresse @default(INTERESSADO)
   nivelPrioridade NivelPrioridade @default(MEDIA)
-  ehFavorito      Boolean   @default(false)
+  ehFavorito      Boolean         @default(false)
   apresentadoEm   DateTime?
   feedback        String?
   motivoRejeicao  String?
-  criadoEm        DateTime  @default(now())
-  atualizadoEm    DateTime  @updatedAt
+  criadoEm        DateTime        @default(now())
+  atualizadoEm    DateTime        @updatedAt
 
   cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
   imovel  Imovel  @relation(fields: [imovelId], references: [id], onDelete: Cascade)
@@ -460,7 +474,7 @@ model InteresseClienteImovel {
 }
 
 model Interacao {
-  id              String          @id @default(cuid())
+  id              String        @id @default(cuid())
   usuarioId       String
   clienteId       String
   imovelId        String?
@@ -469,12 +483,12 @@ model Interacao {
   descricao       String?
   dataInteracao   DateTime
   proximoFollowUp DateTime?
-  criadoEm        DateTime        @default(now())
-  atualizadoEm    DateTime        @updatedAt
+  criadoEm        DateTime      @default(now())
+  atualizadoEm    DateTime      @updatedAt
 
-  usuario  Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  cliente  Cliente   @relation(fields: [clienteId], references: [id], onDelete: Cascade)
-  imovel   Imovel?   @relation(fields: [imovelId], references: [id], onDelete: SetNull)
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  cliente Cliente @relation(fields: [clienteId], references: [id], onDelete: Cascade)
+  imovel  Imovel? @relation(fields: [imovelId], references: [id], onDelete: SetNull)
 
   @@map("interacoes")
 }
@@ -485,7 +499,7 @@ model Etiqueta {
   nome      String
   cor       String @default("#6366f1")
 
-  usuario         Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuario          Usuario           @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   etiquetasCliente EtiquetaCliente[]
 
   @@unique([usuarioId, nome])
@@ -493,7 +507,7 @@ model Etiqueta {
 }
 
 model Proprietario {
-  id           String   @id @default(cuid())
+  id           String                 @id @default(cuid())
   usuarioId    String
   nomeCompleto String
   email        String?
@@ -502,22 +516,23 @@ model Proprietario {
   documento    String?
   tipoPessoa   TipoPessoaProprietario @default(PESSOA_FISICA)
 
-  cidade       String?
-  estado       String?
-  endereco     String?
-  numero       String?
-  bairro       String?
-  cep          String?
+  cidade   String?
+  estado   String?
+  endereco String?
+  numero   String?
+  bairro   String?
+  cep      String?
 
-  observacoes  String?
-  status       StatusProprietario @default(ATIVO)
+  observacoes String?
+  status      StatusProprietario @default(ATIVO)
 
   criadoEm     DateTime @default(now())
   atualizadoEm DateTime @updatedAt
 
-  usuario      Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
-  imoveis      Imovel[]
+  usuario Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  imoveis Imovel[]
 
+  @@index([usuarioId, documento])
   @@map("proprietarios")
 }
 
@@ -597,7 +612,6 @@ enum NivelUrgencia {
   BAIXA
   SEM_URGENCIA
 }
-
 
 enum EstadoCivil {
   SOLTEIRO

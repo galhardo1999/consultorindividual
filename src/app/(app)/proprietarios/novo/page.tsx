@@ -1,35 +1,152 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
 import { maskTelefone, maskDocumento } from "@/lib/utils";
 import { buscarEnderecoPorCep } from "@/lib/viacep";
+import { buscarCadastroPorDocumento, normalizarDocumentoFormulario } from "@/lib/preenchimentoDocumento";
 
-export default function NovoProprietarioPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const [form, setForm] = useState({
-    nomeCompleto: "",
-    email: "",
-    telefone: "",
-    whatsapp: "",
-    documento: "",
-    tipoPessoa: "PESSOA_FISICA",
-    cidade: "",
-    estado: "",
-    endereco: "",
-    numero: "",
-    bairro: "",
-    cep: "",
-    observacoes: "",
-    status: "ATIVO",
-  });
+type ProprietarioCriado = {
+  id: string;
+};
 
-  function update(field: string, value: string) {
+type ErroApi = {
+  error?: string;
+};
+
+type ProprietarioParaClonar = {
+  nomeCompleto?: string | null;
+  email?: string | null;
+  telefone?: string | null;
+  whatsapp?: string | null;
+  tipoPessoa?: string | null;
+  cidade?: string | null;
+  estado?: string | null;
+  endereco?: string | null;
+  numero?: string | null;
+  bairro?: string | null;
+  cep?: string | null;
+  observacoes?: string | null;
+  status?: string | null;
+};
+
+const formularioInicial = {
+  nomeCompleto: "",
+  email: "",
+  telefone: "",
+  whatsapp: "",
+  documento: "",
+  tipoPessoa: "PESSOA_FISICA",
+  cidade: "",
+  estado: "",
+  endereco: "",
+  numero: "",
+  bairro: "",
+  cep: "",
+  observacoes: "",
+  status: "ATIVO",
+};
+
+type CampoFormularioProprietario = keyof typeof formularioInicial;
+
+function NovoProprietarioConteudo() {
+  const roteador = useRouter();
+  const parametrosBusca = useSearchParams();
+  const cloneId = parametrosBusca.get("cloneId");
+  const [salvando, setSalvando] = useState(false);
+  const [carregandoClone, setCarregandoClone] = useState(false);
+  const [erro, setErro] = useState("");
+  const [form, setForm] = useState(formularioInicial);
+
+  useEffect(() => {
+    if (!cloneId) return;
+
+    const carregarProprietarioParaClonar = async () => {
+      setErro("");
+      setCarregandoClone(true);
+
+      try {
+        const resposta = await fetch(`/api/proprietarios/${cloneId}`);
+        if (!resposta.ok) throw new Error("Erro ao carregar proprietário");
+
+        const dados = await resposta.json() as ProprietarioParaClonar & ErroApi;
+        if (dados.error) throw new Error(dados.error);
+
+        setForm({
+          nomeCompleto: `${dados.nomeCompleto || ""} (Cópia)`,
+          email: dados.email || "",
+          telefone: dados.telefone || "",
+          whatsapp: dados.whatsapp || "",
+          documento: "",
+          tipoPessoa: dados.tipoPessoa || "PESSOA_FISICA",
+          cidade: dados.cidade || "",
+          estado: dados.estado || "",
+          endereco: dados.endereco || "",
+          numero: dados.numero || "",
+          bairro: dados.bairro || "",
+          cep: dados.cep || "",
+          observacoes: dados.observacoes || "",
+          status: dados.status === "INATIVO" ? "INATIVO" : "ATIVO",
+        });
+      } catch (erroCarregar) {
+        console.error("Erro ao carregar proprietário para clonagem:", erroCarregar);
+        setErro("Não foi possível carregar os dados para clonagem.");
+      } finally {
+        setCarregandoClone(false);
+      }
+    };
+
+    void carregarProprietarioParaClonar();
+  }, [cloneId]);
+
+  function update(field: CampoFormularioProprietario, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function preencherPorDocumento(documento: string) {
+    const documentoNormalizado = normalizarDocumentoFormulario(documento);
+    if (![11, 14].includes(documentoNormalizado.length)) return;
+
+    try {
+      const cadastro = await buscarCadastroPorDocumento(documento);
+      if (!cadastro) return;
+
+      setForm((dadosAtuais) => {
+        if (normalizarDocumentoFormulario(dadosAtuais.documento) !== documentoNormalizado) {
+          return dadosAtuais;
+        }
+
+        return {
+          ...dadosAtuais,
+          nomeCompleto: cadastro.nome || dadosAtuais.nomeCompleto,
+          telefone: cadastro.telefone ? maskTelefone(cadastro.telefone) : dadosAtuais.telefone,
+          tipoPessoa: documentoNormalizado.length === 14 ? "PESSOA_JURIDICA" : dadosAtuais.tipoPessoa,
+          cidade: cadastro.endereco.cidade || dadosAtuais.cidade,
+          estado: cadastro.endereco.estado || dadosAtuais.estado,
+          endereco: cadastro.endereco.endereco || dadosAtuais.endereco,
+          numero: cadastro.endereco.numero || dadosAtuais.numero,
+          bairro: cadastro.endereco.bairro || dadosAtuais.bairro,
+          cep: cadastro.endereco.cep || dadosAtuais.cep,
+        };
+      });
+    } catch (erroBuscar) {
+      console.error("Erro ao buscar cadastro por documento:", erroBuscar);
+    }
+  }
+
+  async function handleDocumentoChange(evento: React.ChangeEvent<HTMLInputElement>) {
+    const documento = maskDocumento(evento.target.value);
+    const documentoNormalizado = normalizarDocumentoFormulario(documento);
+
+    setForm((dadosAtuais) => ({
+      ...dadosAtuais,
+      documento,
+      tipoPessoa: documentoNormalizado.length > 11 ? "PESSOA_JURIDICA" : "PESSOA_FISICA",
+    }));
+
+    await preencherPorDocumento(documento);
   }
 
   async function handleCepChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -55,25 +172,33 @@ export default function NovoProprietarioPage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setError("");
-    setLoading(true);
+    setErro("");
+    setSalvando(true);
 
-    const res = await fetch("/api/proprietarios", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch("/api/proprietarios", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(form),
+      });
 
-    const data = await res.json();
-    setLoading(false);
+      const data = await res.json() as ProprietarioCriado & ErroApi;
 
-    if (!res.ok) {
-      setError(data.error || "Erro ao cadastrar proprietário.");
-      return;
+      if (!res.ok) {
+        setErro(data.error || "Erro ao cadastrar proprietário.");
+        return;
+      }
+
+      roteador.push(`/proprietarios/${data.id}`);
+    } catch (erroSalvar) {
+      console.error("Erro ao salvar proprietário:", erroSalvar);
+      setErro("Não foi possível salvar o proprietário.");
+    } finally {
+      setSalvando(false);
     }
-
-    router.push(`/proprietarios/${data.id}`);
   }
+
+  const carregandoFormulario = salvando || carregandoClone;
 
   return (
     <div className="page">
@@ -82,9 +207,11 @@ export default function NovoProprietarioPage() {
           <ArrowLeft size={18} />
         </Link>
         <div>
-          <h1 className="text-2xl font-bold" style={{ color: "var(--color-surface-50)" }}>Novo Proprietário</h1>
-          <p style={{ color: "var(--color-surface-400)", fontSize: "0.875rem" }}>
-            Preencha os dados do proprietário
+          <h1 className="text-2xl font-bold text-[var(--color-surface-50)]">
+            {cloneId ? "Clonar Proprietário" : "Novo Proprietário"}
+          </h1>
+          <p className="text-sm text-[var(--color-surface-400)] mt-1">
+            {cloneId ? "Revise e edite as informações do proprietário clonado" : "Preencha os dados do proprietário"}
           </p>
         </div>
       </div>
@@ -116,7 +243,7 @@ export default function NovoProprietarioPage() {
                 <option value="PESSOA_JURIDICA">Pessoa Jurídica</option>
               </select>
             </div>
-            <div className="form-group" style={{ gridColumn: "span 2" }}>
+            <div className="form-group md:col-span-2">
               <label className="label" htmlFor="documento">
                 {form.tipoPessoa === "PESSOA_JURIDICA" ? "CNPJ" : "CPF"}
               </label>
@@ -125,9 +252,9 @@ export default function NovoProprietarioPage() {
                 type="text"
                 className="input"
                 placeholder={form.tipoPessoa === "PESSOA_JURIDICA" ? "00.000.000/0000-00" : "000.000.000-00"}
-                maxLength={form.tipoPessoa === "PESSOA_JURIDICA" ? 18 : 14}
+                maxLength={18}
                 value={form.documento}
-                onChange={(e) => update("documento", maskDocumento(e.target.value))}
+                onChange={handleDocumentoChange}
               />
             </div>
           </div>
@@ -168,7 +295,7 @@ export default function NovoProprietarioPage() {
           </div>
 
           <div className="form-row-3">
-            <div className="form-group" style={{ gridColumn: "span 2" }}>
+            <div className="form-group md:col-span-2">
               <label className="label" htmlFor="endereco">Endereço</label>
               <input id="endereco" type="text" className="input" placeholder="Ex: Rua das Flores"
                 value={form.endereco} onChange={(e) => update("endereco", e.target.value)} />
@@ -202,20 +329,28 @@ export default function NovoProprietarioPage() {
           </div>
         </div>
 
-        {error && (
-          <div className="toast toast-error mb-4" style={{ position: "static", minWidth: "unset", animation: "none" }}>
-            <span style={{ color: "#f87171" }}>{error}</span>
+        {erro && (
+          <div className="alert alert-error mb-4">
+            <span>{erro}</span>
           </div>
         )}
 
         <div className="flex justify-end gap-3">
           <Link href="/proprietarios" className="btn btn-secondary">Cancelar</Link>
-          <button type="submit" className="btn btn-primary" disabled={loading}>
-            {loading ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-            {loading ? "Salvando..." : "Salvar Proprietário"}
+          <button type="submit" className="btn btn-primary" disabled={carregandoFormulario}>
+            {carregandoFormulario ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+            {carregandoClone ? "Carregando..." : salvando ? "Salvando..." : "Salvar Proprietário"}
           </button>
         </div>
       </form>
     </div>
+  );
+}
+
+export default function NovoProprietarioPage() {
+  return (
+    <Suspense fallback={<div className="page"><div className="skeleton h-24 w-full" /></div>}>
+      <NovoProprietarioConteudo />
+    </Suspense>
   );
 }

@@ -6,6 +6,8 @@ import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
 import { STATUS_PARCEIRO_OPCOES, TIPOS_PARCEIRO_OPCOES } from "@/constants/options";
 import { maskCurrency, maskDocumento, maskTelefone, parseCurrency } from "@/lib/utils";
+import { buscarEnderecoPorCep } from "@/lib/viacep";
+import { buscarCadastroPorDocumento, normalizarDocumentoFormulario } from "@/lib/preenchimentoDocumento";
 
 interface ParceiroCriado {
   id: string;
@@ -21,6 +23,12 @@ const formularioInicial = {
   whatsapp: "",
   email: "",
   documento: "",
+  cidade: "",
+  estado: "",
+  endereco: "",
+  numero: "",
+  bairro: "",
+  cep: "",
   tipo: "INDICADOR",
   status: "ATIVO",
   comissaoPadraoPercentual: "",
@@ -51,6 +59,12 @@ export default function EditarParceiroPage() {
           whatsapp: dados.whatsapp || "",
           email: dados.email || "",
           documento: dados.documento || "",
+          cidade: dados.cidade || "",
+          estado: dados.estado || "",
+          endereco: dados.endereco || "",
+          numero: dados.numero || "",
+          bairro: dados.bairro || "",
+          cep: dados.cep || "",
           tipo: dados.tipo || "INDICADOR",
           status: dados.status || "ATIVO",
           comissaoPadraoPercentual: dados.comissaoPadraoPercentual !== null ? String(dados.comissaoPadraoPercentual) : "",
@@ -72,6 +86,63 @@ export default function EditarParceiroPage() {
     setFormulario((dadosAtuais) => ({ ...dadosAtuais, [campo]: valor }));
   };
 
+  const preencherPorDocumento = async (documento: string) => {
+    const documentoNormalizado = normalizarDocumentoFormulario(documento);
+    if (![11, 14].includes(documentoNormalizado.length)) return;
+
+    try {
+      const cadastro = await buscarCadastroPorDocumento(documento);
+      if (!cadastro) return;
+
+      setFormulario((dadosAtuais) => {
+        if (normalizarDocumentoFormulario(dadosAtuais.documento) !== documentoNormalizado) {
+          return dadosAtuais;
+        }
+
+        return {
+          ...dadosAtuais,
+          nome: cadastro.nome || dadosAtuais.nome,
+          telefone: cadastro.telefone ? maskTelefone(cadastro.telefone) : dadosAtuais.telefone,
+          cidade: cadastro.endereco.cidade || dadosAtuais.cidade,
+          estado: cadastro.endereco.estado || dadosAtuais.estado,
+          endereco: cadastro.endereco.endereco || dadosAtuais.endereco,
+          numero: cadastro.endereco.numero || dadosAtuais.numero,
+          bairro: cadastro.endereco.bairro || dadosAtuais.bairro,
+          cep: cadastro.endereco.cep || dadosAtuais.cep,
+        };
+      });
+    } catch (erroBuscar) {
+      console.error("Erro ao buscar cadastro por documento:", erroBuscar);
+    }
+  };
+
+  const alterarDocumento = async (valor: string) => {
+    const documento = maskDocumento(valor);
+    atualizarCampo("documento", documento);
+    await preencherPorDocumento(documento);
+  };
+
+  const alterarCep = async (valor: string) => {
+    let cep = valor.replace(/\D/g, "");
+    if (cep.length > 8) cep = cep.slice(0, 8);
+    if (cep.length > 5) cep = `${cep.slice(0, 5)}-${cep.slice(5)}`;
+
+    atualizarCampo("cep", cep);
+
+    if (cep.replace(/\D/g, "").length === 8) {
+      const endereco = await buscarEnderecoPorCep(cep);
+      if (endereco) {
+        setFormulario((dadosAtuais) => ({
+          ...dadosAtuais,
+          endereco: endereco.logradouro || dadosAtuais.endereco,
+          bairro: endereco.bairro || dadosAtuais.bairro,
+          cidade: endereco.localidade || dadosAtuais.cidade,
+          estado: endereco.uf || dadosAtuais.estado,
+        }));
+      }
+    }
+  };
+
   const salvarParceiro = async (evento: React.FormEvent) => {
     evento.preventDefault();
     setErro("");
@@ -87,6 +158,12 @@ export default function EditarParceiroPage() {
           whatsapp: formulario.whatsapp || null,
           email: formulario.email || null,
           documento: formulario.documento || null,
+          cidade: formulario.cidade || null,
+          estado: formulario.estado || null,
+          endereco: formulario.endereco || null,
+          numero: formulario.numero || null,
+          bairro: formulario.bairro || null,
+          cep: formulario.cep || null,
           tipo: formulario.tipo,
           status: formulario.status,
           comissaoPadraoPercentual: formulario.comissaoPadraoPercentual
@@ -190,7 +267,9 @@ export default function EditarParceiroPage() {
               className="input"
               placeholder="CPF ou CNPJ"
               value={formulario.documento}
-              onChange={(evento) => atualizarCampo("documento", maskDocumento(evento.target.value))}
+              onChange={(evento) => {
+                void alterarDocumento(evento.target.value);
+              }}
             />
           </div>
         </div>
@@ -233,6 +312,81 @@ export default function EditarParceiroPage() {
               placeholder="parceiro@email.com"
               value={formulario.email}
               onChange={(evento) => atualizarCampo("email", evento.target.value)}
+            />
+          </div>
+        </div>
+
+        <div className="card mb-4">
+          <h2 className="section-titulo mb-4">Endereço</h2>
+
+          <div className="form-row-3">
+            <div className="form-group">
+              <label className="label" htmlFor="cep">CEP</label>
+              <input
+                id="cep"
+                className="input"
+                placeholder="00000-000"
+                value={formulario.cep}
+                onChange={(evento) => {
+                  void alterarCep(evento.target.value);
+                }}
+                maxLength={9}
+              />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="cidade">Cidade</label>
+              <input
+                id="cidade"
+                className="input"
+                placeholder="São Paulo"
+                value={formulario.cidade}
+                onChange={(evento) => atualizarCampo("cidade", evento.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="estado">Estado</label>
+              <input
+                id="estado"
+                className="input"
+                placeholder="SP"
+                maxLength={2}
+                value={formulario.estado}
+                onChange={(evento) => atualizarCampo("estado", evento.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-row-3">
+            <div className="form-group md:col-span-2">
+              <label className="label" htmlFor="endereco">Endereço</label>
+              <input
+                id="endereco"
+                className="input"
+                placeholder="Ex: Rua das Flores"
+                value={formulario.endereco}
+                onChange={(evento) => atualizarCampo("endereco", evento.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="label" htmlFor="numero">Número</label>
+              <input
+                id="numero"
+                className="input"
+                placeholder="123"
+                value={formulario.numero}
+                onChange={(evento) => atualizarCampo("numero", evento.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label className="label" htmlFor="bairro">Bairro</label>
+            <input
+              id="bairro"
+              className="input"
+              placeholder="Centro"
+              value={formulario.bairro}
+              onChange={(evento) => atualizarCampo("bairro", evento.target.value)}
             />
           </div>
         </div>

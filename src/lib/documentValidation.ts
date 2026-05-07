@@ -4,10 +4,43 @@ import { prisma } from "./prisma";
  * Normaliza um documento (CPF/CNPJ) removendo todos os caracteres não numéricos.
  * Retorna null se a string estiver vazia ou inválida.
  */
-export function normalizeDocument(document: string | null | undefined): string | null {
-  if (!document) return null;
-  const digits = document.replace(/\D/g, "");
-  return digits.length > 0 ? digits : null;
+export function normalizeDocument(documento: string | null | undefined): string | null {
+  return normalizarDocumento(documento);
+}
+
+export function normalizarDocumento(documento: string | null | undefined): string | null {
+  if (!documento) return null;
+  const digitos = documento.replace(/\D/g, "");
+  return digitos.length > 0 ? digitos : null;
+}
+
+const formatarCpf = (documentoNormalizado: string) => {
+  if (documentoNormalizado.length !== 11) return null;
+  return documentoNormalizado.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
+};
+
+const formatarCnpj = (documentoNormalizado: string) => {
+  if (documentoNormalizado.length !== 14) return null;
+  return documentoNormalizado.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5");
+};
+
+export function obterDocumentosEquivalentes(documento: string | null | undefined): string[] {
+  const documentoNormalizado = normalizarDocumento(documento);
+  if (!documentoNormalizado) return [];
+
+  const documentos = [
+    documentoNormalizado,
+    formatarCpf(documentoNormalizado),
+    formatarCnpj(documentoNormalizado),
+  ].filter((valor): valor is string => Boolean(valor));
+
+  return Array.from(new Set(documentos));
+}
+
+export function obterCondicoesDocumento(documento: string | null | undefined) {
+  return obterDocumentosEquivalentes(documento).map((documentoEquivalente) => ({
+    documento: documentoEquivalente,
+  }));
 }
 
 /**
@@ -27,29 +60,14 @@ export async function isDocumentoDuplicado(
   entityType: "CLIENTE" | "PARCEIRO" | "PROPRIETARIO",
   excludeEntityId?: string
 ): Promise<boolean> {
-  const docNorm = normalizeDocument(documento);
+  const docNorm = normalizarDocumento(documento);
   if (!docNorm) return false;
 
-  const docMascaradoCpf = docNorm.length <= 11 
-    ? docNorm.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4") 
-    : docNorm;
-    
-  const docMascaradoCnpj = docNorm.length > 11 
-    ? docNorm.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, "$1.$2.$3/$4-$5") 
-    : docNorm;
-
-  const conditions = [
-    { documento: docNorm },
-    { documento: docMascaradoCpf },
-    { documento: docMascaradoCnpj }
-  ];
-
-  // Remove duplicatas nas condições
-  const uniqueConditions = Array.from(new Set(conditions.map(c => c.documento))).map(doc => ({ documento: doc }));
+  const condicoesDocumento = obterCondicoesDocumento(documento);
 
   const where = {
     usuarioId,
-    OR: uniqueConditions,
+    OR: condicoesDocumento,
     ...(excludeEntityId ? { id: { not: excludeEntityId } } : {})
   };
 
@@ -68,4 +86,3 @@ export async function isDocumentoDuplicado(
 
   return found;
 }
-

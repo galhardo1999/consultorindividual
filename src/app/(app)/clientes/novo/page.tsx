@@ -4,7 +4,9 @@ import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Save } from "lucide-react";
-import { maskTelefone, maskCPF } from "@/lib/utils";
+import { maskTelefone, maskDocumento } from "@/lib/utils";
+import { buscarEnderecoPorCep } from "@/lib/viacep";
+import { buscarCadastroPorDocumento, normalizarDocumentoFormulario } from "@/lib/preenchimentoDocumento";
 
 import { 
   PROPERTY_TYPES, 
@@ -31,11 +33,17 @@ function NovoClienteContent() {
     telefone: "",
     whatsapp: "",
     email: "",
-    document: "",
+    documento: "",
     dataNascimento: "",
     estadoCivil: "",
     temFilhos: "",
     cidadeAtual: "",
+    cidade: "",
+    estado: "",
+    endereco: "",
+    numero: "",
+    bairro: "",
+    cep: "",
     origemLead: "INDICACAO",
     // Jornada / Status
     estagioJornada: "NOVO_LEAD",
@@ -73,11 +81,17 @@ function NovoClienteContent() {
               telefone: data.telefone,
               whatsapp: data.whatsapp || "",
               email: data.email || "",
-              document: data.documento || "",
+              documento: "",
               dataNascimento: data.dataNascimento ? data.dataNascimento.split('T')[0] : "",
               estadoCivil: data.estadoCivil || "",
               temFilhos: data.temFilhos === true ? "true" : data.temFilhos === false ? "false" : "",
               cidadeAtual: data.cidadeAtual || "",
+              cidade: data.cidade || "",
+              estado: data.estado || "",
+              endereco: data.endereco || "",
+              numero: data.numero || "",
+              bairro: data.bairro || "",
+              cep: data.cep || "",
               origemLead: data.origemLead || "INDICACAO",
               estagioJornada: data.estagioJornada || "NOVO_LEAD",
               formaPagamento: data.formaPagamento || "",
@@ -109,6 +123,65 @@ function NovoClienteContent() {
 
   function update(campo: string, valor: string | boolean) {
     setForm((f) => ({ ...f, [campo]: valor }));
+  }
+
+  async function preencherPorDocumento(documento: string) {
+    const documentoNormalizado = normalizarDocumentoFormulario(documento);
+    if (![11, 14].includes(documentoNormalizado.length)) return;
+
+    try {
+      const cadastro = await buscarCadastroPorDocumento(documento);
+      if (!cadastro) return;
+
+      setForm((dadosAtuais) => {
+        if (normalizarDocumentoFormulario(dadosAtuais.documento) !== documentoNormalizado) {
+          return dadosAtuais;
+        }
+
+        return {
+          ...dadosAtuais,
+          nomeCompleto: cadastro.nome || dadosAtuais.nomeCompleto,
+          telefone: cadastro.telefone ? maskTelefone(cadastro.telefone) : dadosAtuais.telefone,
+          cidadeAtual: cadastro.endereco.cidade || dadosAtuais.cidadeAtual,
+          cidade: cadastro.endereco.cidade || dadosAtuais.cidade,
+          estado: cadastro.endereco.estado || dadosAtuais.estado,
+          endereco: cadastro.endereco.endereco || dadosAtuais.endereco,
+          numero: cadastro.endereco.numero || dadosAtuais.numero,
+          bairro: cadastro.endereco.bairro || dadosAtuais.bairro,
+          cep: cadastro.endereco.cep || dadosAtuais.cep,
+        };
+      });
+    } catch (erroBuscar) {
+      console.error("Erro ao buscar cadastro por documento:", erroBuscar);
+    }
+  }
+
+  async function handleDocumentoChange(evento: React.ChangeEvent<HTMLInputElement>) {
+    const documento = maskDocumento(evento.target.value);
+    update("documento", documento);
+    await preencherPorDocumento(documento);
+  }
+
+  async function handleCepChange(evento: React.ChangeEvent<HTMLInputElement>) {
+    let cep = evento.target.value.replace(/\D/g, "");
+    if (cep.length > 8) cep = cep.slice(0, 8);
+    if (cep.length > 5) cep = `${cep.slice(0, 5)}-${cep.slice(5)}`;
+
+    update("cep", cep);
+
+    if (cep.replace(/\D/g, "").length === 8) {
+      const endereco = await buscarEnderecoPorCep(cep);
+      if (endereco) {
+        setForm((dadosAtuais) => ({
+          ...dadosAtuais,
+          endereco: endereco.logradouro || dadosAtuais.endereco,
+          bairro: endereco.bairro || dadosAtuais.bairro,
+          cidade: endereco.localidade || dadosAtuais.cidade,
+          cidadeAtual: endereco.localidade || dadosAtuais.cidadeAtual,
+          estado: endereco.uf || dadosAtuais.estado,
+        }));
+      }
+    }
   }
 
   function validateBasicTab() {
@@ -152,11 +225,17 @@ function NovoClienteContent() {
       telefone: form.telefone,
       whatsapp: form.whatsapp || undefined,
       email: form.email || undefined,
-      documento: form.document || undefined,
+      documento: form.documento || undefined,
       dataNascimento: form.dataNascimento || undefined,
       estadoCivil: form.estadoCivil || undefined,
       temFilhos: form.temFilhos === "true" ? true : form.temFilhos === "false" ? false : undefined,
       cidadeAtual: form.cidadeAtual || undefined,
+      cidade: form.cidade || undefined,
+      estado: form.estado || undefined,
+      endereco: form.endereco || undefined,
+      numero: form.numero || undefined,
+      bairro: form.bairro || undefined,
+      cep: form.cep || undefined,
       origemLead: form.origemLead || undefined,
       estagioJornada: form.estagioJornada || undefined,
       formaPagamento: form.formaPagamento || undefined,
@@ -324,14 +403,14 @@ function NovoClienteContent() {
 
             <div className="form-row">
               <div className="form-group">
-                <label className="label" htmlFor="document">CPF</label>
+                <label className="label" htmlFor="documento">CPF / CNPJ</label>
                 <input
-                  id="document"
+                  id="documento"
                   type="text"
                   className="input"
-                  placeholder="000.000.000-00"
-                  value={form.document}
-                  onChange={(e) => update("document", maskCPF(e.target.value))}
+                  placeholder="000.000.000-00 ou 00.000.000/0000-00"
+                  value={form.documento}
+                  onChange={handleDocumentoChange}
                 />
               </div>
               <div className="form-group">
@@ -384,6 +463,81 @@ function NovoClienteContent() {
                   {LEAD_SOURCES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
                 </select>
               </div>
+            </div>
+
+            <div className="form-row-3">
+              <div className="form-group">
+                <label className="label" htmlFor="cep">CEP</label>
+                <input
+                  id="cep"
+                  type="text"
+                  className="input"
+                  placeholder="00000-000"
+                  value={form.cep}
+                  onChange={handleCepChange}
+                  maxLength={9}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="cidade">Cidade</label>
+                <input
+                  id="cidade"
+                  type="text"
+                  className="input"
+                  placeholder="São Paulo"
+                  value={form.cidade}
+                  onChange={(e) => update("cidade", e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="estado">Estado</label>
+                <input
+                  id="estado"
+                  type="text"
+                  className="input"
+                  placeholder="SP"
+                  maxLength={2}
+                  value={form.estado}
+                  onChange={(e) => update("estado", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-row-3">
+              <div className="form-group md:col-span-2">
+                <label className="label" htmlFor="endereco">Endereço</label>
+                <input
+                  id="endereco"
+                  type="text"
+                  className="input"
+                  placeholder="Ex: Rua das Flores"
+                  value={form.endereco}
+                  onChange={(e) => update("endereco", e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="label" htmlFor="numero">Número</label>
+                <input
+                  id="numero"
+                  type="text"
+                  className="input"
+                  placeholder="123"
+                  value={form.numero}
+                  onChange={(e) => update("numero", e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="label" htmlFor="bairro">Bairro</label>
+              <input
+                id="bairro"
+                type="text"
+                className="input"
+                placeholder="Centro"
+                value={form.bairro}
+                onChange={(e) => update("bairro", e.target.value)}
+              />
             </div>
           </div>
         )}

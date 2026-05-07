@@ -22,6 +22,12 @@ const updateSchema = z.object({
   profissao: campoOpcional,
   rendaMensal: numeroOpcional,
   cidadeAtual: campoOpcional,
+  cidade: campoOpcional,
+  estado: campoOpcional,
+  endereco: campoOpcional,
+  numero: campoOpcional,
+  bairro: campoOpcional,
+  cep: campoOpcional,
   origemLead: campoOpcional,
   // Jornada / Status
   estagioJornada: campoOpcional,

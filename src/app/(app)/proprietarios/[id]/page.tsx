@@ -4,7 +4,7 @@
 import React, { useEffect, useState, Fragment } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Edit2, Archive, Mail, Phone, MapPin, Building2, User, Home, FileText, Plus, BedDouble, Bath, Car, Maximize, ChevronLeft, ChevronRight, Heart } from "lucide-react";
+import { ArrowLeft, Edit2, Settings, Share2, Trash2, Mail, Phone, MapPin, Building2, User, Home, FileText, Plus, BedDouble, Bath, Car, Maximize, ChevronLeft, ChevronRight, Heart } from "lucide-react";
 import { formatDate, maskTelefone, maskCPF, maskCNPJ, formatCurrency } from "@/lib/utils";
 
 interface Imovel {
@@ -230,6 +230,7 @@ export default function ProprietarioDetailPage() {
   const router = useRouter();
   const [proprietario, setProprietario] = useState<ProprietarioDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [menuAberto, setMenuAberto] = useState(false);
 
   useEffect(() => {
     fetch(`/api/proprietarios/${id}`)
@@ -241,10 +242,18 @@ export default function ProprietarioDetailPage() {
       .catch(() => setLoading(false));
   }, [id, router]);
 
-  async function archiveProprietario() {
-    if (!confirm("Deseja excluir/arquivar este proprietário? Os imóveis vinculados não serão excluídos.")) return;
-    await fetch(`/api/proprietarios/${id}`, { method: "DELETE" });
-    router.push("/proprietarios");
+  async function excluirProprietario() {
+    if (!confirm("Deseja excluir este proprietário? Os imóveis vinculados não serão excluídos.")) return;
+    setMenuAberto(false);
+
+    try {
+      const resposta = await fetch(`/api/proprietarios/${id}`, { method: "DELETE" });
+      if (!resposta.ok) throw new Error("Erro ao excluir proprietário");
+      router.push("/proprietarios");
+    } catch (erro) {
+      console.error("Erro ao excluir proprietário:", erro);
+      alert("Não foi possível excluir o proprietário.");
+    }
   }
 
   if (loading) {
@@ -260,20 +269,52 @@ export default function ProprietarioDetailPage() {
   return (
     <div className="page">
       {/* Top Header Row */}
-      <div className="flex items-center justify-between mb-8">
-        <Link href="/proprietarios" className="flex items-center gap-2 text-surface-400 hover:text-surface-100 transition-colors" style={{ textDecoration: "none" }}>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-8">
+        <Link href="/proprietarios" className="inline-flex items-center gap-2 text-surface-400 hover:text-surface-100 transition-colors no-underline">
           <ArrowLeft size={16} />
           <span className="text-sm font-medium">Voltar para proprietários</span>
         </Link>
-        <div className="flex gap-2">
-          <Link href={`/proprietarios/${id}/editar`} className="btn btn-secondary btn-sm">
-            <Edit2 size={14} />
-            Editar
-          </Link>
-          <button className="btn btn-danger btn-sm" onClick={archiveProprietario}>
-            <Archive size={14} />
-            Excluir
+
+        <div className="relative self-start sm:self-auto">
+          <button
+            onClick={() => setMenuAberto(!menuAberto)}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-surface-800 text-surface-200 hover:text-white hover:bg-surface-700 transition-colors border border-surface-700"
+          >
+            <Settings size={16} />
+            Opções
           </button>
+
+          {menuAberto && (
+            <>
+              <div
+                className="fixed inset-0 z-40"
+                onClick={() => setMenuAberto(false)}
+              />
+              <div className="absolute left-0 sm:left-auto sm:right-0 top-full mt-2 w-52 bg-surface-800 border border-surface-700 rounded-xl shadow-xl z-50 py-2">
+                <Link
+                  href={`/proprietarios/${id}/editar`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                >
+                  <Edit2 size={16} />
+                  Editar Proprietário
+                </Link>
+                <Link
+                  href={`/proprietarios/novo?cloneId=${id}`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-surface-200 hover:text-white hover:bg-surface-700 transition-colors"
+                >
+                  <Share2 size={16} className="rotate-90" />
+                  Clonar Proprietário
+                </Link>
+                <button
+                  onClick={excluirProprietario}
+                  className="w-full flex items-center gap-2 px-4 py-2 text-sm text-red-400 hover:text-red-300 hover:bg-red-400/10 transition-colors text-left"
+                >
+                  <Trash2 size={16} />
+                  Excluir
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
 

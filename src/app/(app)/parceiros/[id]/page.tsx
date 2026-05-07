@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
-import { ArrowLeft, Check, Home, Phone, Settings, Edit2, Trash2 } from "lucide-react";
+import { ArrowLeft, Check, Home, Phone, Settings, Edit2, Share2, Trash2 } from "lucide-react";
 import {
   formatCurrency,
   propertyStatusLabel,
@@ -186,6 +186,13 @@ export default function ParceiroDetalhePage() {
                 >
                   <Edit2 size={16} />
                   Editar Parceiro
+                </Link>
+                <Link
+                  href={`/parceiros/novo?cloneId=${id}`}
+                  className="flex items-center gap-2 px-4 py-2 text-sm text-[var(--color-surface-200)] hover:text-white hover:bg-[var(--color-surface-700)] transition-colors"
+                >
+                  <Share2 size={16} className="rotate-90" />
+                  Clonar Parceiro
                 </Link>
                 <button 
                   onClick={excluirParceiro} 

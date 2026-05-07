@@ -16,6 +16,8 @@ import {
   Search,
   SlidersHorizontal,
   X,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { MapaImoveis, type ImovelMapa } from "@/components/MapaImoveis";
 import { PROPERTY_TYPES, STATUSES, PURCHASE_GOALS } from "@/constants/options";
@@ -249,6 +251,7 @@ export default function MapaPage() {
   const [erroCarregamento, setErroCarregamento] = useState("");
   const [geocodificando, setGeocodificando] = useState(false);
   const [pendentesGeocodificacao, setPendentesGeocodificacao] = useState(0);
+  const [minimizado, setMinimizado] = useState(false);
   const [buscaLocalizacao, setBuscaLocalizacao] = useState("");
   const [buscandoLocalizacao, setBuscandoLocalizacao] = useState(false);
   const [erroBuscaLocalizacao, setErroBuscaLocalizacao] = useState("");
@@ -431,188 +434,203 @@ export default function MapaPage() {
         onSelecionarImovel={selecionarImovel}
       />
 
-      <aside className="absolute inset-x-3 bottom-3 z-[800] max-h-[58vh] overflow-hidden rounded-lg border border-surface-700 bg-surface-950/95 shadow-2xl backdrop-blur-xl lg:inset-y-4 lg:right-4 lg:left-auto lg:max-h-none lg:w-[460px]">
+      <aside
+        className={`absolute inset-x-3 bottom-3 z-[800] overflow-hidden rounded-lg border border-surface-700 bg-surface-950/95 shadow-2xl backdrop-blur-xl transition-all duration-300 lg:right-4 lg:left-auto lg:w-[460px] flex flex-col ${minimizado ? "h-auto lg:bottom-auto lg:top-4" : "max-h-[58vh] lg:inset-y-4 lg:max-h-none"
+          }`}
+      >
         <div className="flex h-full min-h-0 flex-col">
-          <div className="border-b border-surface-700 p-4">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <div className="inline-flex items-center gap-2 rounded-full border border-brand-500/25 bg-brand-500/10 px-2.5 py-1 text-xs font-bold text-brand-200">
-                  <MapPin size={13} aria-hidden="true" />
-                  Mapa de imóveis
-                </div>
-                <h1 className="mt-3 text-xl font-black tracking-normal text-surface-50">Localização da carteira</h1>
-              </div>
-              <button
-                type="button"
-                onClick={() => {
-                  setCarregando(true);
-                  carregarImoveis().catch((erro) => console.error(erro));
-                }}
-                className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 text-surface-200 transition hover:border-surface-500 hover:bg-surface-800"
-                title="Atualizar imóveis"
-              >
-                <RefreshCw size={16} className={carregando ? "animate-spin" : ""} aria-hidden="true" />
-              </button>
-            </div>
-
-            <form onSubmit={buscarLocalizacao} className="mt-4">
-              <div className="flex gap-2">
-                <div className="relative min-w-0 flex-1">
-                  <Search
-                    size={16}
-                    className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-surface-400"
-                    aria-hidden="true"
-                  />
-                  <input
-                    value={buscaLocalizacao}
-                    onChange={(evento) => setBuscaLocalizacao(evento.target.value)}
-                    placeholder="Buscar cidade, bairro ou endereço"
-                    className="h-10 w-full rounded-lg border border-surface-700 bg-surface-900 pl-9 pr-9 text-sm text-surface-50 outline-none transition placeholder:text-surface-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-                  />
-                  {buscaLocalizacao ? (
-                    <button
-                      type="button"
-                      onClick={() => setBuscaLocalizacao("")}
-                      className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-surface-400 transition hover:bg-surface-800 hover:text-surface-100"
-                      title="Limpar busca"
-                    >
-                      <X size={14} aria-hidden="true" />
-                    </button>
-                  ) : null}
-                </div>
-
+          <div className={minimizado ? "p-4" : "border-b border-surface-700 p-4"}>
+            <div className="flex items-center justify-between gap-3">
+              <h1 className="text-xl font-black tracking-normal text-surface-50">
+                Filtros de Imóveis
+              </h1>
+              <div className="flex items-center gap-2">
                 <button
-                  type="submit"
-                  disabled={buscandoLocalizacao || !buscaLocalizacao.trim()}
-                  className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
-                  title="Centralizar no mapa"
+                  type="button"
+                  onClick={() => setMinimizado(!minimizado)}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 text-surface-200 transition hover:border-surface-500 hover:bg-surface-800"
+                  title={minimizado ? "Expandir" : "Minimizar"}
                 >
-                  {buscandoLocalizacao ? (
-                    <Loader2 size={16} className="animate-spin" aria-hidden="true" />
-                  ) : (
-                    <LocateFixed size={16} aria-hidden="true" />
-                  )}
+                  {minimizado ? <ChevronDown size={16} aria-hidden="true" /> : <ChevronUp size={16} aria-hidden="true" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCarregando(true);
+                    carregarImoveis().catch((erro) => console.error(erro));
+                  }}
+                  className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-surface-700 bg-surface-900 text-surface-200 transition hover:border-surface-500 hover:bg-surface-800"
+                  title="Atualizar imóveis"
+                >
+                  <RefreshCw size={16} className={carregando ? "animate-spin" : ""} aria-hidden="true" />
                 </button>
               </div>
-
-              {erroBuscaLocalizacao ? (
-                <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-300">
-                  <AlertCircle size={13} aria-hidden="true" />
-                  {erroBuscaLocalizacao}
-                </p>
-              ) : null}
-            </form>
-          </div>
-
-          <div className="border-b border-surface-700 p-4">
-            <div className="space-y-3">
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-surface-400">
-                    <SlidersHorizontal size={13} aria-hidden="true" />
-                    Filtros
-                  </label>
-                  <button
-                    type="button"
-                    onClick={limparFiltros}
-                    className="text-xs font-bold text-brand-300 transition hover:text-brand-200"
-                  >
-                    Limpar
-                  </button>
-                </div>
-
-                <div className="flex gap-2 overflow-x-auto pr-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-                  <button
-                    type="button"
-                    onClick={() => setStatusSelecionado("TODOS")}
-                    className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusSelecionado === "TODOS"
-                      ? "border-brand-500 bg-brand-600 text-white shadow-sm shadow-brand-900/50"
-                      : "border-surface-700 bg-surface-900 text-surface-300 hover:border-surface-500 hover:text-surface-50"
-                      }`}
-                  >
-                    Todos
-                  </button>
-                  {STATUSES.map((opcao) => (
-                    <button
-                      key={opcao.value}
-                      type="button"
-                      onClick={() => setStatusSelecionado(opcao.value)}
-                      className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusSelecionado === opcao.value
-                        ? "border-brand-500 bg-brand-600 text-white shadow-sm shadow-brand-900/50"
-                        : "border-surface-700 bg-surface-900 text-surface-300 hover:border-surface-500 hover:text-surface-50"
-                        }`}
-                    >
-                      {opcao.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={finalidadeSelecionada}
-                  onChange={(evento) => setFinalidadeSelecionada(evento.target.value)}
-                  className="h-10 rounded-lg border border-surface-700 bg-surface-900 px-3 text-sm text-surface-50 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-                >
-                  <option value="TODAS">Todos objetivos</option>
-                  {PURCHASE_GOALS.map((goal) => (
-                    <option key={goal.value} value={goal.value}>
-                      {goal.label}
-                    </option>
-                  ))}
-                </select>
-
-                <select
-                  value={tipoSelecionado}
-                  onChange={(evento) => setTipoSelecionado(evento.target.value)}
-                  className="h-10 rounded-lg border border-surface-700 bg-surface-900 px-3 text-sm text-surface-50 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
-                >
-                  <option value="TODOS">Todos os tipos</option>
-                  {PROPERTY_TYPES.map((tipo) => (
-                    <option key={tipo.value} value={tipo.value}>
-                      {tipo.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
-          </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto p-4">
-            {carregando ? (
-              <div className="space-y-3">
-                {[0, 1, 2].map((indice) => (
-                  <div key={indice} className="h-28 animate-pulse rounded-lg border border-surface-700 bg-surface-900" />
-                ))}
-              </div>
-            ) : erroCarregamento ? (
-              <div className="rounded-lg border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-200">
-                <div className="flex items-center gap-2 font-bold">
-                  <AlertCircle size={16} aria-hidden="true" />
-                  {erroCarregamento}
+            {!minimizado && (
+              <form onSubmit={buscarLocalizacao} className="mt-4">
+                <div className="flex gap-2">
+                  <div className="relative min-w-0 flex-1">
+                    <Search
+                      size={16}
+                      className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-surface-400"
+                      aria-hidden="true"
+                    />
+                    <input
+                      value={buscaLocalizacao}
+                      onChange={(evento) => setBuscaLocalizacao(evento.target.value)}
+                      placeholder="Buscar cidade, bairro ou endereço"
+                      className="h-10 w-full rounded-lg border border-surface-700 bg-surface-900 pl-9 pr-9 text-sm text-surface-50 outline-none transition placeholder:text-surface-500 focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                    />
+                    {buscaLocalizacao ? (
+                      <button
+                        type="button"
+                        onClick={() => setBuscaLocalizacao("")}
+                        className="absolute right-2 top-1/2 inline-flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-md text-surface-400 transition hover:bg-surface-800 hover:text-surface-100"
+                        title="Limpar busca"
+                      >
+                        <X size={14} aria-hidden="true" />
+                      </button>
+                    ) : null}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={buscandoLocalizacao || !buscaLocalizacao.trim()}
+                    className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-600 text-white transition hover:bg-brand-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    title="Centralizar no mapa"
+                  >
+                    {buscandoLocalizacao ? (
+                      <Loader2 size={16} className="animate-spin" aria-hidden="true" />
+                    ) : (
+                      <LocateFixed size={16} aria-hidden="true" />
+                    )}
+                  </button>
                 </div>
-              </div>
-            ) : imoveisFiltrados.length === 0 ? (
-              <div className="rounded-lg border border-surface-700 bg-surface-900 p-5 text-center">
-                <Building2 size={30} className="mx-auto text-surface-500" aria-hidden="true" />
-                <h2 className="mt-3 text-sm font-bold text-surface-100">Nenhum imóvel encontrado</h2>
-                <p className="mt-1 text-xs leading-relaxed text-surface-400">
-                  Ajuste os filtros ou aguarde a localização dos imóveis com endereço cadastrado.
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {imoveisFiltrados.map((imovel) => (
-                  <ItemImovel
-                    key={imovel.id}
-                    imovel={imovel}
-                    selecionado={imovel.id === imovelSelecionado?.id}
-                    onSelecionar={selecionarImovel}
-                  />
-                ))}
-              </div>
+
+                {erroBuscaLocalizacao ? (
+                  <p className="mt-2 flex items-center gap-1.5 text-xs font-medium text-red-300">
+                    <AlertCircle size={13} aria-hidden="true" />
+                    {erroBuscaLocalizacao}
+                  </p>
+                ) : null}
+              </form>
             )}
           </div>
+
+          {!minimizado && (
+            <>
+              <div className="border-b border-surface-700 p-4">
+                <div className="space-y-3">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between gap-2">
+                      <label className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-surface-400">
+                        <SlidersHorizontal size={13} aria-hidden="true" />
+                        Filtros
+                      </label>
+                      <button
+                        type="button"
+                        onClick={limparFiltros}
+                        className="text-xs font-bold text-brand-300 transition hover:text-brand-200"
+                      >
+                        Limpar
+                      </button>
+                    </div>
+
+                    <div className="flex gap-2 overflow-x-auto pr-2 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+                      <button
+                        type="button"
+                        onClick={() => setStatusSelecionado("TODOS")}
+                        className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusSelecionado === "TODOS"
+                          ? "border-brand-500 bg-brand-600 text-white shadow-sm shadow-brand-900/50"
+                          : "border-surface-700 bg-surface-900 text-surface-300 hover:border-surface-500 hover:text-surface-50"
+                          }`}
+                      >
+                        Todos
+                      </button>
+                      {STATUSES.map((opcao) => (
+                        <button
+                          key={opcao.value}
+                          type="button"
+                          onClick={() => setStatusSelecionado(opcao.value)}
+                          className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${statusSelecionado === opcao.value
+                            ? "border-brand-500 bg-brand-600 text-white shadow-sm shadow-brand-900/50"
+                            : "border-surface-700 bg-surface-900 text-surface-300 hover:border-surface-500 hover:text-surface-50"
+                            }`}
+                        >
+                          {opcao.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <select
+                      value={finalidadeSelecionada}
+                      onChange={(evento) => setFinalidadeSelecionada(evento.target.value)}
+                      className="h-10 rounded-lg border border-surface-700 bg-surface-900 px-3 text-sm text-surface-50 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                    >
+                      <option value="TODAS">Todos objetivos</option>
+                      {PURCHASE_GOALS.map((goal) => (
+                        <option key={goal.value} value={goal.value}>
+                          {goal.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      value={tipoSelecionado}
+                      onChange={(evento) => setTipoSelecionado(evento.target.value)}
+                      className="h-10 rounded-lg border border-surface-700 bg-surface-900 px-3 text-sm text-surface-50 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/10"
+                    >
+                      <option value="TODOS">Todos os tipos</option>
+                      {PROPERTY_TYPES.map((tipo) => (
+                        <option key={tipo.value} value={tipo.value}>
+                          {tipo.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="min-h-0 flex-1 overflow-y-auto p-4">
+                {carregando ? (
+                  <div className="space-y-3">
+                    {[0, 1, 2].map((indice) => (
+                      <div key={indice} className="h-28 animate-pulse rounded-lg border border-surface-700 bg-surface-900" />
+                    ))}
+                  </div>
+                ) : erroCarregamento ? (
+                  <div className="rounded-lg border border-red-500/25 bg-red-500/10 p-4 text-sm text-red-200">
+                    <div className="flex items-center gap-2 font-bold">
+                      <AlertCircle size={16} aria-hidden="true" />
+                      {erroCarregamento}
+                    </div>
+                  </div>
+                ) : imoveisFiltrados.length === 0 ? (
+                  <div className="rounded-lg border border-surface-700 bg-surface-900 p-5 text-center">
+                    <Building2 size={30} className="mx-auto text-surface-500" aria-hidden="true" />
+                    <h2 className="mt-3 text-sm font-bold text-surface-100">Nenhum imóvel encontrado</h2>
+                    <p className="mt-1 text-xs leading-relaxed text-surface-400">
+                      Ajuste os filtros ou aguarde a localização dos imóveis com endereço cadastrado.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {imoveisFiltrados.map((imovel) => (
+                      <ItemImovel
+                        key={imovel.id}
+                        imovel={imovel}
+                        selecionado={imovel.id === imovelSelecionado?.id}
+                        onSelecionar={selecionarImovel}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
         </div>
       </aside>
 
